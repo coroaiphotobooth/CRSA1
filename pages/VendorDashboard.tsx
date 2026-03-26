@@ -206,8 +206,41 @@ export default function VendorDashboard() {
     const confirmed = await showDialog('confirm', 'Remove Event', "Are you sure you want to remove this event? All data and settings in this event will be deleted.");
     if (confirmed) {
       try {
+        const eventToDelete = events.find(e => e.id === eventId);
+
         const { error } = await supabase.from('events').delete().eq('id', eventId);
         if (error) throw error;
+
+        if (eventToDelete?.storage_folder) {
+          const folderPath = eventToDelete.storage_folder;
+          const deleteFilesInPath = async (path: string) => {
+            let hasMore = true;
+            let iterations = 0;
+            while (hasMore && iterations < 50) { // Max 5000 files to prevent infinite loop
+              iterations++;
+              const { data: files } = await supabase.storage.from('photobooth').list(path, { limit: 100 });
+              if (files && files.length > 0) {
+                const fileNames = files.filter(x => x.id).map(x => `${path}/${x.name}`);
+                if (fileNames.length > 0) {
+                  const { error: removeError } = await supabase.storage.from('photobooth').remove(fileNames);
+                  if (removeError) {
+                    console.error("Error removing files:", removeError);
+                    break;
+                  }
+                } else {
+                  hasMore = false;
+                }
+              } else {
+                hasMore = false;
+              }
+            }
+          };
+
+          await deleteFilesInPath(`${folderPath}/original`);
+          await deleteFilesInPath(`${folderPath}/result`);
+          await deleteFilesInPath(folderPath);
+        }
+
         setEvents(events.filter(e => e.id !== eventId));
       } catch (err: any) {
         console.error("Failed to delete event:", err);
