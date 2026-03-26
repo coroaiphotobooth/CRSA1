@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload } from 'lucide-react';
+import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X } from 'lucide-react';
 import { Vendor, Event } from '../types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { robustFetch } from '../lib/appsScript';
+import { useDialog } from '../components/DialogProvider';
 
 export default function VendorDashboard() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
@@ -17,6 +18,7 @@ export default function VendorDashboard() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ current: number, total: number } | null>(null);
   const [backupProgress, setBackupProgress] = useState<{ current: number, total: number, success: number, fail: number } | null>(null);
+  const { showDialog } = useDialog();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -130,14 +132,15 @@ export default function VendorDashboard() {
   };
 
   const handleDeleteEvent = async (eventId: string) => {
-    if (window.confirm("Are you sure you want to remove this event? All data and settings in this event will be deleted.")) {
+    const confirmed = await showDialog('confirm', 'Remove Event', "Are you sure you want to remove this event? All data and settings in this event will be deleted.");
+    if (confirmed) {
       try {
         const { error } = await supabase.from('events').delete().eq('id', eventId);
         if (error) throw error;
         setEvents(events.filter(e => e.id !== eventId));
       } catch (err: any) {
         console.error("Failed to delete event:", err);
-        alert(`Failed to delete event: ${err.message}`);
+        await showDialog('alert', 'Error', `Failed to delete event: ${err.message}`);
       }
     }
   };
@@ -151,18 +154,18 @@ export default function VendorDashboard() {
 
       if (error) throw error;
       if (!sessions || sessions.length === 0) {
-        alert("No data found for this event.");
+        await showDialog('alert', 'Notice', "No data found for this event.");
         return;
       }
 
       let totalFiles = 0;
       sessions.forEach(s => {
-        if (s.generated_result) totalFiles++;
-        if (s.original_capture) totalFiles++;
+        if (s.result_image_url) totalFiles++;
+        if (s.result_video_url) totalFiles++;
       });
 
       if (totalFiles === 0) {
-        alert("No files found to download.");
+        await showDialog('alert', 'Notice', "No files found to download.");
         return;
       }
 
@@ -173,33 +176,32 @@ export default function VendorDashboard() {
 
       let count = 0;
       for (const session of sessions) {
-        if (session.generated_result) {
+        if (session.result_image_url) {
           try {
-            const response = await fetch(session.generated_result);
+            const response = await fetch(session.result_image_url);
             const blob = await response.blob();
-            const ext = session.generated_result.includes('.mp4') ? 'mp4' : 'jpg';
-            folder?.file(`session_${session.id}_result.${ext}`, blob);
+            folder?.file(`session_${session.id}_image.jpg`, blob);
             count++;
             setDownloadProgress({ current: count, total: totalFiles });
           } catch (e) {
-            console.error(`Failed to download result for session ${session.id}`, e);
+            console.error(`Failed to download image for session ${session.id}`, e);
           }
         }
-        if (session.original_capture) {
+        if (session.result_video_url) {
           try {
-            const response = await fetch(session.original_capture);
+            const response = await fetch(session.result_video_url);
             const blob = await response.blob();
-            folder?.file(`session_${session.id}_original.jpg`, blob);
+            folder?.file(`session_${session.id}_video.mp4`, blob);
             count++;
             setDownloadProgress({ current: count, total: totalFiles });
           } catch (e) {
-            console.error(`Failed to download original for session ${session.id}`, e);
+            console.error(`Failed to download video for session ${session.id}`, e);
           }
         }
       }
 
       if (count === 0) {
-        alert("No files could be downloaded.");
+        await showDialog('alert', 'Notice', "No files could be downloaded.");
         setDownloadProgress(null);
         return;
       }
@@ -210,14 +212,14 @@ export default function VendorDashboard() {
       
     } catch (err: any) {
       console.error("Failed to download data:", err);
-      alert(`Failed to download data: ${err.message}`);
+      await showDialog('alert', 'Error', `Failed to download data: ${err.message}`);
       setDownloadProgress(null);
     }
   };
 
   const handleBackupToDrive = async (eventId: string) => {
-    const driveInput = window.prompt("Please enter your Google Drive Folder ID or URL.\n\nIMPORTANT: The folder must have General access set to 'Anyone on the internet with the link can edit'.");
-    if (!driveInput) return;
+    const driveInput = await showDialog('prompt', 'Google Drive Backup', "Please enter your Google Drive Folder ID or URL.\n\nIMPORTANT: The folder must have General access set to 'Anyone on the internet with the link can edit'.");
+    if (!driveInput || typeof driveInput !== 'string') return;
 
     let folderId = driveInput;
     const match = driveInput.match(/folders\/([a-zA-Z0-9-_]+)/);
@@ -236,7 +238,7 @@ export default function VendorDashboard() {
 
       if (error) throw error;
       if (!sessions || sessions.length === 0) {
-        alert("No data found for this event.");
+        await showDialog('alert', 'Notice', "No data found for this event.");
         return;
       }
 
@@ -244,17 +246,18 @@ export default function VendorDashboard() {
       const gasUrl = globalSettings?.gas_url;
 
       if (!gasUrl) {
-        alert("Google Apps Script URL not configured. Cannot backup to Google Drive.");
+        await showDialog('alert', 'Error', "Google Apps Script URL not configured. Cannot backup to Google Drive.");
         return;
       }
 
       let totalFiles = 0;
       sessions.forEach(s => {
-        if (s.generated_result) totalFiles++;
+        if (s.result_image_url) totalFiles++;
+        if (s.result_video_url) totalFiles++;
       });
 
       if (totalFiles === 0) {
-        alert("No files found to backup.");
+        await showDialog('alert', 'Notice', "No files found to backup.");
         return;
       }
 
@@ -265,9 +268,9 @@ export default function VendorDashboard() {
       let currentCount = 0;
 
       for (const session of sessions) {
-        if (session.generated_result) {
+        if (session.result_image_url) {
           try {
-            const response = await fetch(session.generated_result);
+            const response = await fetch(session.result_image_url);
             const blob = await response.blob();
             const reader = new FileReader();
             const base64Promise = new Promise<string>((resolve) => {
@@ -276,13 +279,10 @@ export default function VendorDashboard() {
             });
             const base64Data = await base64Promise;
 
-            const isVideo = session.generated_result.includes('.mp4');
-            const action = isVideo ? 'uploadGeneratedVideo' : 'uploadGenerated';
-
             const res = await robustFetch(gasUrl, {
               method: 'POST',
               body: JSON.stringify({
-                action,
+                action: 'uploadGenerated',
                 image: base64Data,
                 folderId,
                 skipGallery: true
@@ -291,7 +291,37 @@ export default function VendorDashboard() {
             if (res.ok) successCount++;
             else failCount++;
           } catch (e) {
-            console.error("Backup failed for a file:", e);
+            console.error("Backup failed for an image:", e);
+            failCount++;
+          }
+          currentCount++;
+          setBackupProgress({ current: currentCount, total: totalFiles, success: successCount, fail: failCount });
+        }
+
+        if (session.result_video_url) {
+          try {
+            const response = await fetch(session.result_video_url);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            const base64Promise = new Promise<string>((resolve) => {
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            const base64Data = await base64Promise;
+
+            const res = await robustFetch(gasUrl, {
+              method: 'POST',
+              body: JSON.stringify({
+                action: 'uploadGeneratedVideo',
+                image: base64Data,
+                folderId,
+                skipGallery: true
+              })
+            });
+            if (res.ok) successCount++;
+            else failCount++;
+          } catch (e) {
+            console.error("Backup failed for a video:", e);
             failCount++;
           }
           currentCount++;
@@ -299,15 +329,15 @@ export default function VendorDashboard() {
         }
       }
 
-      setTimeout(() => {
-        alert(`Backup complete! Successfully backed up ${successCount} files. Failed: ${failCount} files.`);
+      setTimeout(async () => {
         setBackupProgress(null);
+        await showDialog('alert', 'Success', `Backup complete! Successfully backed up ${successCount} files. Failed: ${failCount} files.`);
       }, 500);
 
     } catch (err: any) {
       console.error("Backup error:", err);
-      alert(`Backup failed: ${err.message}`);
       setBackupProgress(null);
+      await showDialog('alert', 'Error', `Backup failed: ${err.message}`);
     }
   };
 
@@ -368,7 +398,7 @@ export default function VendorDashboard() {
             <div className="mt-auto pt-4 flex items-center justify-between">
               <p className="text-xs text-gray-500">1 Credit = 1 AI Generation</p>
               <button 
-                onClick={() => alert("Payment gateway integration coming soon! (Stripe/Xendit)")}
+                onClick={() => showDialog('alert', 'Coming Soon', "Payment gateway integration coming soon! (Stripe/Xendit)")}
                 className="text-xs bg-[#bc13fe] hover:bg-[#a010d8] text-white px-3 py-1.5 rounded-md font-bold transition-colors"
               >
                 BUY CREDITS

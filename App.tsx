@@ -20,8 +20,8 @@ import FastThanksPage from './pages/FastThanksPage';
 import GuestResultPage from './pages/GuestResultPage';
 import LoginPage from './pages/LoginPage';
 import VendorDashboard from './pages/VendorDashboard';
-
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import { useDialog } from './components/DialogProvider';
 
 // Helper: Safe LocalStorage Set (Only for small settings, NOT concepts)
 const safeLocalStorageSet = (key: string, value: string) => {
@@ -35,6 +35,7 @@ const safeLocalStorageSet = (key: string, value: string) => {
 const PhotoboothFlow: React.FC = () => {
   const location = useLocation();
   const { eventId } = useParams<{ eventId: string }>();
+  const { showDialog } = useDialog();
   
   const queryParams = new URLSearchParams(location.search);
   const initialPage = queryParams.get('page') === 'gallery' 
@@ -255,9 +256,9 @@ const PhotoboothFlow: React.FC = () => {
       // Use saveLargeData (IndexedDB) instead of localStorage
       saveLargeData('pb_concepts', newConcepts).then(() => {
           console.log("Concepts cached to IndexedDB");
-      }).catch(err => {
+      }).catch(async err => {
           console.error("Failed to save concepts to IndexedDB", err);
-          alert("Warning: Failed to cache concepts locally. Data is saved to Cloud only.");
+          await showDialog('alert', 'Warning', "Warning: Failed to cache concepts locally. Data is saved to Cloud only.");
       });
   };
 

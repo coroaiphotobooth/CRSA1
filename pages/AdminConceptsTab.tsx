@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Concept } from '../types';
 import { saveConceptsToGas } from '../lib/appsScript';
 import { supabase } from '../lib/supabase';
+import { useDialog } from '../components/DialogProvider';
 
 interface AdminConceptsTabProps {
   concepts: Concept[];
@@ -14,6 +15,7 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
   const [localConcepts, setLocalConcepts] = useState(concepts);
   const { eventId } = useParams<{ eventId: string }>();
   const [isSavingConcepts, setIsSavingConcepts] = useState(false);
+  const { showDialog } = useDialog();
 
   useEffect(() => {
     setLocalConcepts(concepts);
@@ -83,18 +85,18 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
           .insert(conceptsToSave);
           
         if (error) throw error;
-        alert('SUCCESS: Concepts saved locally AND synced to Supabase.');
+        await showDialog('alert', 'Success', 'SUCCESS: Concepts saved locally AND synced to Supabase.');
       } else {
         const ok = await saveConceptsToGas(localConcepts, adminPin);
         
         if (ok) {
-          alert('SUCCESS: Concepts saved locally AND synced to Cloud (GAS).');
+          await showDialog('alert', 'Success', 'SUCCESS: Concepts saved locally AND synced to Cloud (GAS).');
         } else {
-          alert('WARNING: Concepts saved LOCALLY only. Cloud sync failed (Data might be too large), but items are safe on this machine.');
+          await showDialog('alert', 'Warning', 'WARNING: Concepts saved LOCALLY only. Cloud sync failed (Data might be too large), but items are safe on this machine.');
         }
       }
     } catch (e) {
-        alert('Local save successful. Cloud error: ' + e);
+        await showDialog('alert', 'Warning', 'Local save successful. Cloud error: ' + e);
     } finally {
       setIsSavingConcepts(false);
     }
@@ -148,11 +150,11 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
                   
                   <label className="absolute inset-0 bg-blue-600/80 opacity-0 group-hover/ref:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
                      {concept.refImage ? 'Change Reference' : 'Add Reference'}
-                     <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+                     <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
                            if (file.size > 1024 * 1024) {
-                              alert("File too large! Max size is 1MB.");
+                              await showDialog('alert', 'Error', "File too large! Max size is 1MB.");
                               return;
                            }
                            const reader = new FileReader();

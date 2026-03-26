@@ -3,6 +3,7 @@ import { GalleryItem, Concept, PhotoboothSettings, ProcessNotification } from '.
 import { fetchGallery, fetchImageBase64, deletePhotoFromGas, deleteAllPhotosFromGas, queueVideoTask } from '../lib/appsScript';
 import { printImage } from '../lib/printUtils'; // Import Print Utils
 import { decrementCredits } from '../lib/supabase';
+import { useDialog } from '../components/DialogProvider';
 
 interface GalleryPageProps {
   onBack: () => void;
@@ -128,6 +129,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
   const [clearPin, setClearPin] = useState('');
   const [isClearing, setIsClearing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const { showDialog } = useDialog();
 
   useEffect(() => {
      loadGallery();
@@ -184,7 +186,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
           if (!res.ok) throw new Error(res.error || "Failed to delete");
       } catch (err: any) {
           console.error(err);
-          alert(`Gagal menghapus foto. Error: ${err.message}`);
+          await showDialog('alert', 'Error', `Gagal menghapus foto. Error: ${err.message}`);
           setItems(prevItems); 
           onUpdateCache(prevItems); 
       } finally {
@@ -199,7 +201,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
 
   const executeClearGallery = async () => {
       if (String(clearPin) !== String(settings?.adminPin)) {
-          alert("PIN INVALID!");
+          await showDialog('alert', 'Error', "PIN INVALID!");
           return;
       }
       setIsClearing(true);
@@ -210,7 +212,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
           setShowClearDialog(false);
       } catch (err) {
           console.error(err);
-          alert("Failed to clear gallery.");
+          await showDialog('alert', 'Error', "Failed to clear gallery.");
       } finally {
           setIsClearing(false);
       }
@@ -218,7 +220,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
 
   const handleGenerateVideoFromGallery = async () => {
       if (!selectedItem) {
-          alert("Session data incomplete. Cannot generate video.");
+          await showDialog('alert', 'Error', "Session data incomplete. Cannot generate video.");
           return;
       }
       
@@ -227,7 +229,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
         const creditCost = videoRes === '720p' ? 5 : 3;
         const hasCredits = await decrementCredits(settings.activeEventId, creditCost);
         if (!hasCredits) {
-          alert(`Insufficient credits for video generation. You need ${creditCost} credits.`);
+          await showDialog('alert', 'Error', `Insufficient credits for video generation. You need ${creditCost} credits.`);
           return;
         }
       }
@@ -277,11 +279,11 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
              setItems(updatedList);
              onUpdateCache(updatedList);
          } else {
-             alert(`Failed to start video: ${data.error}`);
+             await showDialog('alert', 'Error', `Failed to start video: ${data.error}`);
          }
       } catch(e) {
          console.error(e);
-         alert("Error starting video generation.");
+         await showDialog('alert', 'Error', "Error starting video generation.");
       } finally {
           setIsGeneratingVideo(false);
       }
@@ -335,12 +337,12 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
                 : undefined;
              onRegenerate(base64, concept, useUltraQuality, sessionData);
           } else {
-             alert("Gagal mengambil foto original. Silakan coba lagi.");
+             await showDialog('alert', 'Error', "Gagal mengambil foto original. Silakan coba lagi.");
              setIsRegenerating(false);
           }
       } catch(e) {
           console.error(e);
-          alert("Terjadi kesalahan saat memproses regenerasi.");
+          await showDialog('alert', 'Error', "Terjadi kesalahan saat memproses regenerasi.");
           setIsRegenerating(false);
       }
   };

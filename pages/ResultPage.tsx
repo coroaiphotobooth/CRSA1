@@ -7,6 +7,7 @@ import { applyOverlay, getGoogleDriveDirectLink } from '../lib/imageUtils';
 import { OverlayCache } from '../lib/overlayCache'; 
 import { printImage } from '../lib/printUtils';
 import { decrementCredits } from '../lib/supabase';
+import { useDialog } from '../components/DialogProvider';
 
 interface ResultPageProps {
   capturedImage: string;
@@ -39,6 +40,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   const [isVideoRequested, setIsVideoRequested] = useState(false);
   const [videoRedirectTimer, setVideoRedirectTimer] = useState<number | null>(null);
   const [videoStatusText, setVideoStatusText] = useState("PREPARING REQUEST...");
+  const { showDialog } = useDialog();
 
   let targetWidth = 1080;
   let targetHeight = 1920;
@@ -175,7 +177,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
       const creditCost = videoRes === '720p' ? 5 : 3;
       const hasCredits = await decrementCredits(settings.activeEventId, creditCost);
       if (!hasCredits) {
-        alert(`Insufficient credits for video generation. You need ${creditCost} credits.`);
+        await showDialog('alert', 'Error', `Insufficient credits for video generation. You need ${creditCost} credits.`);
         return;
       }
     }

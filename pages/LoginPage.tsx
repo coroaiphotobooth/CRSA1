@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Loader2 } from 'lucide-react';
+import { useDialog } from '../components/DialogProvider';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
+  const { showDialog } = useDialog();
 
   const COUNTRIES = [
     "Indonesia", "Malaysia", "Singapore", "Thailand", "Vietnam", "Philippines",
@@ -53,7 +55,7 @@ export default function LoginPage() {
           if (vendorError) {
              console.error("Failed to create vendor:", vendorError);
           }
-          alert("Registration successful! Please sign in.");
+          await showDialog('alert', 'Success', "Registration successful! Please sign in.");
           setIsSignUp(false);
         }
       } else {

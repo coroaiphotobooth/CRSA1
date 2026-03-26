@@ -8,6 +8,7 @@ import {
 } from '../lib/appsScript';
 import { getGoogleDriveDirectLink } from '../lib/imageUtils';
 import { supabase } from '../lib/supabase';
+import { useDialog } from '../components/DialogProvider';
 
 interface AdminSettingsTabProps {
   settings: PhotoboothSettings;
@@ -20,6 +21,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
   const { eventId } = useParams<{ eventId: string }>();
   const [isUploadingOverlay, setIsUploadingOverlay] = useState(false);
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
+  const { showDialog } = useDialog();
 
   const overlayInputRef = useRef<HTMLInputElement>(null);
   const backgroundInputRef = useRef<HTMLInputElement>(null);
@@ -68,17 +70,17 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           .eq('id', eventId);
           
         if (error) throw error;
-        alert('Settings saved locally and synced to Supabase.');
+        await showDialog('alert', 'Success', 'Settings saved locally and synced to Supabase.');
       } catch (err) {
         console.error("Supabase save error:", err);
-        alert('Settings saved LOCALLY. Supabase sync failed.');
+        await showDialog('alert', 'Warning', 'Settings saved LOCALLY. Supabase sync failed.');
       }
     } else {
       const ok = await saveSettingsToGas(localSettings, settings.adminPin);
       if (ok) {
-        alert('Settings saved locally and synced to Cloud.');
+        await showDialog('alert', 'Success', 'Settings saved locally and synced to Cloud.');
       } else {
-        alert('Settings saved LOCALLY. Cloud sync failed, but data is safe on this machine.');
+        await showDialog('alert', 'Warning', 'Settings saved LOCALLY. Cloud sync failed, but data is safe on this machine.');
       }
     }
   };
@@ -403,7 +405,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
                   const res = await uploadOverlayToGas(reader.result as string, settings.adminPin);
                   if (res.ok) {
                     setLocalSettings({...localSettings, overlayImage: res.url});
-                    alert('Overlay updated');
+                    await showDialog('alert', 'Success', 'Overlay updated');
                   }
                   setIsUploadingOverlay(false);
                 };
@@ -455,7 +457,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
                   const res = await uploadBackgroundToGas(reader.result as string, settings.adminPin);
                   if (res.ok) {
                     setLocalSettings({...localSettings, backgroundImage: res.url});
-                    alert('Background Image updated');
+                    await showDialog('alert', 'Success', 'Background Image updated');
                   }
                   setIsUploadingBackground(false);
                 };

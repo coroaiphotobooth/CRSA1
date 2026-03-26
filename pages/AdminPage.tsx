@@ -6,6 +6,7 @@ import { DEFAULT_GAS_URL } from '../constants';
 import AdminSettingsTab from './AdminSettingsTab';
 import AdminConceptsTab from './AdminConceptsTab';
 import AdminMonitorTab from './AdminMonitorTab';
+import { useDialog } from '../components/DialogProvider';
 
 interface AdminPageProps {
   settings: PhotoboothSettings;
@@ -21,6 +22,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
   const [pin, setPin] = useState('');
   const [gasUrl, setGasUrl] = useState('');
   const [activeTab, setActiveTab] = useState<'settings' | 'concepts'>('settings');
+  const { showDialog } = useDialog();
 
   // Initialize GAS URL
   useEffect(() => {
@@ -28,11 +30,11 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
     setGasUrl(savedUrl);
   }, []);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (pin === settings.adminPin) {
       setIsAuthenticated(true);
     } else {
-      alert('INVALID SECURITY PIN');
+      await showDialog('alert', 'Error', 'INVALID SECURITY PIN');
       setPin('');
     }
   };

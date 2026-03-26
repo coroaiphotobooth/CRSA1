@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Loader2, LogOut, Trash2, Edit, Save, Settings, ShieldAlert } from 'lucide-react';
 import { Vendor } from '../types';
+import { useDialog } from '../components/DialogProvider';
 
 export default function SuperAdminDashboard() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -14,6 +15,7 @@ export default function SuperAdminDashboard() {
   const [editForm, setEditForm] = useState({ name: '', plan: 'free', credits: 0 });
   const [showSqlModal, setShowSqlModal] = useState(false);
   const navigate = useNavigate();
+  const { showDialog } = useDialog();
 
   const SUPER_ADMIN_EMAIL = 'coroaiphotobooth@gmail.com';
 
@@ -80,9 +82,9 @@ export default function SuperAdminDashboard() {
         });
 
       if (error) throw error;
-      alert('Global settings saved successfully!');
+      await showDialog('alert', 'Success', 'Global settings saved successfully!');
     } catch (err: any) {
-      alert(`Failed to save settings: ${err.message}`);
+      await showDialog('alert', 'Error', `Failed to save settings: ${err.message}`);
     } finally {
       setSavingSettings(false);
     }
@@ -94,7 +96,8 @@ export default function SuperAdminDashboard() {
   };
 
   const handleDeleteVendor = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this vendor? This will delete all their events and data.')) return;
+    const confirmed = await showDialog('confirm', 'Confirm Deletion', 'Are you sure you want to delete this vendor? This will delete all their events and data.');
+    if (!confirmed) return;
     
     try {
       // Note: Deleting from auth.users requires service role key. 
@@ -103,7 +106,7 @@ export default function SuperAdminDashboard() {
       if (error) throw error;
       setVendors(vendors.filter(v => v.id !== id));
     } catch (err: any) {
-      alert(`Failed to delete vendor: ${err.message}\n\nNote: Deleting users completely requires Supabase Dashboard access or a Service Role key.`);
+      await showDialog('alert', 'Error', `Failed to delete vendor: ${err.message}\n\nNote: Deleting users completely requires Supabase Dashboard access or a Service Role key.`);
     }
   };
 
@@ -133,7 +136,7 @@ export default function SuperAdminDashboard() {
       setVendors(vendors.map(v => v.id === editingVendor.id ? { ...v, ...editForm } as Vendor : v));
       setEditingVendor(null);
     } catch (err: any) {
-      alert(`Failed to update vendor: ${err.message}`);
+      await showDialog('alert', 'Error', `Failed to update vendor: ${err.message}`);
     }
   };
 
