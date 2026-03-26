@@ -82,10 +82,18 @@ export default function LoginPage() {
     try {
       setLoading(true);
       setError(null);
+      
+      // Get the current origin, but if we are in a local dev environment that might
+      // not be registered in Supabase, fallback to the production URL or let Supabase
+      // use its default Site URL.
+      const redirectUrl = window.location.origin.includes('localhost') 
+        ? undefined // Let Supabase use its default Site URL
+        : `${window.location.origin}/dashboard`;
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard` // Note: OAuth redirect might need to be handled in a central auth listener
+          redirectTo: redirectUrl
         }
       });
       if (error) throw error;
