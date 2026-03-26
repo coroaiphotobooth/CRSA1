@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X } from 'lucide-react';
+import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert } from 'lucide-react';
 import { Vendor, Event } from '../types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -38,13 +38,20 @@ export default function VendorDashboard() {
           .eq('id', user.id)
           .single();
 
+        let currentVendor = vendorData;
+
         if (vendorError) {
           if (vendorError.code === 'PGRST116') {
             // Vendor doesn't exist, create it
             const newVendor = {
               id: user.id,
               email: user.email || '',
-              name: user.user_metadata?.full_name || 'Vendor'
+              name: user.user_metadata?.full_name || user.user_metadata?.name || 'Vendor',
+              company_name: user.user_metadata?.company_name || null,
+              country: user.user_metadata?.country || null,
+              phone: user.user_metadata?.phone || null,
+              credits: user.user_metadata?.credits || 5,
+              is_blocked: false
             };
             const { data: createdVendor, error: createError } = await supabase
               .from('vendors')
@@ -55,26 +62,29 @@ export default function VendorDashboard() {
             if (createError) {
               console.error("Error creating vendor:", createError);
               setErrorMsg(`Warning: Could not create your vendor profile in the database (${createError.message}). You may not be able to create events.`);
-              setVendor({ ...newVendor, created_at: new Date().toISOString() } as any);
+              currentVendor = { ...newVendor, created_at: new Date().toISOString() } as any;
             } else {
-              setVendor(createdVendor);
+              currentVendor = createdVendor;
             }
           } else {
             console.error("Error fetching vendor:", vendorError);
-            setVendor({
+            currentVendor = {
               id: user.id,
               email: user.email || '',
               name: user.user_metadata?.full_name || 'Vendor',
               plan: 'free',
-              credits: 100,
-              created_at: new Date().toISOString()
-            });
+              credits: 5,
+              created_at: new Date().toISOString(),
+              is_blocked: false
+            } as any;
           }
-        } else {
-          setVendor(vendorData);
         }
 
-        // Fetch Events
+        if (currentVendor?.is_blocked) {
+          // We show a dedicated UI for this now
+        }
+
+        // Fetch Events first to check if they are a new user
         const { data: eventsData, error: eventsError } = await supabase
           .from('events')
           .select('*')
@@ -86,6 +96,48 @@ export default function VendorDashboard() {
         } else {
           setEvents(eventsData || []);
         }
+
+        // Check if we need to update existing vendor with metadata
+        const metadataName = user.user_metadata?.full_name || user.user_metadata?.name;
+        if (currentVendor && (currentVendor.name === 'Vendor' || !currentVendor.company_name || currentVendor.credits === 0 || currentVendor.credits === 100)) {
+            const updateData: any = {};
+            if (currentVendor.name === 'Vendor' && metadataName) updateData.name = metadataName;
+            if (!currentVendor.company_name && user.user_metadata?.company_name) updateData.company_name = user.user_metadata.company_name;
+            if (!currentVendor.country && user.user_metadata?.country) updateData.country = user.user_metadata.country;
+            if (!currentVendor.phone && user.user_metadata?.phone) updateData.phone = user.user_metadata.phone;
+            
+            let grantingCredits = false;
+            // If the vendor has 0 or 100 credits (from old trigger) and hasn't been granted credits yet
+            // We also check if they have no events to prevent giving existing users who ran out of credits a bonus
+            if ((currentVendor.credits === 0 || currentVendor.credits === 100) && (!eventsData || eventsData.length === 0)) {
+                // Only grant if they haven't been granted before
+                if (!user.user_metadata?.credits_granted) {
+                    updateData.credits = 5;
+                    grantingCredits = true;
+                }
+            }
+
+            if (Object.keys(updateData).length > 0) {
+                const { data: updatedVendor, error: updateError } = await supabase
+                  .from('vendors')
+                  .update(updateData)
+                  .eq('id', user.id)
+                  .select()
+                  .single();
+                  
+                if (!updateError && updatedVendor) {
+                    currentVendor = updatedVendor;
+                    if (grantingCredits) {
+                        // Update user metadata so we don't grant credits again
+                        await supabase.auth.updateUser({
+                            data: { credits_granted: true }
+                        });
+                    }
+                }
+            }
+        }
+
+        setVendor(currentVendor);
       } catch (err) {
         console.error("Dashboard error:", err);
       } finally {
@@ -106,14 +158,33 @@ export default function VendorDashboard() {
     if (!vendor) return;
     if (!newEventName.trim()) return;
 
+    if (vendor.is_blocked) {
+      await showDialog('alert', 'Account Blocked', 'Your account has been temporarily blocked by coro.ai. Please contact the admin at coroaiphotobooth@gmail.com or send a message on WhatsApp at +6282381230888');
+      return;
+    }
+
     try {
+      // Generate folder name: companyname_eventname
+      const sanitizeName = (name: string) => name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      const companyName = vendor.company_name || vendor.name || 'vendor';
+      const folderName = `${sanitizeName(companyName)}_${sanitizeName(newEventName.trim())}`;
+
+      // Create folders in Supabase Storage by uploading a dummy .keep file
+      const emptyBlob = new Blob([''], { type: 'text/plain' });
+      
+      await Promise.all([
+        supabase.storage.from('photobooth').upload(`${folderName}/original/.keep`, emptyBlob, { upsert: true }),
+        supabase.storage.from('photobooth').upload(`${folderName}/result/.keep`, emptyBlob, { upsert: true })
+      ]);
+
       const { data, error } = await supabase
         .from('events')
         .insert([
           {
             vendor_id: vendor.id,
             name: newEventName.trim(),
-            description: newEventDescription.trim()
+            description: newEventDescription.trim(),
+            storage_folder: folderName
           }
         ])
         .select();
@@ -381,6 +452,24 @@ export default function VendorDashboard() {
             </button>
           </div>
         </div>
+
+        {errorMsg && (
+          <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded-xl mb-8">
+            {errorMsg}
+          </div>
+        )}
+
+        {vendor?.is_blocked && (
+          <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-6 rounded-xl mb-8 flex items-start gap-4">
+            <ShieldAlert className="w-8 h-8 flex-shrink-0 mt-1" />
+            <div>
+              <h3 className="text-lg font-bold mb-2">Account Blocked</h3>
+              <p className="text-sm opacity-90">
+                Your account has been temporarily blocked by coro.ai. Please contact the admin at <a href="mailto:coroaiphotobooth@gmail.com" className="underline">coroaiphotobooth@gmail.com</a> or send a message on WhatsApp at <a href="https://wa.me/6282381230888" className="underline">+6282381230888</a>
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Stats / Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">

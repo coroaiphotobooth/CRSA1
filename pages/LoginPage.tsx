@@ -37,24 +37,18 @@ export default function LoginPage() {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              full_name: name || 'Vendor',
+              company_name: companyName,
+              country: country,
+              phone: phone,
+              credits: 5
+            }
+          }
         });
         if (error) throw error;
         if (data.user) {
-          // Create vendor record
-          const { error: vendorError } = await supabase
-            .from('vendors')
-            .insert([{ 
-              id: data.user.id, 
-              email: data.user.email || '', 
-              name: name || 'Vendor',
-              company_name: companyName,
-              country: country,
-              phone: phone
-            }]);
-          
-          if (vendorError) {
-             console.error("Failed to create vendor:", vendorError);
-          }
           await showDialog('alert', 'Success', "Registration successful! Please sign in.");
           setIsSignUp(false);
         }

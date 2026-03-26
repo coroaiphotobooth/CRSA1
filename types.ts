@@ -106,6 +106,7 @@ export interface Vendor {
   plan: 'free' | 'pro' | 'enterprise';
   credits: number;
   created_at: string;
+  is_blocked?: boolean;
 }
 
 export interface Event {
@@ -117,4 +118,5 @@ export interface Event {
   is_active: boolean;
   settings: PhotoboothSettings;
   created_at: string;
+  storage_folder?: string;
 }

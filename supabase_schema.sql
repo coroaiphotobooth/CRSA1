@@ -48,6 +48,7 @@ CREATE TABLE events (
   date TIMESTAMP WITH TIME ZONE,
   is_active BOOLEAN DEFAULT true,
   settings JSONB DEFAULT '{}'::jsonb,
+  storage_folder TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
