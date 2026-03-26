@@ -151,3 +151,35 @@ BEGIN
   RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to decrement credits by a specific amount
+CREATE OR REPLACE FUNCTION decrement_credits_by_amount(p_event_id UUID, p_amount INTEGER)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_vendor_id UUID;
+  v_credits INTEGER;
+BEGIN
+  -- Get the vendor ID and current credits for the event
+  SELECT v.id, v.credits INTO v_vendor_id, v_credits
+  FROM events e
+  JOIN vendors v ON e.vendor_id = v.id
+  WHERE e.id = p_event_id AND e.is_active = true;
+
+  -- If event not found or inactive, return false
+  IF v_vendor_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  -- Check if vendor has enough credits
+  IF v_credits < p_amount THEN
+    RETURN FALSE;
+  END IF;
+
+  -- Deduct credit
+  UPDATE vendors
+  SET credits = credits - p_amount
+  WHERE id = v_vendor_id;
+
+  RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

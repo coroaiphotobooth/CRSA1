@@ -9,7 +9,7 @@ const getGasUrl = () => {
 };
 
 // HELPER: Robust Fetch with CORS handling & Logging
-const robustFetch = async (url: string, options: RequestInit = {}) => {
+export const robustFetch = async (url: string, options: RequestInit = {}) => {
     try {
         if (options.method === 'POST') {
              if (!options.headers) {
@@ -426,12 +426,5 @@ export const uploadBackgroundToGas = async (base64Image: string, pin: string) =>
     const url = getGasUrl();
     try {
         return await robustFetch(url, { method: 'POST', body: JSON.stringify({ action: 'uploadBackground', pin, image: base64Image }) });
-    } catch (e) { return { ok: false }; }
-};
-
-export const uploadAudioToGas = async (base64Audio: string, pin: string) => {
-    const url = getGasUrl();
-    try {
-        return await robustFetch(url, { method: 'POST', body: JSON.stringify({ action: 'uploadAudio', pin, image: base64Audio }) });
     } catch (e) { return { ok: false }; }
 };

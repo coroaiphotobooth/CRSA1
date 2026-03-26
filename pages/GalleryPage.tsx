@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { GalleryItem, Concept, PhotoboothSettings, ProcessNotification } from '../types';
 import { fetchGallery, fetchImageBase64, deletePhotoFromGas, deleteAllPhotosFromGas, queueVideoTask } from '../lib/appsScript';
 import { printImage } from '../lib/printUtils'; // Import Print Utils
+import { decrementCredits } from '../lib/supabase';
 
 interface GalleryPageProps {
   onBack: () => void;
@@ -220,6 +221,17 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
           alert("Session data incomplete. Cannot generate video.");
           return;
       }
+      
+      if (settings?.activeEventId) {
+        const videoRes = settings.videoResolution || '480p';
+        const creditCost = videoRes === '720p' ? 5 : 3;
+        const hasCredits = await decrementCredits(settings.activeEventId, creditCost);
+        if (!hasCredits) {
+          alert(`Insufficient credits for video generation. You need ${creditCost} credits.`);
+          return;
+        }
+      }
+
       setIsGeneratingVideo(true);
       try {
          // Try queueing first

@@ -169,6 +169,17 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   // FIXED: Trigger queueing instead of direct generate and AWAIT RESPONSE
   const handleGenerateVideo = async () => {
     if (!photoId) return;
+    
+    if (settings.activeEventId) {
+      const videoRes = settings.videoResolution || '480p';
+      const creditCost = videoRes === '720p' ? 5 : 3;
+      const hasCredits = await decrementCredits(settings.activeEventId, creditCost);
+      if (!hasCredits) {
+        alert(`Insufficient credits for video generation. You need ${creditCost} credits.`);
+        return;
+      }
+    }
+
     setIsVideoRequested(true);
     setVideoStatusText("CONNECTING TO SERVER...");
 

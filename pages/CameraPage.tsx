@@ -200,7 +200,9 @@ const CameraPage: React.FC<CameraPageProps> = ({
          // Rotate based on settings
          ctx.rotate((cameraRotation * Math.PI) / 180);
          // Mirror (Standard Webcam behavior)
-         ctx.scale(-1, 1); 
+         if (settings?.mirrorCamera !== false) {
+           ctx.scale(-1, 1); 
+         }
 
          // Draw Video to Canvas
          const drawW = isSideways ? destH : destW;
@@ -225,7 +227,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
          onGenerate();
       }
     }
-  }, [onCapture, onGenerate, cameraRotation, targetRatioValue, stopCamera]);
+  }, [onCapture, onGenerate, cameraRotation, targetRatioValue, stopCamera, settings?.mirrorCamera]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -391,7 +393,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
                       playsInline 
                       muted
                       className="w-full h-full object-contain"
-                      style={{ transform: 'scaleX(-1)' }}
+                      style={{ transform: settings?.mirrorCamera !== false ? 'scaleX(-1)' : 'none' }}
                     />
                   </div>
                   

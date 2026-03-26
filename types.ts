@@ -32,7 +32,6 @@ export interface PhotoboothSettings {
   overlayImage: string | null;
   backgroundImage: string | null;
   backgroundVideoUrl?: string | null; // New Field for Video Loop Background
-  backgroundAudio: string | null; 
   videoPrompt: string; 
   // enableVideoGeneration is deprecated in favor of boothMode
   enableVideoGeneration?: boolean; 
@@ -48,6 +47,7 @@ export interface PhotoboothSettings {
   outputRatio: AspectRatio;
   activeEventId?: string;
   cameraRotation: number;
+  mirrorCamera?: boolean; // New Setting: Toggle mirror effect on camera preview
   promptMode?: 'raw' | 'wrapped' | 'booth'; // New Setting: 'raw' = free transform, 'wrapped' = strict face lock, 'booth' = outfit swap
   enableModelShortcut?: boolean; // New Setting: Show Quick Model Toggle on Camera
   enablePrint?: boolean; // New Setting: Enable Direct Printing Feature

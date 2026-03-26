@@ -54,7 +54,6 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   overlayImage: null,
   backgroundImage: null,
   backgroundVideoUrl: null, // New Default for Video Loop
-  backgroundAudio: null,
   videoPrompt: 'Cinematic slow motion, subtle movement, 4k high quality, looping background',
   enableVideoGeneration: true, // Deprecated but kept for type safety
   videoResolution: '480p', // Default 480p
@@ -68,6 +67,7 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   orientation: 'portrait',
   outputRatio: '9:16',
   cameraRotation: 0,
+  mirrorCamera: true, // Default to mirrored preview
   promptMode: 'wrapped', // Default: Wrapped (Safe/Strict)
   enableModelShortcut: false, // Default off
   enablePrint: false // Default off

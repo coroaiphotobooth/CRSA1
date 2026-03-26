@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins } from 'lucide-react';
+import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload } from 'lucide-react';
 import { Vendor, Event } from '../types';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import { robustFetch } from '../lib/appsScript';
 
 export default function VendorDashboard() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
@@ -10,7 +13,10 @@ export default function VendorDashboard() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newEventName, setNewEventName] = useState('');
+  const [newEventDescription, setNewEventDescription] = useState('AI PHOTOBOOTH EXPERIENCE');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [downloadProgress, setDownloadProgress] = useState<{ current: number, total: number } | null>(null);
+  const [backupProgress, setBackupProgress] = useState<{ current: number, total: number, success: number, fail: number } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -104,7 +110,8 @@ export default function VendorDashboard() {
         .insert([
           {
             vendor_id: vendor.id,
-            name: newEventName.trim()
+            name: newEventName.trim(),
+            description: newEventDescription.trim()
           }
         ])
         .select();
@@ -114,10 +121,193 @@ export default function VendorDashboard() {
         setEvents([data[0], ...events]);
         setShowCreateModal(false);
         setNewEventName('');
+        setNewEventDescription('AI PHOTOBOOTH EXPERIENCE');
       }
     } catch (err: any) {
       console.error("Failed to create event:", err);
       setErrorMsg(`Failed to create event: ${err.message || 'Unknown error'}. Please ensure your Supabase tables and policies are correctly set up.`);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (window.confirm("Are you sure you want to remove this event? All data and settings in this event will be deleted.")) {
+      try {
+        const { error } = await supabase.from('events').delete().eq('id', eventId);
+        if (error) throw error;
+        setEvents(events.filter(e => e.id !== eventId));
+      } catch (err: any) {
+        console.error("Failed to delete event:", err);
+        alert(`Failed to delete event: ${err.message}`);
+      }
+    }
+  };
+
+  const handleDownloadAllData = async (eventId: string) => {
+    try {
+      const { data: sessions, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('event_id', eventId);
+
+      if (error) throw error;
+      if (!sessions || sessions.length === 0) {
+        alert("No data found for this event.");
+        return;
+      }
+
+      let totalFiles = 0;
+      sessions.forEach(s => {
+        if (s.generated_result) totalFiles++;
+        if (s.original_capture) totalFiles++;
+      });
+
+      if (totalFiles === 0) {
+        alert("No files found to download.");
+        return;
+      }
+
+      setDownloadProgress({ current: 0, total: totalFiles });
+      
+      const zip = new JSZip();
+      const folder = zip.folder(`event_${eventId}_data`);
+
+      let count = 0;
+      for (const session of sessions) {
+        if (session.generated_result) {
+          try {
+            const response = await fetch(session.generated_result);
+            const blob = await response.blob();
+            const ext = session.generated_result.includes('.mp4') ? 'mp4' : 'jpg';
+            folder?.file(`session_${session.id}_result.${ext}`, blob);
+            count++;
+            setDownloadProgress({ current: count, total: totalFiles });
+          } catch (e) {
+            console.error(`Failed to download result for session ${session.id}`, e);
+          }
+        }
+        if (session.original_capture) {
+          try {
+            const response = await fetch(session.original_capture);
+            const blob = await response.blob();
+            folder?.file(`session_${session.id}_original.jpg`, blob);
+            count++;
+            setDownloadProgress({ current: count, total: totalFiles });
+          } catch (e) {
+            console.error(`Failed to download original for session ${session.id}`, e);
+          }
+        }
+      }
+
+      if (count === 0) {
+        alert("No files could be downloaded.");
+        setDownloadProgress(null);
+        return;
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `event_${eventId}_data.zip`);
+      setDownloadProgress(null);
+      
+    } catch (err: any) {
+      console.error("Failed to download data:", err);
+      alert(`Failed to download data: ${err.message}`);
+      setDownloadProgress(null);
+    }
+  };
+
+  const handleBackupToDrive = async (eventId: string) => {
+    const driveInput = window.prompt("Please enter your Google Drive Folder ID or URL.\n\nIMPORTANT: The folder must have General access set to 'Anyone on the internet with the link can edit'.");
+    if (!driveInput) return;
+
+    let folderId = driveInput;
+    const match = driveInput.match(/folders\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) {
+      folderId = match[1];
+    } else if (driveInput.includes('id=')) {
+      const urlParams = new URLSearchParams(driveInput.substring(driveInput.indexOf('?')));
+      folderId = urlParams.get('id') || driveInput;
+    }
+
+    try {
+      const { data: sessions, error } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('event_id', eventId);
+
+      if (error) throw error;
+      if (!sessions || sessions.length === 0) {
+        alert("No data found for this event.");
+        return;
+      }
+
+      const { data: globalSettings } = await supabase.from('global_settings').select('gas_url').single();
+      const gasUrl = globalSettings?.gas_url;
+
+      if (!gasUrl) {
+        alert("Google Apps Script URL not configured. Cannot backup to Google Drive.");
+        return;
+      }
+
+      let totalFiles = 0;
+      sessions.forEach(s => {
+        if (s.generated_result) totalFiles++;
+      });
+
+      if (totalFiles === 0) {
+        alert("No files found to backup.");
+        return;
+      }
+
+      setBackupProgress({ current: 0, total: totalFiles, success: 0, fail: 0 });
+
+      let successCount = 0;
+      let failCount = 0;
+      let currentCount = 0;
+
+      for (const session of sessions) {
+        if (session.generated_result) {
+          try {
+            const response = await fetch(session.generated_result);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            const base64Promise = new Promise<string>((resolve) => {
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            const base64Data = await base64Promise;
+
+            const isVideo = session.generated_result.includes('.mp4');
+            const action = isVideo ? 'uploadGeneratedVideo' : 'uploadGenerated';
+
+            const res = await robustFetch(gasUrl, {
+              method: 'POST',
+              body: JSON.stringify({
+                action,
+                image: base64Data,
+                folderId,
+                skipGallery: true
+              })
+            });
+            if (res.ok) successCount++;
+            else failCount++;
+          } catch (e) {
+            console.error("Backup failed for a file:", e);
+            failCount++;
+          }
+          currentCount++;
+          setBackupProgress({ current: currentCount, total: totalFiles, success: successCount, fail: failCount });
+        }
+      }
+
+      setTimeout(() => {
+        alert(`Backup complete! Successfully backed up ${successCount} files. Failed: ${failCount} files.`);
+        setBackupProgress(null);
+      }, 500);
+
+    } catch (err: any) {
+      console.error("Backup error:", err);
+      alert(`Backup failed: ${err.message}`);
+      setBackupProgress(null);
     }
   };
 
@@ -136,7 +326,7 @@ export default function VendorDashboard() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
-            <h1 className="text-3xl font-heading font-bold neon-text mb-1">VENDOR DASHBOARD</h1>
+            <h1 className="text-3xl font-heading font-bold neon-text mb-1">DASHBOARD</h1>
             <p className="text-gray-400">Welcome back, {vendor?.name}</p>
           </div>
           <div className="flex items-center gap-4">
@@ -218,28 +408,56 @@ export default function VendorDashboard() {
                 
                 <p className="text-sm text-gray-400 line-clamp-2">{event.description || 'New Photobooth Event'}</p>
                 
-                <div className="mt-auto pt-4 border-t border-white/10 flex gap-2">
-                  <button 
-                    onClick={() => navigate(`/app/${event.id}`)}
-                    className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Play className="w-3 h-3" />
-                    LAUNCH
-                  </button>
-                  <button 
-                    onClick={() => navigate(`/admin/${event.id}`)}
-                    className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Settings className="w-3 h-3" />
-                    SETTINGS
-                  </button>
-                  <button 
-                    onClick={() => navigate(`/app/${event.id}?page=gallery`)}
-                    className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                  >
-                    <ImageIcon className="w-3 h-3" />
-                    GALLERY
-                  </button>
+                <div className="mt-auto pt-4 border-t border-white/10 flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => navigate(`/app/${event.id}`)}
+                      className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Play className="w-3 h-3" />
+                      LAUNCH
+                    </button>
+                    <button 
+                      onClick={() => navigate(`/admin/${event.id}`)}
+                      className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Settings className="w-3 h-3" />
+                      SETTINGS
+                    </button>
+                    <button 
+                      onClick={() => navigate(`/app/${event.id}?page=gallery`)}
+                      className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                    >
+                      <ImageIcon className="w-3 h-3" />
+                      GALLERY
+                    </button>
+                  </div>
+                  <div className="flex gap-2 mt-1">
+                    <button 
+                      onClick={() => handleDownloadAllData(event.id)}
+                      className="flex-1 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                      title="Download All Data (ZIP)"
+                    >
+                      <Download className="w-3 h-3" />
+                      DOWNLOAD
+                    </button>
+                    <button 
+                      onClick={() => handleBackupToDrive(event.id)}
+                      className="flex-1 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                      title="Backup to Google Drive"
+                    >
+                      <CloudUpload className="w-3 h-3" />
+                      BACKUP
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteEvent(event.id)}
+                      className="flex-1 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                      title="Remove Event"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      REMOVE
+                    </button>
+                  </div>
                 </div>
               </div>
             ))
@@ -247,6 +465,51 @@ export default function VendorDashboard() {
         </div>
 
       </div>
+
+      {/* Progress Modals */}
+      {downloadProgress && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md text-center">
+            <Loader2 className="w-12 h-12 text-[#bc13fe] animate-spin mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">Downloading Data</h2>
+            <p className="text-gray-400 mb-4">Please wait while we prepare your files...</p>
+            <div className="w-full bg-white/10 rounded-full h-4 mb-2 overflow-hidden">
+              <div 
+                className="bg-[#bc13fe] h-full transition-all duration-300" 
+                style={{ width: `${(downloadProgress.current / downloadProgress.total) * 100}%` }}
+              />
+            </div>
+            <p className="text-sm font-bold">
+              {downloadProgress.current} / {downloadProgress.total} files processed
+              ({Math.round((downloadProgress.current / downloadProgress.total) * 100)}%)
+            </p>
+          </div>
+        </div>
+      )}
+
+      {backupProgress && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md text-center">
+            <Loader2 className="w-12 h-12 text-green-500 animate-spin mx-auto mb-4" />
+            <h2 className="text-xl font-bold mb-2">Backing up to Google Drive</h2>
+            <p className="text-gray-400 mb-4">Please do not close this window...</p>
+            <div className="w-full bg-white/10 rounded-full h-4 mb-2 overflow-hidden">
+              <div 
+                className="bg-green-500 h-full transition-all duration-300" 
+                style={{ width: `${(backupProgress.current / backupProgress.total) * 100}%` }}
+              />
+            </div>
+            <p className="text-sm font-bold mb-2">
+              {backupProgress.current} / {backupProgress.total} files processed
+              ({Math.round((backupProgress.current / backupProgress.total) * 100)}%)
+            </p>
+            <div className="flex justify-center gap-4 text-xs">
+              <span className="text-green-400">Success: {backupProgress.success}</span>
+              <span className="text-red-400">Failed: {backupProgress.fail}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Event Modal */}
       {showCreateModal && (
@@ -264,6 +527,16 @@ export default function VendorDashboard() {
                   placeholder="e.g., John & Jane Wedding"
                   autoFocus
                   required
+                />
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm text-gray-400 mb-2">Event Description</label>
+                <input
+                  type="text"
+                  value={newEventDescription}
+                  onChange={(e) => setNewEventDescription(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#bc13fe]"
+                  placeholder="e.g., AI PHOTOBOOTH EXPERIENCE"
                 />
               </div>
               <div className="flex justify-end gap-2">

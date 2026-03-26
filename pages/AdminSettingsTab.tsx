@@ -4,7 +4,6 @@ import { PhotoboothSettings, AspectRatio, MonitorTheme } from '../types';
 import { 
   uploadOverlayToGas, 
   uploadBackgroundToGas,
-  uploadAudioToGas,
   saveSettingsToGas 
 } from '../lib/appsScript';
 import { getGoogleDriveDirectLink } from '../lib/imageUtils';
@@ -21,11 +20,9 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
   const { eventId } = useParams<{ eventId: string }>();
   const [isUploadingOverlay, setIsUploadingOverlay] = useState(false);
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
-  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
 
   const overlayInputRef = useRef<HTMLInputElement>(null);
   const backgroundInputRef = useRef<HTMLInputElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setLocalSettings(prev => {
@@ -163,7 +160,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Event Name</label>
             <input 
               className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-white focus:border-purple-500 outline-none transition-colors rounded-lg" 
-              value={localSettings.eventName} 
+              value={localSettings.eventName || ''} 
               onChange={e => setLocalSettings({...localSettings, eventName: e.target.value})}
             />
           </div>
@@ -171,31 +168,9 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Event Description</label>
             <input 
               className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-white focus:border-purple-500 outline-none transition-colors rounded-lg" 
-              value={localSettings.eventDescription} 
+              value={localSettings.eventDescription || ''} 
               onChange={e => setLocalSettings({...localSettings, eventDescription: e.target.value})}
             />
-          </div>
-          
-          {/* Folder Configurations */}
-          <div className="flex flex-col gap-3">
-            <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Generated Result Folder ID</label>
-            <input 
-              className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-purple-300 focus:border-purple-500 outline-none transition-colors rounded-lg" 
-              value={localSettings.folderId} 
-              onChange={e => setLocalSettings({...localSettings, folderId: e.target.value})}
-              placeholder="Enter Folder ID for AI Results"
-            />
-          </div>
-          
-          <div className="flex flex-col gap-3">
-            <label className="text-[10px] text-green-500 uppercase tracking-widest font-bold">Original Capture Folder ID (Raw)</label>
-            <input 
-              className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-green-300 focus:border-green-500 outline-none transition-colors rounded-lg" 
-              value={localSettings.originalFolderId || ''} 
-              onChange={e => setLocalSettings({...localSettings, originalFolderId: e.target.value})}
-              placeholder="Enter Folder ID for Original Raw Photos (Optional)"
-            />
-            <p className="text-[9px] text-gray-500">* Leave blank if you don't want to save originals. Saved originals will NOT appear in the gallery.</p>
           </div>
 
           {/* AI Model Config */}
@@ -249,125 +224,29 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
 
           {/* Quick Model Shortcut Toggle (NEW) */}
           <div className="flex items-center justify-between bg-white/5 p-4 rounded border border-white/10 mb-4">
-             <div className="flex flex-col">
-                 <label className="text-[10px] text-orange-400 uppercase tracking-widest font-bold">Enable Camera Model Shortcut</label>
-                 <span className="text-[8px] text-gray-500">Adds "Normal/Ultra" toggle button on Camera screen</span>
+           </div>
+
+           {/* Print Feature Toggle (NEW) */}
+           <div className="flex items-center justify-between bg-white/5 p-4 rounded border border-white/10 mb-4">
+              <div className="flex flex-col">
+                  <label className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">Enable Direct Printing</label>
+                  <span className="text-[8px] text-gray-500">Show Print button in Result and Gallery screens</span>
+              </div>
+              <div className="flex items-center">
+               <input 
+                 type="checkbox" 
+                 className="w-5 h-5 accent-cyan-600 cursor-pointer"
+                 checked={localSettings.enablePrint ?? false}
+                 onChange={e => setLocalSettings({...localSettings, enablePrint: e.target.checked})}
+               />
              </div>
-             <div className="flex items-center">
-              <input 
-                type="checkbox" 
-                className="w-5 h-5 accent-orange-600 cursor-pointer"
-                checked={localSettings.enableModelShortcut ?? false}
-                onChange={e => setLocalSettings({...localSettings, enableModelShortcut: e.target.checked})}
-              />
-            </div>
-          </div>
+           </div>
 
-          {/* Print Feature Toggle (NEW) */}
-          <div className="flex items-center justify-between bg-white/5 p-4 rounded border border-white/10 mb-4">
-             <div className="flex flex-col">
-                 <label className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">Enable Direct Printing</label>
-                 <span className="text-[8px] text-gray-500">Show Print button in Result and Gallery screens</span>
-             </div>
-             <div className="flex items-center">
-              <input 
-                type="checkbox" 
-                className="w-5 h-5 accent-cyan-600 cursor-pointer"
-                checked={localSettings.enablePrint ?? false}
-                onChange={e => setLocalSettings({...localSettings, enablePrint: e.target.checked})}
-              />
-            </div>
-          </div>
-
-          {localSettings.enableOpenAI && (
-             <div className="flex flex-col gap-3 mb-6 bg-green-900/10 p-4 rounded border border-green-500/20">
-               <label className="text-[10px] text-green-500 uppercase tracking-widest font-bold">OpenAI GPT-1.5 Render Size (Speed Control)</label>
-               <div className="grid grid-cols-3 gap-3">
-                  {(['512', '720', '1024'] as const).map(size => (
-                    <button
-                      key={size}
-                      onClick={() => setLocalSettings({...localSettings, gptModelSize: size})}
-                      className={`py-2 border rounded font-mono text-xs transition-all uppercase ${localSettings.gptModelSize === size ? 'bg-green-600 text-white border-green-400' : 'bg-black/50 text-gray-400 border-white/10 hover:bg-white/5'}`}
-                    >
-                      {size}px
-                    </button>
-                  ))}
-               </div>
-               <p className="text-[9px] text-gray-500">* Lower resolution = Faster generation. Aspect ratio is preserved within this box.</p>
-             </div>
-          )}
-
-          <div className="flex flex-col gap-3">
-            <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Image Generation Model</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <button
-                onClick={() => setLocalSettings({...localSettings, selectedModel: 'gemini-3.1-flash-image-preview'})}
-                className={`py-4 border border-white/10 rounded font-mono text-xs transition-all flex flex-col items-center gap-1 ${localSettings.selectedModel === 'gemini-3.1-flash-image-preview' ? 'bg-purple-600 text-white shadow-lg border-purple-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-              >
-                <span className="text-sm font-bold">GEN3.1</span>
-                <span className="text-[8px] opacity-70 uppercase">FAST (FLASH)</span>
-              </button>
-              <button
-                onClick={() => setLocalSettings({...localSettings, selectedModel: 'auto'})}
-                className={`py-4 border border-white/10 rounded font-mono text-xs transition-all flex flex-col items-center gap-1 ${localSettings.selectedModel === 'auto' ? 'bg-blue-600 text-white shadow-lg border-blue-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-              >
-                <span className="text-sm font-bold">AUTO</span>
-                <span className="text-[8px] opacity-70 uppercase">SMART DETECT</span>
-              </button>
-              <button
-                onClick={() => setLocalSettings({...localSettings, selectedModel: 'gemini-3-pro-image-preview'})}
-                className={`py-4 border border-white/10 rounded font-mono text-xs transition-all flex flex-col items-center gap-1 ${localSettings.selectedModel === 'gemini-3-pro-image-preview' ? 'bg-purple-600 text-white shadow-lg border-purple-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-              >
-                <span className="text-sm font-bold">GEN 3</span>
-                <span className="text-[8px] opacity-70 uppercase">QUALITY (PRO)</span>
-              </button>
-              
-              {/* SEEDREAM OPTION */}
-              <button
-                onClick={() => setLocalSettings({...localSettings, selectedModel: 'seedream-4-5-251128'})}
-                className={`py-4 border border-white/10 rounded font-mono text-xs transition-all flex flex-col items-center gap-1 ${localSettings.selectedModel === 'seedream-4-5-251128' ? 'bg-orange-600 text-white shadow-lg border-orange-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-              >
-                <span className="text-sm font-bold">SEEDREAM</span>
-                <span className="text-[8px] opacity-70 uppercase">BYTEPLUS 4.5</span>
-              </button>
-
-              {localSettings.enableOpenAI && (
-                <button
-                  onClick={() => setLocalSettings({...localSettings, selectedModel: 'gpt-image-1.5'})}
-                  className={`py-4 border border-white/10 rounded font-mono text-xs transition-all flex flex-col items-center gap-1 ${localSettings.selectedModel === 'gpt-image-1.5' ? 'bg-green-600 text-white shadow-lg border-green-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-                >
-                  <span className="text-sm font-bold">GP5</span>
-                  <span className="text-[8px] opacity-70 uppercase">OPENAI</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Video Settings */}
-          <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 mt-6 uppercase italic">Video Generation (Seedance)</h3>
-          
-          <div className="flex flex-col gap-3">
-            <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Video Model Version</label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setLocalSettings({...localSettings, videoModel: 'seedance-1-0-pro-fast-251015'})}
-                className={`py-4 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.videoModel === 'seedance-1-0-pro-fast-251015' ? 'bg-purple-600 text-white shadow-lg border-purple-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-              >
-                 <span className="font-bold">Seedance 1.0</span>
-                 <span className="text-[8px] opacity-60">PRO FAST (DEFAULT)</span>
-              </button>
-              <button
-                onClick={() => setLocalSettings({...localSettings, videoModel: 'seedance-1-5-pro-251215'})}
-                className={`py-4 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.videoModel === 'seedance-1-5-pro-251215' ? 'bg-blue-600 text-white shadow-lg border-blue-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-              >
-                 <span className="font-bold">Seedance 1.5</span>
-                 <span className="text-[8px] opacity-60">LATEST PRO</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Video Resolution</label>
+           {/* Video Settings */}
+           <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 mt-6 uppercase italic">Video Setting</h3>
+           
+           <div className="flex flex-col gap-3">
+             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Video Resolution</label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setLocalSettings({...localSettings, videoResolution: '480p'})}
@@ -389,7 +268,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Video Prompt</label>
             <textarea 
               className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-white focus:border-purple-500 outline-none transition-colors h-24 rounded-lg" 
-              value={localSettings.videoPrompt} 
+              value={localSettings.videoPrompt || ''} 
               onChange={e => setLocalSettings({...localSettings, videoPrompt: e.target.value})}
               placeholder="Describe motion (e.g. slow motion, subtle movement...)"
               disabled={localSettings.boothMode === 'photo'}
@@ -433,6 +312,20 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
               ))}
             </div>
           </div>
+          <div className="flex items-center justify-between bg-white/5 p-4 rounded border border-white/10 mt-4 mb-4">
+             <div className="flex flex-col">
+                 <label className="text-[10px] text-orange-400 uppercase tracking-widest font-bold">Mirror Preview Camera</label>
+                 <span className="text-[8px] text-gray-500">Flips the camera preview horizontally</span>
+             </div>
+             <div className="flex items-center">
+              <input 
+                type="checkbox" 
+                className="w-5 h-5 accent-orange-600 cursor-pointer"
+                checked={localSettings.mirrorCamera ?? true}
+                onChange={e => setLocalSettings({...localSettings, mirrorCamera: e.target.checked})}
+              />
+            </div>
+          </div>
 
           {/* Monitor Config */}
           <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 mt-6 uppercase italic">Monitor Config</h3>
@@ -474,7 +367,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
               type="text"
               maxLength={8}
               className="bg-red-900/10 border border-red-500/30 p-4 font-mono text-xs text-red-200 focus:border-red-500 outline-none transition-colors tracking-[0.5em] text-center rounded-lg" 
-              value={localSettings.adminPin} 
+              value={localSettings.adminPin || ''} 
               onChange={e => setLocalSettings({...localSettings, adminPin: e.target.value})}
               placeholder="****"
             />
@@ -519,6 +412,11 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
               <button onClick={() => overlayInputRef.current?.click()} disabled={isUploadingOverlay} className="w-full py-4 border-2 border-white/10 hover:border-purple-500 text-[10px] tracking-widest font-bold uppercase bg-white/5 rounded-lg transition-colors">
                 {isUploadingOverlay ? 'UPLOADING...' : 'CHANGE PNG OVERLAY'}
               </button>
+              {localSettings.overlayImage && (
+                <button onClick={() => setLocalSettings({...localSettings, overlayImage: null})} className="w-full py-3 border border-red-500/30 text-red-400 hover:bg-red-500/10 text-[10px] tracking-widest font-bold uppercase bg-transparent rounded-lg transition-colors">
+                  REMOVE OVERLAY
+                </button>
+              )}
             </div>
           </div>
 
@@ -566,39 +464,11 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
               <button onClick={() => backgroundInputRef.current?.click()} disabled={isUploadingBackground} className="w-full py-4 border-2 border-white/10 hover:border-purple-500 text-[10px] tracking-widest font-bold uppercase bg-white/5 rounded-lg transition-colors">
                 {isUploadingBackground ? 'UPLOADING...' : 'CHANGE BACKGROUND IMAGE'}
               </button>
-            </div>
-          </div>
-
-          {/* Audio Asset */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit text-center backdrop-blur-md bg-black/60 rounded-xl">
-            <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 uppercase italic">Background Audio (5s)</h3>
-            <div className="flex flex-col gap-6">
-              <div className="w-full p-4 bg-white/5 border border-white/10 rounded-lg flex flex-col items-center justify-center gap-2">
-                 {localSettings.backgroundAudio ? (
-                   <div className="flex flex-col items-center gap-2 w-full">
-                     <span className="text-green-500 text-xs font-bold">AUDIO ACTIVE</span>
-                     <audio controls src={localSettings.backgroundAudio} className="w-full h-8" />
-                   </div>
-                 ) : <span className="text-[10px] text-gray-700 font-mono">NO AUDIO</span>}
-              </div>
-              <input type="file" accept="audio/*" className="hidden" ref={audioInputRef} onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setIsUploadingAudio(true);
-                const reader = new FileReader();
-                reader.onload = async () => {
-                  const res = await uploadAudioToGas(reader.result as string, settings.adminPin);
-                  if (res.ok) {
-                    setLocalSettings({...localSettings, backgroundAudio: res.url});
-                    alert('Audio updated');
-                  }
-                  setIsUploadingAudio(false);
-                };
-                reader.readAsDataURL(file);
-              }} />
-              <button onClick={() => audioInputRef.current?.click()} disabled={isUploadingAudio} className="w-full py-4 border-2 border-white/10 hover:border-purple-500 text-[10px] tracking-widest font-bold uppercase bg-white/5 rounded-lg transition-colors">
-                {isUploadingAudio ? 'UPLOADING...' : 'CHANGE AUDIO (5 SEC)'}
-              </button>
+              {localSettings.backgroundImage && (
+                <button onClick={() => setLocalSettings({...localSettings, backgroundImage: null})} className="w-full py-3 border border-red-500/30 text-red-400 hover:bg-red-500/10 text-[10px] tracking-widest font-bold uppercase bg-transparent rounded-lg transition-colors">
+                  REMOVE IMAGE BACKGROUND
+                </button>
+              )}
             </div>
           </div>
 
