@@ -42,7 +42,7 @@ export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { prompt, imageBase64, driveFileId, sessionFolderId, model, resolution } = req.body;
+    const { prompt, imageBase64, driveFileId, sessionFolderId, model, resolution, imageUrl } = req.body;
 
     // 1. DEFAULT MODEL & GUARD
     const selectedModel = model || process.env.VIDEO_MODEL || 'seedance-1-0-pro-fast-251015';
@@ -67,17 +67,41 @@ export default async function handler(req: any, res: any) {
     // 2. RESOLVE INPUT IMAGE
     let inputImageUrl = "";
     
-    if (driveFileId) {
-       // PATCH A: Use Thumbnail URL for smaller input size to reduce Seedance output bitrate/size
-       const sizeParam = videoResolution === '720p' ? 'w720' : 'w480';
-       inputImageUrl = `https://drive.google.com/thumbnail?id=${driveFileId}&sz=${sizeParam}`;
-       console.log(`[API Video] drive input = thumbnail sz=${sizeParam}`);
+    if (imageUrl) {
+       inputImageUrl = imageUrl;
+       console.log(`[API Video] Using provided imageUrl`);
+    } else if (driveFileId) {
+       // Check if driveFileId is a UUID (Supabase session ID)
+       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(driveFileId);
+       if (isUUID) {
+           // If it's a UUID but no imageUrl was provided, we need to fetch it from Supabase
+           try {
+               const { createClient } = await import('@supabase/supabase-js');
+               const supabaseUrl = process.env.VITE_SUPABASE_URL;
+               const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+               if (supabaseUrl && supabaseKey) {
+                   const supabase = createClient(supabaseUrl, supabaseKey);
+                   const { data, error } = await supabase.from('sessions').select('result_image_url').eq('id', driveFileId).single();
+                   if (!error && data?.result_image_url) {
+                       inputImageUrl = data.result_image_url;
+                       console.log(`[API Video] Fetched imageUrl from Supabase`);
+                   }
+               }
+           } catch (e) {
+               console.error("[API Video] Failed to fetch imageUrl from Supabase", e);
+           }
+       } else {
+           // PATCH A: Use Thumbnail URL for smaller input size to reduce Seedance output bitrate/size
+           const sizeParam = videoResolution === '720p' ? 'w720' : 'w480';
+           inputImageUrl = `https://drive.google.com/thumbnail?id=${driveFileId}&sz=${sizeParam}`;
+           console.log(`[API Video] drive input = thumbnail sz=${sizeParam}`);
+       }
     } else if (imageBase64) {
        inputImageUrl = imageBase64; 
     }
 
     if (!inputImageUrl) {
-        return res.status(400).json({ error: "No input image provided (driveFileId required)" });
+        return res.status(400).json({ error: "No input image provided (driveFileId or imageUrl required)" });
     }
 
     // PATCH B: FORCE RESOLUTION IN PROMPT
@@ -100,7 +124,9 @@ export default async function handler(req: any, res: any) {
     // 4. REGISTER TO GOOGLE SHEET (QUEUE) - WITH AWAIT & RETRY
     // Critical: If this fails, the frontend won't track the video properly.
     const gasUrl = process.env.APPS_SCRIPT_BASE_URL;
-    if (gasUrl && driveFileId) {
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(driveFileId || '');
+    
+    if (!isUUID && gasUrl && driveFileId) {
         try {
             await fetchGasWithRetry(gasUrl, {
                 action: 'updateVideoStatus',
@@ -116,6 +142,30 @@ export default async function handler(req: any, res: any) {
             // We proceed to return 200 because the video generation actually started.
             // Client might need to rely on polling via task ID if we exposed it, but standard flow relies on GAS.
             // This error will likely result in "Missing log" on UI.
+        }
+    } else if (driveFileId) {
+        // Fallback to Supabase if GAS URL is not provided or it's a UUID
+        try {
+            const { createClient } = await import('@supabase/supabase-js');
+            const supabaseUrl = process.env.VITE_SUPABASE_URL;
+            const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+            
+            if (supabaseUrl && supabaseKey) {
+                const supabase = createClient(supabaseUrl, supabaseKey);
+                const { error } = await supabase
+                    .from('sessions')
+                    .update({
+                        video_status: 'processing',
+                        status: 'processing',
+                        video_task_id: taskId
+                    })
+                    .eq('id', driveFileId);
+                
+                if (error) throw error;
+                console.log("[API Video] Supabase Updated Successfully");
+            }
+        } catch (e) {
+            console.error("[API Video] CRITICAL: Failed to update Supabase.", e);
         }
     }
 

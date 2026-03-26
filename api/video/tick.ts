@@ -37,17 +37,57 @@ export default async function handler(req: any, res: any) {
   const gasUrl = process.env.APPS_SCRIPT_BASE_URL;
   const defaultModelId = process.env.SEEDANCE_MODEL_ID || 'seedance-1-0-pro-fast-251015';
 
-  if (!apiKey || !baseUrl || !gasUrl) return res.status(500).json({ error: 'Config missing' });
+  if (!apiKey || !baseUrl) return res.status(500).json({ error: 'Config missing' });
 
   try {
-    const sheetRes = await fetch(`${gasUrl}?action=gallery&t=${Date.now()}`);
-    if (!sheetRes.ok) throw new Error(`Failed to fetch Gallery: ${sheetRes.status}`);
-
-    const sheetData = await sheetRes.json();
-    const items: any[] = sheetData.items || [];
+    let items: any[] = [];
+    
+    // 1. Fetch from GAS if configured
+    if (gasUrl) {
+        try {
+            const sheetRes = await fetch(`${gasUrl}?action=gallery&t=${Date.now()}`);
+            if (sheetRes.ok) {
+                const sheetData = await sheetRes.json();
+                items = [...items, ...(sheetData.items || [])];
+            } else {
+                console.error(`Failed to fetch Gallery from GAS: ${sheetRes.status}`);
+            }
+        } catch (e) {
+            console.error("Error fetching from GAS:", e);
+        }
+    }
+    
+    // 2. Fetch from Supabase if configured
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (supabaseUrl && supabaseKey) {
+        try {
+            const { createClient } = await import('@supabase/supabase-js');
+            const supabase = createClient(supabaseUrl, supabaseKey);
+            const { data, error } = await supabase
+                .from('sessions')
+                .select('id, result_image_url, video_status, video_prompt, video_task_id')
+                .in('video_status', ['processing', 'pending', 'queued']);
+                
+            if (error) throw error;
+            const supabaseItems = (data || []).map(session => ({
+                id: session.id,
+                imageUrl: session.result_image_url,
+                videoStatus: session.video_status,
+                videoPrompt: session.video_prompt,
+                videoTaskId: session.video_task_id,
+                sessionFolderId: session.id,
+                source: 'supabase' // Mark source to know where to update
+            }));
+            items = [...items, ...supabaseItems];
+        } catch (e) {
+            console.error("Error fetching from Supabase:", e);
+        }
+    }
 
     const processingTasks = items.filter(i => i.videoStatus === 'processing');
-    const queuedTasks = items.filter(i => i.videoStatus === 'queued');
+    const queuedTasks = items.filter(i => i.videoStatus === 'queued' || i.videoStatus === 'pending');
     const activeCount = processingTasks.length + queuedTasks.length;
 
     const report = { processed: 0, started: 0, rescued: 0, errors: [] as string[] };
@@ -70,30 +110,65 @@ export default async function handler(req: any, res: any) {
                    console.log(`[TICK] Attempting lock for ${task.id}...`);
                    
                    try {
-                       const lockJson = await fetchGasWithRetry(gasUrl, { 
-                           action: 'updateVideoStatus', 
-                           photoId: task.id, 
-                           status: 'uploading', // Intermediate Lock State
-                           providerUrl: videoUrl,
-                           requireStatus: 'processing' // Optimistic Locking Requirement
-                       });
+                       let lockOk = false;
+                       if (task.source !== 'supabase' && gasUrl) {
+                           const lockJson = await fetchGasWithRetry(gasUrl, { 
+                               action: 'updateVideoStatus', 
+                               photoId: task.id, 
+                               status: 'uploading', // Intermediate Lock State
+                               providerUrl: videoUrl,
+                               requireStatus: 'processing' // Optimistic Locking Requirement
+                           });
+                           lockOk = lockJson?.ok;
+                       } else if (supabaseUrl && supabaseKey) {
+                           // Fallback to Supabase
+                           const { createClient } = await import('@supabase/supabase-js');
+                           const supabase = createClient(supabaseUrl, supabaseKey);
+                           const { data, error } = await supabase
+                               .from('sessions')
+                               .update({
+                                   video_status: 'uploading',
+                                   result_video_url: videoUrl
+                               })
+                               .eq('id', task.id)
+                               .eq('video_status', 'processing')
+                               .select();
+                               
+                           lockOk = !error && data && data.length > 0;
+                       }
 
-                       if (lockJson.ok) {
+                       if (lockOk) {
                            console.log(`[TICK] Lock acquired for ${task.id}. Triggering Finalize.`);
                            
                            // Trigger background upload to Drive
                            // We use fire-and-forget logic here but with retry wrapper if needed, 
                            // though `finalizeVideoUpload` is server-to-server and might be long running.
-                           fetch(gasUrl, {
-                               method: 'POST',
-                               headers: { "Content-Type": "text/plain" }, 
-                               body: JSON.stringify({ 
-                                   action: 'finalizeVideoUpload', 
-                                   photoId: task.id, 
-                                   videoUrl: videoUrl, 
-                                   sessionFolderId: task.sessionFolderId 
-                               })
-                           }).catch(e => console.error(`[TICK] Finalize trigger failed for ${task.id}`, e));
+                           if (task.source !== 'supabase' && gasUrl) {
+                               fetch(gasUrl, {
+                                   method: 'POST',
+                                   headers: { "Content-Type": "text/plain" }, 
+                                   body: JSON.stringify({ 
+                                       action: 'finalizeVideoUpload', 
+                                       photoId: task.id, 
+                                       videoUrl: videoUrl, 
+                                       sessionFolderId: task.sessionFolderId 
+                                   })
+                               }).catch(e => console.error(`[TICK] Finalize trigger failed for ${task.id}`, e));
+                           } else if (supabaseUrl && supabaseKey) {
+                               // Fallback to Supabase
+                               const { createClient } = await import('@supabase/supabase-js');
+                               const supabase = createClient(supabaseUrl, supabaseKey);
+                               const { error } = await supabase
+                                   .from('sessions')
+                                   .update({
+                                       result_video_url: videoUrl,
+                                       video_status: 'done',
+                                       status: 'completed'
+                                   })
+                                   .eq('id', task.id);
+                                   
+                               if (error) console.error(`[TICK] Supabase finalize failed for ${task.id}`, error);
+                           }
                            
                            report.processed++;
                        } else {
@@ -104,7 +179,13 @@ export default async function handler(req: any, res: any) {
                    }
                }
            } else if (status === 'failed' || status === 'error') {
-               await fetchGasWithRetry(gasUrl, { action: 'updateVideoStatus', photoId: task.id, status: 'failed' }).catch(e => console.error("Fail update error", e));
+               if (task.source !== 'supabase' && gasUrl) {
+                   await fetchGasWithRetry(gasUrl, { action: 'updateVideoStatus', photoId: task.id, status: 'failed' }).catch(e => console.error("Fail update error", e));
+               } else if (supabaseUrl && supabaseKey) {
+                   const { createClient } = await import('@supabase/supabase-js');
+                   const supabase = createClient(supabaseUrl, supabaseKey);
+                   await supabase.from('sessions').update({ video_status: 'failed' }).eq('id', task.id);
+               }
            }
        }
     }
@@ -121,8 +202,11 @@ export default async function handler(req: any, res: any) {
              
              // PATCH A: Use Thumbnail URL for smaller input
              const sizeParam = finalRes === '720p' ? 'w720' : 'w480';
-             const driveInputUrl = `https://drive.google.com/thumbnail?id=${task.id}&sz=${sizeParam}`;
-             console.log(`[TICK] Starting task ${task.id} with Drive input sz=${sizeParam}`);
+             let driveInputUrl = task.imageUrl;
+             if (!driveInputUrl) {
+                 driveInputUrl = `https://drive.google.com/thumbnail?id=${task.id}&sz=${sizeParam}`;
+             }
+             console.log(`[TICK] Starting task ${task.id} with input URL`);
 
              // PATCH B: FORCE PROMPT FLAGS
              const duration = 5;
@@ -149,12 +233,18 @@ export default async function handler(req: any, res: any) {
                  const taskId = startData.id || startData.Result?.id;
                  if (taskId) {
                      try {
-                         await fetchGasWithRetry(gasUrl, { 
-                             action: 'updateVideoStatus', 
-                             photoId: task.id, 
-                             status: 'processing', 
-                             taskId: taskId 
-                         });
+                         if (task.source !== 'supabase' && gasUrl) {
+                             await fetchGasWithRetry(gasUrl, { 
+                                 action: 'updateVideoStatus', 
+                                 photoId: task.id, 
+                                 status: 'processing', 
+                                 taskId: taskId 
+                             });
+                         } else if (supabaseUrl && supabaseKey) {
+                             const { createClient } = await import('@supabase/supabase-js');
+                             const supabase = createClient(supabaseUrl, supabaseKey);
+                             await supabase.from('sessions').update({ video_status: 'processing', video_task_id: taskId }).eq('id', task.id);
+                         }
                          report.started++;
                      } catch(e) {
                          console.error(`[TICK] Failed to update start status for ${task.id}`, e);

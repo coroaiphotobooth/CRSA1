@@ -177,7 +177,8 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
          await saveSessionToCloud({
            sessionId: sessionFolder.id,
            eventId: settings.activeEventId,
-           isVideoRequested: true
+           isVideoRequested: true,
+           videoPrompt: settings.videoPrompt
          });
        }
 
@@ -186,7 +187,8 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
            prompt: settings.videoPrompt,
            resolution: settings.videoResolution || '480p',
            model: settings.videoModel || 'seedance-1-0-pro-fast-251015',
-           eventId: settings.activeEventId
+           eventId: settings.activeEventId,
+           sessionId: sessionFolder?.id
        });
 
        if (!res.ok) {
@@ -207,7 +209,8 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                 driveFileId: photoId,
+                 driveFileId: (sessionFolder?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionFolder.id)) ? sessionFolder.id : photoId, // Use sessionId for Supabase, photoId for GAS
+                 imageUrl: photoId, // Pass the image URL directly
                  prompt: settings.videoPrompt,
                  resolution: settings.videoResolution || '480p',
                  model: settings.videoModel // Ensure model is passed

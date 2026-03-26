@@ -92,7 +92,9 @@ export const saveSessionToCloud = async (sessionData: any): Promise<{success: bo
           event_id: sessionData.eventId,
           result_image_url: sessionData.resultImageUrl,
           result_video_url: sessionData.resultVideoUrl,
-          status: sessionData.isVideoRequested ? 'processing' : 'completed'
+          status: sessionData.isVideoRequested ? 'processing' : 'completed',
+          video_status: sessionData.isVideoRequested ? 'pending' : 'idle',
+          video_prompt: sessionData.videoPrompt || ''
         }, { onConflict: 'id' });
         
       if (error) throw error;
@@ -169,6 +171,7 @@ export const createSessionFolder = async (): Promise<{ok: boolean, folderId?: st
 export const queueVideoTask = async (photoId: string, options?: any): Promise<{ok: boolean}> => {
   if (options?.eventId) {
     try {
+      const sessionId = options?.sessionId || photoId;
       const { error } = await supabase
         .from('sessions')
         .update({ 
@@ -176,7 +179,7 @@ export const queueVideoTask = async (photoId: string, options?: any): Promise<{o
           video_status: 'pending',
           video_prompt: options?.prompt || ''
         })
-        .eq('id', photoId);
+        .eq('id', sessionId);
         
       if (error) throw error;
       return { ok: true };
@@ -305,7 +308,7 @@ export const fetchGallery = async (eventId?: string, since?: number): Promise<{ 
     try {
       let query = supabase
         .from('sessions')
-        .select('id, result_image_url, created_at')
+        .select('id, result_image_url, result_video_url, video_status, video_prompt, created_at')
         .eq('event_id', eventId)
         .not('result_image_url', 'is', null)
         .order('created_at', { ascending: false });
@@ -324,7 +327,10 @@ export const fetchGallery = async (eventId?: string, since?: number): Promise<{ 
         downloadUrl: session.result_image_url,
         createdAt: session.created_at,
         token: session.id,
-        conceptName: 'AI Photo'
+        conceptName: 'AI Photo',
+        videoStatus: session.video_status || 'idle',
+        videoUrl: session.result_video_url,
+        sessionFolderId: session.id // Map sessionFolderId to id for Supabase compatibility
       }));
       
       return {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GalleryItem, Concept, PhotoboothSettings, ProcessNotification } from '../types';
-import { fetchGallery, fetchImageBase64, deletePhotoFromGas, deleteAllPhotosFromGas } from '../lib/appsScript';
+import { fetchGallery, fetchImageBase64, deletePhotoFromGas, deleteAllPhotosFromGas, queueVideoTask } from '../lib/appsScript';
 import { printImage } from '../lib/printUtils'; // Import Print Utils
 
 interface GalleryPageProps {
@@ -216,19 +216,43 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
   };
 
   const handleGenerateVideoFromGallery = async () => {
-      if (!selectedItem || !selectedItem.sessionFolderId) {
+      if (!selectedItem) {
           alert("Session data incomplete. Cannot generate video.");
           return;
       }
       setIsGeneratingVideo(true);
       try {
+         // Try queueing first
+         const queueRes = await queueVideoTask(selectedItem.id, {
+             prompt: settings?.videoPrompt,
+             resolution: settings?.videoResolution || '480p',
+             model: settings?.videoModel || 'seedance-1-0-pro-fast-251015',
+             eventId: settings?.activeEventId,
+             sessionId: selectedItem.id
+         });
+
+         if (queueRes.ok) {
+             const updateQueued = (current: GalleryItem) => 
+                current.id === selectedItem.id ? { ...current, videoStatus: 'queued' as const } : current;
+             setSelectedItem(prev => prev ? updateQueued(prev) : null);
+             const updatedList = items.map(updateQueued);
+             setItems(updatedList);
+             onUpdateCache(updatedList);
+             return;
+         }
+
+         // Fallback to direct API call if queue fails
+         console.warn("Queue failed, attempting direct render fallback...");
          const res = await fetch('/api/video/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-               driveFileId: selectedItem.id,
-               sessionFolderId: selectedItem.sessionFolderId,
-               prompt: settings?.videoPrompt
+               driveFileId: selectedItem.id, // We use the session ID as the identifier
+               sessionFolderId: selectedItem.id, // For Supabase, sessionFolderId is just the session ID
+               imageUrl: selectedItem.imageUrl, // Pass imageUrl directly to avoid fetching again
+               prompt: settings?.videoPrompt,
+               resolution: settings?.videoResolution || '480p',
+               model: settings?.videoModel || 'seedance-1-0-pro-fast-251015'
             })
          });
          
@@ -247,7 +271,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
          console.error(e);
          alert("Error starting video generation.");
       } finally {
-         setIsGeneratingVideo(false);
+          setIsGeneratingVideo(false);
       }
   };
 
