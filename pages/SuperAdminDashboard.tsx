@@ -214,6 +214,9 @@ CREATE POLICY "Super admin can do everything on concepts" ON concepts FOR ALL US
                     <tr className="border-b border-white/10 text-gray-400 text-sm">
                       <th className="pb-4 font-medium">Email</th>
                       <th className="pb-4 font-medium">Name</th>
+                      <th className="pb-4 font-medium">Company</th>
+                      <th className="pb-4 font-medium">Country</th>
+                      <th className="pb-4 font-medium">Phone</th>
                       <th className="pb-4 font-medium">Plan</th>
                       <th className="pb-4 font-medium">Credits</th>
                       <th className="pb-4 font-medium text-right">Actions</th>
@@ -233,6 +236,9 @@ CREATE POLICY "Super admin can do everything on concepts" ON concepts FOR ALL US
                             />
                           ) : (v.name || 'N/A')}
                         </td>
+                        <td className="py-4 text-gray-400">{v.company_name || '-'}</td>
+                        <td className="py-4 text-gray-400">{v.country || '-'}</td>
+                        <td className="py-4 text-gray-400">{v.phone || '-'}</td>
                         <td className="py-4">
                           {editingVendor?.id === v.id ? (
                             <select 

@@ -30,12 +30,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       {/* Top Right Controls Group */}
       <div className="absolute top-6 right-6 z-50 flex items-center gap-6">
         <button 
-          onClick={() => window.location.href = '/login'} 
-          className="text-gray-500 hover:text-[#bc13fe] transition-colors uppercase text-[10px] md:text-sm tracking-widest font-bold"
-        >
-          VENDOR LOGIN
-        </button>
-        <button 
           onClick={toggleFullScreen} 
           className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
         >
@@ -45,7 +39,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
           onClick={onAdmin} 
           className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
         >
-          ADMIN
+          SETTINGS
         </button>
       </div>
 

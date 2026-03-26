@@ -100,6 +100,9 @@ export interface Vendor {
   id: string;
   email: string;
   name: string;
+  company_name?: string;
+  country?: string;
+  phone?: string;
   plan: 'free' | 'pro' | 'enterprise';
   credits: number;
   created_at: string;

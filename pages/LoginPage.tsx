@@ -6,10 +6,20 @@ import { Loader2 } from 'lucide-react';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [country, setCountry] = useState('Indonesia');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
+
+  const COUNTRIES = [
+    "Indonesia", "Malaysia", "Singapore", "Thailand", "Vietnam", "Philippines",
+    "United States", "United Kingdom", "Australia", "Japan", "South Korea", "Other"
+  ];
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,6 +28,10 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match");
+        }
+        
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -27,7 +41,14 @@ export default function LoginPage() {
           // Create vendor record
           const { error: vendorError } = await supabase
             .from('vendors')
-            .insert([{ id: data.user.id, email: data.user.email || '', name: 'Vendor' }]);
+            .insert([{ 
+              id: data.user.id, 
+              email: data.user.email || '', 
+              name: name || 'Vendor',
+              company_name: companyName,
+              country: country,
+              phone: phone
+            }]);
           
           if (vendorError) {
              console.error("Failed to create vendor:", vendorError);
@@ -79,9 +100,9 @@ export default function LoginPage() {
       <div className="glass-card p-8 rounded-2xl border border-white/10 max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-heading font-bold neon-text mb-2">
-            {isSignUp ? 'VENDOR REGISTRATION' : 'VENDOR LOGIN'}
+            {isSignUp ? 'REGISTRATION' : 'LOGIN'}
           </h1>
-          <p className="text-gray-400 text-sm">CoroAI Photobooth SaaS</p>
+          <p className="text-gray-400 text-sm">AI PHOTOBOOTH APP</p>
         </div>
 
         {error && (
@@ -91,6 +112,57 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleAuth} className="flex flex-col gap-4">
+          {isSignUp && (
+            <>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs text-gray-400 uppercase tracking-widest font-bold">Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="bg-black/50 border border-white/10 p-3 rounded-lg text-white focus:border-[#bc13fe] outline-none transition-colors"
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs text-gray-400 uppercase tracking-widest font-bold">Company Name</label>
+                <input
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  className="bg-black/50 border border-white/10 p-3 rounded-lg text-white focus:border-[#bc13fe] outline-none transition-colors"
+                  placeholder="Acme Corp"
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs text-gray-400 uppercase tracking-widest font-bold">Country</label>
+                <select
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                  className="bg-black/50 border border-white/10 p-3 rounded-lg text-white focus:border-[#bc13fe] outline-none transition-colors"
+                  required
+                >
+                  {COUNTRIES.map(c => (
+                    <option key={c} value={c} className="bg-black text-white">{c}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs text-gray-400 uppercase tracking-widest font-bold">Phone Number</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="bg-black/50 border border-white/10 p-3 rounded-lg text-white focus:border-[#bc13fe] outline-none transition-colors"
+                  placeholder="+62 812 3456 7890"
+                  required
+                />
+              </div>
+            </>
+          )}
+
           <div className="flex flex-col gap-2">
             <label className="text-xs text-gray-400 uppercase tracking-widest font-bold">Email Address</label>
             <input
@@ -114,6 +186,20 @@ export default function LoginPage() {
               required
             />
           </div>
+
+          {isSignUp && (
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-gray-400 uppercase tracking-widest font-bold">Retry Password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="bg-black/50 border border-white/10 p-3 rounded-lg text-white focus:border-[#bc13fe] outline-none transition-colors"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+          )}
 
           <button
             type="submit"
