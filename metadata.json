@@ -1,0 +1,7 @@
+{
+  "name": "FINAL APP 1  PHOTOBOOTH V4",
+  "description": "BIKIN LINK SENDIRI",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
