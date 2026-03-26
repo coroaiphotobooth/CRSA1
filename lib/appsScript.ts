@@ -94,7 +94,8 @@ export const saveSessionToCloud = async (sessionData: any): Promise<{success: bo
           result_video_url: sessionData.resultVideoUrl,
           status: sessionData.isVideoRequested ? 'processing' : 'completed',
           video_status: sessionData.isVideoRequested ? 'pending' : 'idle',
-          video_prompt: sessionData.videoPrompt || ''
+          video_prompt: sessionData.videoPrompt || '',
+          ...(sessionData.originalImageUrl && { original_image_url: sessionData.originalImageUrl })
         }, { onConflict: 'id' });
         
       if (error) throw error;
@@ -308,7 +309,7 @@ export const fetchGallery = async (eventId?: string, since?: number): Promise<{ 
     try {
       let query = supabase
         .from('sessions')
-        .select('id, result_image_url, result_video_url, video_status, video_prompt, created_at')
+        .select('*')
         .eq('event_id', eventId)
         .not('result_image_url', 'is', null)
         .order('created_at', { ascending: false });
@@ -329,7 +330,8 @@ export const fetchGallery = async (eventId?: string, since?: number): Promise<{ 
         token: session.id,
         conceptName: 'AI Photo',
         videoStatus: session.video_status || 'idle',
-        videoUrl: session.result_video_url,
+        providerUrl: session.result_video_url,
+        originalId: session.original_image_url,
         sessionFolderId: session.id // Map sessionFolderId to id for Supabase compatibility
       }));
       

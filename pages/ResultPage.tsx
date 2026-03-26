@@ -144,7 +144,8 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
         await saveSessionToCloud({
           sessionId: sessionRes.folderId,
           eventId: settings.activeEventId,
-          resultImageUrl: directLink
+          resultImageUrl: directLink,
+          originalImageUrl: originalRes.id ? getGoogleDriveDirectLink(originalRes.id) : undefined
         });
       }
       

@@ -343,7 +343,8 @@ const PhotoboothFlow: React.FC = () => {
                 await saveSessionToCloud({
                   sessionId: jobId,
                   eventId: settings.activeEventId,
-                  resultImageUrl: directLink
+                  resultImageUrl: directLink,
+                  originalImageUrl: originalId ? getGoogleDriveDirectLink(originalId) : undefined
                 });
 
                 setTimeout(() => {
