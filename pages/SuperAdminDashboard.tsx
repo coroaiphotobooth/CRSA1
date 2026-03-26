@@ -49,7 +49,7 @@ export default function SuperAdminDashboard() {
       const { data: settingsData, error: settingsError } = await supabase
         .from('global_settings')
         .select('*')
-        .eq('id', 'default')
+        .eq('id', 1)
         .single();
       
       if (!settingsError && settingsData) {
@@ -73,7 +73,7 @@ export default function SuperAdminDashboard() {
       const { error } = await supabase
         .from('global_settings')
         .upsert({
-          id: 'default',
+          id: 1,
           default_free_credits: globalSettings.default_free_credits,
           system_status: globalSettings.system_status,
           updated_at: new Date().toISOString()
