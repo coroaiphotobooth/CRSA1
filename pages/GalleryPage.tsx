@@ -251,7 +251,13 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
       }
   };
 
-  const getHighResUrl = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w1200`;
+  const getHighResUrl = (item: GalleryItem) => {
+    if (item.imageUrl && item.imageUrl.startsWith('http') && !item.imageUrl.includes('lh3.googleusercontent.com')) {
+      return item.imageUrl;
+    }
+    return `https://drive.google.com/thumbnail?id=${item.id}&sz=w1200`;
+  };
+  
   const getOriginalUrl = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
   
   // Logic updated: Prioritize providerUrl for instant playback
@@ -268,6 +274,10 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
   };
 
   const getQRLink = (item: GalleryItem) => {
+     // If it has a valid UUID format (Supabase session), point to the result page
+     if (item.id && item.id.length > 20) {
+         return `${window.location.origin}/result/${item.id}`;
+     }
      return item.sessionFolderUrl || item.downloadUrl;
   };
 
@@ -307,7 +317,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
   const handlePrint = () => {
       if (selectedItem) {
           // Print High Res Version
-          printImage(getHighResUrl(selectedItem.id));
+          printImage(getHighResUrl(selectedItem));
       }
   };
 
@@ -383,7 +393,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl p-4 md:p-8 animate-[fadeIn_0.2s]" onClick={() => !showConceptSelector && !showQRModal && !showDeleteConfirm && setSelectedItem(null)}>
            <div className="relative w-full h-full max-w-6xl max-h-[90vh] flex flex-col bg-black rounded-2xl overflow-hidden border border-white/10 shadow-2xl" onClick={e => e.stopPropagation()}>
                <div className="relative flex-1 w-full h-full overflow-hidden flex items-center justify-center bg-black">
-                  {viewMode === 'result' && <img src={getHighResUrl(selectedItem.id)} className="w-full h-full object-contain" />}
+                  {viewMode === 'result' && <img src={getHighResUrl(selectedItem)} className="w-full h-full object-contain" />}
                   {viewMode === 'original' && selectedItem.originalId && <img src={getOriginalUrl(selectedItem.originalId)} className="w-full h-full object-contain" />}
                   
                   {/* VIDEO PLAYER */}
