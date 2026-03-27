@@ -22,10 +22,10 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_default_credits INTEGER;
 BEGIN
-  -- Get default credits from global_settings, fallback to 100
-  SELECT default_free_credits INTO v_default_credits FROM public.global_settings WHERE id = 'default';
+  -- Get default credits from global_settings, fallback to 5
+  SELECT default_free_credits INTO v_default_credits FROM public.global_settings LIMIT 1;
   IF v_default_credits IS NULL THEN
-    v_default_credits := 100;
+    v_default_credits := 5;
   END IF;
 
   INSERT INTO public.vendors (id, email, name, credits)
