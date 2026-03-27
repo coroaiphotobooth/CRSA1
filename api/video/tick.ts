@@ -67,7 +67,7 @@ export default async function handler(req: any, res: any) {
             const supabase = createClient(supabaseUrl, supabaseKey);
             const { data, error } = await supabase
                 .from('sessions')
-                .select('id, result_image_url, video_status, video_prompt, video_task_id')
+                .select('id, result_image_url, video_status, video_prompt, video_task_id, events(storage_folder)')
                 .in('video_status', ['processing', 'pending', 'queued']);
                 
             if (error) throw error;
@@ -78,6 +78,7 @@ export default async function handler(req: any, res: any) {
                 videoPrompt: session.video_prompt,
                 videoTaskId: session.video_task_id,
                 sessionFolderId: session.id,
+                storageFolder: session.events?.storage_folder,
                 source: 'supabase' // Mark source to know where to update
             }));
             items = [...items, ...supabaseItems];
@@ -158,10 +159,29 @@ export default async function handler(req: any, res: any) {
                                // Fallback to Supabase
                                const { createClient } = await import('@supabase/supabase-js');
                                const supabase = createClient(supabaseUrl, supabaseKey);
+                               
+                               let finalVideoUrl = videoUrl;
+                               try {
+                                   const videoRes = await fetch(videoUrl);
+                                   if (!videoRes.ok) throw new Error("Failed to fetch video");
+                                   const videoBlob = await videoRes.blob();
+                                   let folderPath = task.storageFolder ? `${task.storageFolder}/result` : task.id;
+                                   const fileName = `${folderPath}/${Date.now()}_${Math.random().toString(36).substring(7)}.mp4`;
+                                   const { error: uploadError } = await supabase.storage.from('photobooth').upload(fileName, videoBlob, { contentType: 'video/mp4', upsert: false });
+                                   if (!uploadError) {
+                                       const { data: { publicUrl } } = supabase.storage.from('photobooth').getPublicUrl(fileName);
+                                       finalVideoUrl = publicUrl;
+                                   } else {
+                                       console.error(`[TICK] Failed to upload video to Supabase Storage for ${task.id}`, uploadError);
+                                   }
+                               } catch (e) {
+                                   console.error(`[TICK] Failed to process video for Supabase Storage for ${task.id}`, e);
+                               }
+
                                const { error } = await supabase
                                    .from('sessions')
                                    .update({
-                                       result_video_url: videoUrl,
+                                       result_video_url: finalVideoUrl,
                                        video_status: 'done',
                                        status: 'completed'
                                    })

@@ -25,6 +25,7 @@ export interface PhotoboothSettings {
   eventDescription: string;
   folderId: string;
   originalFolderId?: string; 
+  storage_folder?: string;
   spreadsheetId?: string; 
   selectedModel: string;
   enableOpenAI?: boolean; 

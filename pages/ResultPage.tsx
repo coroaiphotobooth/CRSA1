@@ -81,7 +81,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
       if (currentSessionId && currentSessionUrl) {
            sessionTask = Promise.resolve({ ok: true, folderId: currentSessionId, folderUrl: currentSessionUrl });
       } else {
-           sessionTask = createSessionFolder().then(res => {
+           sessionTask = createSessionFolder(settings.activeEventId).then(res => {
               if (res.ok && res.folderId) {
                   setSessionFolder({ id: res.folderId, url: res.folderUrl! });
               }
@@ -95,6 +95,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
              eventName: settings.eventName,
              eventId: settings.activeEventId,
              folderId: settings.originalFolderId,
+             storage_folder: settings.storage_folder,
              skipGallery: true 
           })
         : Promise.resolve({ ok: true, id: null });
@@ -133,6 +134,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
           eventName: settings.eventName,
           eventId: settings.activeEventId,
           folderId: sessionRes.folderId, 
+          storage_folder: settings.storage_folder,
           originalId: originalRes.id,
           sessionFolderId: sessionRes.folderId,
           sessionFolderUrl: sessionRes.folderUrl

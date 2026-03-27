@@ -170,7 +170,8 @@ const PhotoboothFlow: React.FC = () => {
               ...(eventData.settings || {}), 
               eventName: eventData.name,
               eventDescription: eventData.description,
-              activeEventId: eventData.id 
+              activeEventId: eventData.id,
+              storage_folder: eventData.storage_folder
             }));
             
             // Also fetch concepts from Supabase if we have a concepts table
@@ -208,7 +209,8 @@ const PhotoboothFlow: React.FC = () => {
               eventName: active.name,
               eventDescription: active.description,
               folderId: active.folderId,
-              activeEventId: active.id
+              activeEventId: active.id,
+              storage_folder: active.storage_folder
             }));
           }
         }
@@ -300,6 +302,7 @@ const PhotoboothFlow: React.FC = () => {
                       eventName: settings.eventName,
                       eventId: settings.activeEventId,
                       folderId: settings.originalFolderId,
+                      storage_folder: settings.storage_folder,
                       skipGallery: true 
                     });
                     if (origRes.ok) originalId = origRes.id;
@@ -332,6 +335,7 @@ const PhotoboothFlow: React.FC = () => {
                 eventName: settings.eventName,
                 eventId: settings.activeEventId,
                 folderId: settings.folderId,
+                storage_folder: settings.storage_folder,
                 originalId: originalId || undefined,
             });
 

@@ -471,6 +471,9 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
                               <button onClick={() => setShowQRModal(true)} className="flex items-center gap-2 px-6 py-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl backdrop-blur-md transition-all text-white text-xs font-bold uppercase tracking-widest shadow-lg">
                                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4h2v-4zm-6 0H6.4M6 20h2v-4H6v4zm0-6h2v-4H6v4zm6 0h2v-4h-2v4z" /></svg>QR CODE
                               </button>
+                              {selectedItem.originalId && <button onClick={handleOpenRegenModal} className="flex items-center gap-2 px-6 py-4 bg-orange-900/40 hover:bg-orange-800/60 border border-orange-500/30 rounded-xl backdrop-blur-md transition-all text-orange-200 text-xs font-bold uppercase tracking-widest shadow-lg">
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>REGENERATE
+                              </button>}
                               {/* PRINT BUTTON GALLERY */}
                               {settings?.enablePrint && (
                                   <button 
@@ -480,9 +483,6 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
                                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>PRINT
                                   </button>
                               )}
-                              {selectedItem.originalId && <button onClick={handleOpenRegenModal} className="flex items-center gap-2 px-6 py-4 bg-orange-900/40 hover:bg-orange-800/60 border border-orange-500/30 rounded-xl backdrop-blur-md transition-all text-orange-200 text-xs font-bold uppercase tracking-widest shadow-lg">
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>REGENERATE
-                              </button>}
                           </div>
                           <div className="flex bg-black/40 backdrop-blur-md rounded-xl p-1.5 border border-white/10 shadow-lg">
                               <button onClick={() => setViewMode('result')} className={`px-6 py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${viewMode === 'result' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}>RESULT</button>

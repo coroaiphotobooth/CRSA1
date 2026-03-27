@@ -156,7 +156,11 @@ export const fetchSessionFromCloud = async (sessionId: string, eventId?: string)
   }
 };
 
-export const createSessionFolder = async (): Promise<{ok: boolean, folderId?: string, folderUrl?: string}> => {
+export const createSessionFolder = async (eventId?: string): Promise<{ok: boolean, folderId?: string, folderUrl?: string}> => {
+  if (eventId) {
+    const fakeId = `session_${Date.now()}`;
+    return { ok: true, folderId: fakeId, folderUrl: `supabase://${fakeId}` };
+  }
   const url = getGasUrl();
   try {
     return await robustFetch(url, {
@@ -216,7 +220,13 @@ export const uploadToDrive = async (base64Image: string, metadata: any) => {
       const res = await fetch(base64Image);
       const blob = await res.blob();
       
-      const fileName = `${metadata.eventId}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      let folderPath = metadata.eventId; // fallback
+      if (metadata.storage_folder) {
+        const subfolder = metadata.conceptName === "ORIGINAL_CAPTURE" ? "original" : "result";
+        folderPath = `${metadata.storage_folder}/${subfolder}`;
+      }
+      
+      const fileName = `${folderPath}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
       
       const { data, error } = await supabase.storage
         .from('photobooth')
