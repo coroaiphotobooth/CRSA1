@@ -252,13 +252,15 @@ export default function VendorDashboard() {
           ref_image: concept.ref_image || concept.refImage || null
         }));
 
-        const { error: conceptsError } = await supabase
-          .from('concepts')
-          .insert(conceptsToInsert);
+        if (conceptsToInsert.length > 0) {
+          const { error: conceptsError } = await supabase
+            .from('concepts')
+            .insert(conceptsToInsert);
 
-        if (conceptsError) {
-          console.error("Failed to insert default concepts:", conceptsError);
-          // Don't fail the whole event creation, just log it
+          if (conceptsError) {
+            console.error("Failed to insert default concepts:", conceptsError);
+            // Don't fail the whole event creation, just log it
+          }
         }
 
         setEvents([newEvent, ...events]);

@@ -27,35 +27,42 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack }) =
 
       {/* CENTERED GRID WRAPPER - Takes remaining height and centers content */}
       <div className="flex-1 w-full max-w-6xl flex items-center justify-center py-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full animate-[popIn_0.5s_ease-out]">
-          {concepts.map((concept) => (
-            <div 
-              key={concept.id}
-              onClick={() => onSelect(concept)}
-              className="group relative h-[200px] md:h-[280px] cursor-pointer overflow-hidden rounded-xl border-2 border-white/10 hover:border-purple-500 transition-all duration-300 shadow-2xl hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:-translate-y-2 bg-black/40 backdrop-blur-sm"
-            >
-              <img 
-                src={concept.thumbnail} 
-                alt={concept.name}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100"
-              />
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90" />
-              
-              {/* Content */}
-              <div className="absolute bottom-0 left-0 p-4 w-full flex flex-col gap-1">
-                <h3 className="text-sm md:text-lg font-heading text-white leading-tight tracking-tight uppercase italic group-hover:neon-text transition-all">{concept.name}</h3>
-                <div className="h-0.5 w-8 bg-purple-500 group-hover:w-full transition-all duration-500" />
-                <p className="text-[8px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 uppercase tracking-widest mt-1">
-                    Click to Select
-                </p>
-              </div>
+        {concepts.length === 0 ? (
+          <div className="text-center bg-black/50 p-8 rounded-2xl border border-white/10 backdrop-blur-md">
+            <h3 className="text-xl font-bold text-white mb-2">No Concepts Available</h3>
+            <p className="text-gray-400 text-sm">Please ask the admin to add some concepts in the settings.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full animate-[popIn_0.5s_ease-out]">
+            {concepts.map((concept) => (
+              <div 
+                key={concept.id}
+                onClick={() => onSelect(concept)}
+                className="group relative h-[200px] md:h-[280px] cursor-pointer overflow-hidden rounded-xl border-2 border-white/10 hover:border-purple-500 transition-all duration-300 shadow-2xl hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:-translate-y-2 bg-black/40 backdrop-blur-sm"
+              >
+                <img 
+                  src={concept.thumbnail} 
+                  alt={concept.name}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100"
+                />
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90" />
+                
+                {/* Content */}
+                <div className="absolute bottom-0 left-0 p-4 w-full flex flex-col gap-1">
+                  <h3 className="text-sm md:text-lg font-heading text-white leading-tight tracking-tight uppercase italic group-hover:neon-text transition-all">{concept.name}</h3>
+                  <div className="h-0.5 w-8 bg-purple-500 group-hover:w-full transition-all duration-500" />
+                  <p className="text-[8px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 uppercase tracking-widest mt-1">
+                      Click to Select
+                  </p>
+                </div>
 
-              {/* Selection Ring Animation */}
-              <div className="absolute inset-0 border-2 border-purple-500/0 group-hover:border-purple-500/100 rounded-xl transition-all duration-300" />
-            </div>
-          ))}
-        </div>
+                {/* Selection Ring Animation */}
+                <div className="absolute inset-0 border-2 border-purple-500/0 group-hover:border-purple-500/100 rounded-xl transition-all duration-300" />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       
     </div>
