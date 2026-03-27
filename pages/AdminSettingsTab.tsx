@@ -70,7 +70,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           .eq('id', eventId);
           
         if (error) throw error;
-        await showDialog('alert', 'Success', 'Settings saved locally and synced to Supabase.');
+        await showDialog('alert', 'Success', 'Settings saved locally and synced to Database.');
       } catch (err) {
         console.error("Supabase save error:", err);
         await showDialog('alert', 'Warning', 'Settings saved LOCALLY. Supabase sync failed.');
@@ -102,14 +102,14 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
     <div className="flex flex-col gap-10">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10">
-          <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 uppercase italic">Global Identity</h3>
+          <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Global Identity</h3>
           
           {/* BOOTH MODE & PROCESSING MODE */}
-          <div className="flex flex-col gap-4 mb-4 bg-purple-900/10 p-5 rounded-lg border border-purple-500/20">
+          <div className="flex flex-col gap-4 mb-4 bg-[#bc13fe]/10 p-5 rounded-lg border border-[#bc13fe]/20">
             
             {/* Booth Mode Selector */}
             <div className="flex flex-col gap-2">
-               <label className="text-[10px] text-purple-400 uppercase tracking-widest font-bold">BOOTH MODE</label>
+               <label className="text-[10px] text-[#bc13fe] uppercase tracking-widest font-bold">BOOTH MODE</label>
                <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setLocalSettings({...localSettings, boothMode: 'photo'})}
@@ -132,11 +132,11 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
 
             {/* Processing Mode Toggle */}
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] text-purple-400 uppercase tracking-widest font-bold">Kiosk Processing Mode</label>
+              <label className="text-[10px] text-[#bc13fe] uppercase tracking-widest font-bold">Kiosk Processing Mode</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setLocalSettings({...localSettings, processingMode: 'normal'})}
-                  className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.processingMode === 'normal' ? 'bg-purple-600 text-white shadow-lg border-purple-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                  className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.processingMode === 'normal' ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                 >
                    <span className="font-bold">NORMAL MODE</span>
                    <span className="text-[8px] opacity-60">Instant Preview</span>
@@ -161,7 +161,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           <div className="flex flex-col gap-3">
             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Event Name</label>
             <input 
-              className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-white focus:border-purple-500 outline-none transition-colors rounded-lg" 
+              className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-white focus:border-[#bc13fe] outline-none transition-colors rounded-lg" 
               value={localSettings.eventName || ''} 
               onChange={e => setLocalSettings({...localSettings, eventName: e.target.value})}
             />
@@ -169,22 +169,22 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           <div className="flex flex-col gap-3">
             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Event Description</label>
             <input 
-              className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-white focus:border-purple-500 outline-none transition-colors rounded-lg" 
+              className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-white focus:border-[#bc13fe] outline-none transition-colors rounded-lg" 
               value={localSettings.eventDescription || ''} 
               onChange={e => setLocalSettings({...localSettings, eventDescription: e.target.value})}
             />
           </div>
 
           {/* AI Model Config */}
-          <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 mt-6 uppercase italic">AI Model Configuration</h3>
+          <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 mt-6 uppercase italic">AI Model Configuration</h3>
           
           {/* Prompt Mode Selector */}
-          <div className="flex flex-col gap-2 bg-purple-900/10 p-4 rounded border border-purple-500/20 mb-4">
-               <label className="text-[10px] text-purple-400 uppercase tracking-widest font-bold">Prompt Mode</label>
+          <div className="flex flex-col gap-2 bg-[#bc13fe]/10 p-4 rounded border border-[#bc13fe]/20 mb-4">
+               <label className="text-[10px] text-[#bc13fe] uppercase tracking-widest font-bold">Prompt Mode</label>
                <div className="grid grid-cols-3 gap-3">
                   <button
                     onClick={() => setLocalSettings({...localSettings, promptMode: 'wrapped'})}
-                    className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.promptMode === 'wrapped' ? 'bg-purple-600 text-white shadow-lg border-purple-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                    className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.promptMode === 'wrapped' ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                   >
                     <span className="font-bold">WRAPPED</span>
                     <span className="text-[8px] opacity-60">Face Lock</span>
@@ -245,14 +245,14 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
            </div>
 
            {/* Video Settings */}
-           <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 mt-6 uppercase italic">Video Setting</h3>
+           <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 mt-6 uppercase italic">Video Setting</h3>
            
            <div className="flex flex-col gap-3">
              <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Video Resolution</label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setLocalSettings({...localSettings, videoResolution: '480p'})}
-                className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.videoResolution === '480p' ? 'bg-purple-600 text-white shadow-lg border-purple-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.videoResolution === '480p' ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
               >
                  <span className="font-bold">480p (FAST)</span>
               </button>
@@ -269,7 +269,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           <div className="flex flex-col gap-3 mt-2">
             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Video Prompt</label>
             <textarea 
-              className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-white focus:border-purple-500 outline-none transition-colors h-24 rounded-lg" 
+              className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-white focus:border-[#bc13fe] outline-none transition-colors h-24 rounded-lg" 
               value={localSettings.videoPrompt || ''} 
               onChange={e => setLocalSettings({...localSettings, videoPrompt: e.target.value})}
               placeholder="Describe motion (e.g. slow motion, subtle movement...)"
@@ -279,7 +279,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           </div>
 
           {/* Output Config */}
-          <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 mt-6 uppercase italic">Output Configuration</h3>
+          <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 mt-6 uppercase italic">Output Configuration</h3>
           <div className="flex flex-col gap-3">
             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Output Aspect Ratio</label>
             <div className="grid grid-cols-2 gap-3">
@@ -287,7 +287,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
                 <button
                   key={r}
                   onClick={() => handleRatioChange(r)}
-                  className={`py-4 border border-white/10 rounded font-mono text-xs transition-all flex flex-col items-center gap-1 ${localSettings.outputRatio === r ? 'bg-purple-600 text-white shadow-lg border-purple-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                  className={`py-4 border border-white/10 rounded font-mono text-xs transition-all flex flex-col items-center gap-1 ${localSettings.outputRatio === r ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                 >
                   <span className="text-sm font-bold">{r}</span>
                   <span className="text-[8px] opacity-70 uppercase">
@@ -299,7 +299,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           </div>
 
           {/* Camera Config */}
-          <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 mt-6 uppercase italic">Camera Configuration</h3>
+          <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 mt-6 uppercase italic">Camera Configuration</h3>
           <div className="flex flex-col gap-3">
             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Webcam Rotation</label>
             <div className="grid grid-cols-4 gap-3">
@@ -307,7 +307,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
                 <button
                   key={deg}
                   onClick={() => setLocalSettings({...localSettings, cameraRotation: deg})}
-                  className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase ${localSettings.cameraRotation === deg ? 'bg-purple-600 text-white shadow-lg border-purple-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                  className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase ${localSettings.cameraRotation === deg ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                 >
                   {deg}°
                 </button>
@@ -330,7 +330,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           </div>
 
           {/* Monitor Config */}
-          <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 mt-6 uppercase italic">Monitor Config</h3>
+          <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 mt-6 uppercase italic">Monitor Config</h3>
           <div className="flex flex-col gap-3">
             <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Monitor Theme Layout</label>
             <div className="grid grid-cols-4 gap-2">
@@ -338,7 +338,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
                 <button
                   key={t}
                   onClick={() => handleMonitorThemeChange(t)}
-                  className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase ${localSettings.monitorTheme === t ? 'bg-purple-600 text-white shadow-lg border-purple-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                  className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase ${localSettings.monitorTheme === t ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                 >
                   {t}
                 </button>
@@ -353,7 +353,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
                 <button
                   key={s}
                   onClick={() => setLocalSettings({...localSettings, monitorImageSize: s})}
-                  className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase ${localSettings.monitorImageSize === s ? 'bg-purple-600 text-white shadow-lg border-purple-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                  className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase ${localSettings.monitorImageSize === s ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                 >
                   {s}
                 </button>
@@ -383,7 +383,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
         <div className="flex flex-col gap-8">
           {/* Overlay Asset */}
           <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit text-center backdrop-blur-md bg-black/60 rounded-xl">
-            <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 uppercase italic">Overlay (PNG)</h3>
+            <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Overlay (PNG)</h3>
             <div className="flex flex-col gap-6">
               <div 
                 className="bg-white/5 border border-white/10 rounded-lg flex items-center justify-center overflow-hidden mx-auto shadow-2xl transition-all duration-300"
@@ -400,18 +400,43 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
                 const file = e.target.files?.[0];
                 if (!file) return;
                 setIsUploadingOverlay(true);
-                const reader = new FileReader();
-                reader.onload = async () => {
-                  const res = await uploadOverlayToGas(reader.result as string, settings.adminPin);
-                  if (res.ok) {
-                    setLocalSettings({...localSettings, overlayImage: res.url});
+                
+                if (eventId) {
+                  const fileExt = file.name.split('.').pop();
+                  const folderName = localSettings.storage_folder || eventId;
+                  const fileName = `${folderName}/assets/overlay-${Date.now()}.${fileExt}`;
+                  
+                  const { data, error } = await supabase.storage
+                    .from('photobooth')
+                    .upload(fileName, file, { upsert: true });
+                    
+                  if (error) {
+                    console.error("Error uploading overlay:", error);
+                    await showDialog('alert', 'Error', 'Failed to upload overlay to Database.');
+                  } else {
+                    const { data: { publicUrl } } = supabase.storage
+                      .from('photobooth')
+                      .getPublicUrl(fileName);
+                    setLocalSettings({...localSettings, overlayImage: publicUrl});
                     await showDialog('alert', 'Success', 'Overlay updated');
                   }
                   setIsUploadingOverlay(false);
-                };
-                reader.readAsDataURL(file);
+                } else {
+                  const reader = new FileReader();
+                  reader.onload = async () => {
+                    const res = await uploadOverlayToGas(reader.result as string, settings.adminPin);
+                    if (res.ok) {
+                      setLocalSettings({...localSettings, overlayImage: res.url});
+                      await showDialog('alert', 'Success', 'Overlay updated');
+                    } else {
+                      await showDialog('alert', 'Error', 'Failed to upload overlay to GAS.');
+                    }
+                    setIsUploadingOverlay(false);
+                  };
+                  reader.readAsDataURL(file);
+                }
               }} />
-              <button onClick={() => overlayInputRef.current?.click()} disabled={isUploadingOverlay} className="w-full py-4 border-2 border-white/10 hover:border-purple-500 text-[10px] tracking-widest font-bold uppercase bg-white/5 rounded-lg transition-colors">
+              <button onClick={() => overlayInputRef.current?.click()} disabled={isUploadingOverlay} className="w-full py-4 border-2 border-white/10 hover:border-[#bc13fe] text-[10px] tracking-widest font-bold uppercase bg-white/5 rounded-lg transition-colors">
                 {isUploadingOverlay ? 'UPLOADING...' : 'CHANGE PNG OVERLAY'}
               </button>
               {localSettings.overlayImage && (
@@ -424,13 +449,13 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
 
           {/* Background Asset (Image) */}
           <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit text-center backdrop-blur-md bg-black/60 rounded-xl">
-            <h3 className="font-heading text-xl text-purple-400 border-b border-white/5 pb-4 uppercase italic">Background</h3>
+            <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Background</h3>
             
             {/* Video URL Input */}
-            <div className="flex flex-col gap-2 bg-purple-900/10 p-3 rounded border border-purple-500/20">
+            <div className="flex flex-col gap-2 bg-[#bc13fe]/10 p-3 rounded border border-[#bc13fe]/20">
                 <label className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Video Background URL (MP4)</label>
                 <input 
-                  className="bg-black/50 border border-white/10 p-2 font-mono text-xs text-white focus:border-purple-500 outline-none transition-colors rounded" 
+                  className="bg-black/50 border border-white/10 p-2 font-mono text-xs text-white focus:border-[#bc13fe] outline-none transition-colors rounded" 
                   value={localSettings.backgroundVideoUrl || ''} 
                   onChange={e => setLocalSettings({...localSettings, backgroundVideoUrl: e.target.value})}
                   placeholder="https://.../video.mp4 (Takes priority)"
@@ -446,24 +471,49 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
                   <img src={getGoogleDriveDirectLink(localSettings.backgroundImage)} className="w-full h-full object-cover" alt="Background" />
                 ) : <span className="text-[10px] text-gray-700 font-mono">DEFAULT_DARK</span>}
                 
-                {localSettings.backgroundVideoUrl && <div className="absolute top-2 right-2 bg-purple-600 px-2 py-1 rounded text-[8px] font-bold">VIDEO MODE</div>}
+                {localSettings.backgroundVideoUrl && <div className="absolute top-2 right-2 bg-[#bc13fe] px-2 py-1 rounded text-[8px] font-bold">VIDEO MODE</div>}
               </div>
               <input type="file" accept="image/jpeg,image/png" className="hidden" ref={backgroundInputRef} onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
                 setIsUploadingBackground(true);
-                const reader = new FileReader();
-                reader.onload = async () => {
-                  const res = await uploadBackgroundToGas(reader.result as string, settings.adminPin);
-                  if (res.ok) {
-                    setLocalSettings({...localSettings, backgroundImage: res.url});
+                
+                if (eventId) {
+                  const fileExt = file.name.split('.').pop();
+                  const folderName = localSettings.storage_folder || eventId;
+                  const fileName = `${folderName}/assets/background-${Date.now()}.${fileExt}`;
+                  
+                  const { data, error } = await supabase.storage
+                    .from('photobooth')
+                    .upload(fileName, file, { upsert: true });
+                    
+                  if (error) {
+                    console.error("Error uploading background:", error);
+                    await showDialog('alert', 'Error', 'Failed to upload background to Database.');
+                  } else {
+                    const { data: { publicUrl } } = supabase.storage
+                      .from('photobooth')
+                      .getPublicUrl(fileName);
+                    setLocalSettings({...localSettings, backgroundImage: publicUrl});
                     await showDialog('alert', 'Success', 'Background Image updated');
                   }
                   setIsUploadingBackground(false);
-                };
-                reader.readAsDataURL(file);
+                } else {
+                  const reader = new FileReader();
+                  reader.onload = async () => {
+                    const res = await uploadBackgroundToGas(reader.result as string, settings.adminPin);
+                    if (res.ok) {
+                      setLocalSettings({...localSettings, backgroundImage: res.url});
+                      await showDialog('alert', 'Success', 'Background Image updated');
+                    } else {
+                      await showDialog('alert', 'Error', 'Failed to upload background to GAS.');
+                    }
+                    setIsUploadingBackground(false);
+                  };
+                  reader.readAsDataURL(file);
+                }
               }} />
-              <button onClick={() => backgroundInputRef.current?.click()} disabled={isUploadingBackground} className="w-full py-4 border-2 border-white/10 hover:border-purple-500 text-[10px] tracking-widest font-bold uppercase bg-white/5 rounded-lg transition-colors">
+              <button onClick={() => backgroundInputRef.current?.click()} disabled={isUploadingBackground} className="w-full py-4 border-2 border-white/10 hover:border-[#bc13fe] text-[10px] tracking-widest font-bold uppercase bg-white/5 rounded-lg transition-colors">
                 {isUploadingBackground ? 'UPLOADING...' : 'CHANGE BACKGROUND IMAGE'}
               </button>
               {localSettings.backgroundImage && (

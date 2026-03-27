@@ -7,6 +7,15 @@ export interface Concept {
   refImage?: string; // Optional: Reference image for style/clothes/background
 }
 
+export interface TemplateConcept {
+  id: string;
+  name: string;
+  prompt: string;
+  thumbnail: string;
+  ref_image?: string;
+  created_at?: string;
+}
+
 export interface EventRecord {
   id: string;
   name: string;
@@ -14,6 +23,7 @@ export interface EventRecord {
   folderId: string;
   createdAt: string;
   isActive: boolean;
+  storage_folder?: string;
 }
 
 export type AspectRatio = '16:9' | '9:16' | '3:2' | '2:3';

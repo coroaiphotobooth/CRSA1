@@ -185,3 +185,22 @@ BEGIN
   RETURN TRUE;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 8. Template Concepts Table (For Super Admin)
+CREATE TABLE template_concepts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  thumbnail TEXT NOT NULL,
+  ref_image TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Enable RLS for template_concepts
+ALTER TABLE template_concepts ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access to template concepts (so vendors can view them)
+CREATE POLICY "Anyone can view template concepts" ON template_concepts FOR SELECT USING (true);
+
+-- Allow super admin to manage template concepts
+CREATE POLICY "Super admin can manage template concepts" ON template_concepts FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');

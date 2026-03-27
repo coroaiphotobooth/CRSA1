@@ -47,7 +47,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
         <h1 className="text-4xl md:text-7xl font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-4 uppercase">
           {settings.eventName}
         </h1>
-        <h2 className="text-sm md:text-xl tracking-[0.3em] md:tracking-[0.5em] text-purple-400 font-bold uppercase">
+        <h2 className="text-sm md:text-xl tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase">
           {settings.eventDescription}
         </h2>
       </div>
@@ -55,7 +55,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       <div className="relative z-10 flex flex-col md:flex-row gap-4 md:gap-8 w-full max-w-md md:max-w-none justify-center">
         <button 
           onClick={onStart}
-          className="group relative px-8 md:px-12 py-5 md:py-6 bg-purple-600 hover:bg-purple-500 transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden"
+          className="group relative px-8 md:px-12 py-5 md:py-6 bg-[#bc13fe] hover:bg-[#a010d8] transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden"
         >
           <span className="relative z-10 italic">LAUNCH</span>
           <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
@@ -78,7 +78,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
                 {n.status === 'failed' && <div className="w-2 h-2 rounded-full bg-red-500" />}
                 
                 <span className="text-[10px] font-mono uppercase text-gray-300">
-                    {n.conceptName} : <span className={n.status === 'completed' ? 'text-green-400' : n.status === 'failed' ? 'text-red-400' : 'text-yellow-400'}>
+                    {n.conceptName} : <span className={n.status === 'completed' ? 'text-green-400' : n.status === 'failed' ? 'text-red-400' : 'text-[#bc13fe]'}>
                         {n.status === 'completed' ? 'READY IN GALLERY' : n.status.toUpperCase()}
                     </span>
                 </span>

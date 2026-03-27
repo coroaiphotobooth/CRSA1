@@ -180,7 +180,7 @@ const PhotoboothFlow: React.FC = () => {
               .select('*')
               .eq('event_id', eventId);
               
-            if (!conceptsError && conceptsData && conceptsData.length > 0) {
+            if (!conceptsError && conceptsData) {
               setConcepts(conceptsData);
               saveLargeData('pb_concepts', conceptsData).catch(err => 
                   console.error("Failed to cache concepts to DB", err)

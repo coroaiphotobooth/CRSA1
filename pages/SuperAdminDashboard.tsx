@@ -1,18 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Loader2, LogOut, Trash2, Edit, Save, Settings, ShieldAlert, Lock, Unlock } from 'lucide-react';
-import { Vendor } from '../types';
+import { Loader2, LogOut, Trash2, Edit, Save, Settings, ShieldAlert, Lock, Unlock, ExternalLink } from 'lucide-react';
+import { Vendor, TemplateConcept } from '../types';
 import { useDialog } from '../components/DialogProvider';
 
 export default function SuperAdminDashboard() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [globalSettings, setGlobalSettings] = useState({ default_free_credits: 100, system_status: 'active' });
+  const [events, setEvents] = useState<any[]>([]);
+  const [templateConcepts, setTemplateConcepts] = useState<TemplateConcept[]>([]);
+  const [globalSettings, setGlobalSettings] = useState({ default_free_credits: 100, system_status: 'active', template_event_id: '' });
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [editForm, setEditForm] = useState({ name: '', company_name: '', country: '', phone: '', plan: 'free', credits: 0 });
+  
+  // Template Concept Form State
+  const [showConceptModal, setShowConceptModal] = useState(false);
+  const [editingConcept, setEditingConcept] = useState<TemplateConcept | null>(null);
+  const [conceptForm, setConceptForm] = useState({ name: '', prompt: '', thumbnail: '', ref_image: '' });
+  const [savingConcept, setSavingConcept] = useState(false);
+
   const [showSqlModal, setShowSqlModal] = useState(false);
   const navigate = useNavigate();
   const { showDialog } = useDialog();
@@ -59,8 +68,36 @@ export default function SuperAdminDashboard() {
       if (!settingsError && settingsData) {
         setGlobalSettings({
           default_free_credits: settingsData.default_free_credits,
-          system_status: settingsData.system_status
+          system_status: settingsData.system_status,
+          template_event_id: settingsData.template_event_id || ''
         });
+      }
+
+      // Fetch all events for the template dropdown
+      const { data: eventsData } = await supabase
+        .from('events')
+        .select('id, name, vendor_id')
+        .order('created_at', { ascending: false });
+      
+      if (eventsData) {
+        setEvents(eventsData);
+      }
+
+      // Fetch template concepts
+      const { data: conceptsData, error: conceptsError } = await supabase
+        .from('template_concepts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (conceptsError) {
+        // If table doesn't exist, show SQL modal
+        if (conceptsError.code === '42P01' || conceptsError.code === 'PGRST205') {
+          setShowSqlModal(true);
+        } else {
+          console.error("Error fetching template concepts:", conceptsError);
+        }
+      } else if (conceptsData) {
+        setTemplateConcepts(conceptsData);
       }
 
     } catch (err: any) {
@@ -80,6 +117,7 @@ export default function SuperAdminDashboard() {
           id: 1,
           default_free_credits: globalSettings.default_free_credits,
           system_status: globalSettings.system_status,
+          template_event_id: globalSettings.template_event_id || null,
           updated_at: new Date().toISOString()
         });
 
@@ -177,6 +215,175 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleSetDefaultTemplate = async (eventId: string) => {
+    try {
+      setSavingSettings(true);
+      const { error } = await supabase
+        .from('global_settings')
+        .upsert({
+          id: 1,
+          default_free_credits: globalSettings.default_free_credits,
+          system_status: globalSettings.system_status,
+          template_event_id: eventId,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+      setGlobalSettings({ ...globalSettings, template_event_id: eventId });
+      await showDialog('alert', 'Success', 'Default template event updated successfully!');
+    } catch (err: any) {
+      await showDialog('alert', 'Error', `Failed to set default template: ${err.message}`);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleCreateTemplateEvent = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if super admin has a vendor record
+      let { data: vendor } = await supabase.from('vendors').select('*').eq('id', user.id).single();
+      
+      if (!vendor) {
+        // Create vendor record for super admin
+        const { data: newVendor, error: vendorError } = await supabase.from('vendors').insert([{
+          id: user.id,
+          name: 'Super Admin',
+          company_name: 'Coro AI',
+          email: user.email,
+          plan: 'pro',
+          credits: 999999
+        }]).select().single();
+        
+        if (vendorError) throw vendorError;
+        vendor = newVendor;
+      }
+
+      // Create a new event
+      const eventName = 'Default Template ' + new Date().toLocaleDateString();
+      const folderName = `template_${Date.now()}`;
+      
+      // Create folders in Supabase Storage by uploading a dummy .keep file
+      const emptyBlob = new Blob([''], { type: 'text/plain' });
+      await Promise.all([
+        supabase.storage.from('photobooth').upload(`${folderName}/original/.keep`, emptyBlob, { upsert: true }),
+        supabase.storage.from('photobooth').upload(`${folderName}/result/.keep`, emptyBlob, { upsert: true })
+      ]);
+
+      const { data: newEvent, error: eventError } = await supabase.from('events').insert([{
+        vendor_id: vendor.id,
+        name: eventName,
+        description: 'Template for default event settings',
+        storage_folder: folderName,
+        settings: {
+          eventName: eventName,
+          eventDescription: 'Template for default event settings',
+          storage_folder: folderName
+        }
+      }]).select().single();
+
+      if (eventError) throw eventError;
+
+      // Navigate to the event admin page
+      navigate(`/admin/${newEvent.id}`);
+    } catch (err: any) {
+      await showDialog('alert', 'Error', `Failed to create template event: ${err.message}`);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'thumbnail' | 'ref_image') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const filePath = `templates/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('photobooth')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('photobooth')
+        .getPublicUrl(filePath);
+
+      setConceptForm({ ...conceptForm, [field]: publicUrl });
+    } catch (err: any) {
+      await showDialog('alert', 'Upload Error', `Failed to upload image: ${err.message}`);
+    }
+  };
+
+  const handleSaveTemplateConcept = async () => {
+    if (!conceptForm.name || !conceptForm.prompt || !conceptForm.thumbnail) {
+      await showDialog('alert', 'Validation Error', 'Name, prompt, and thumbnail are required.');
+      return;
+    }
+
+    try {
+      setSavingConcept(true);
+      if (editingConcept) {
+        const { error } = await supabase
+          .from('template_concepts')
+          .update({
+            name: conceptForm.name,
+            prompt: conceptForm.prompt,
+            thumbnail: conceptForm.thumbnail,
+            ref_image: conceptForm.ref_image || null
+          })
+          .eq('id', editingConcept.id);
+
+        if (error) throw error;
+        setTemplateConcepts(templateConcepts.map(c => c.id === editingConcept.id ? { ...c, ...conceptForm } : c));
+      } else {
+        const { data, error } = await supabase
+          .from('template_concepts')
+          .insert([{
+            name: conceptForm.name,
+            prompt: conceptForm.prompt,
+            thumbnail: conceptForm.thumbnail,
+            ref_image: conceptForm.ref_image || null
+          }])
+          .select();
+
+        if (error) throw error;
+        if (data && data[0]) {
+          setTemplateConcepts([data[0], ...templateConcepts]);
+        }
+      }
+      setShowConceptModal(false);
+      setEditingConcept(null);
+      setConceptForm({ name: '', prompt: '', thumbnail: '', ref_image: '' });
+      await showDialog('alert', 'Success', 'Template concept saved successfully!');
+    } catch (err: any) {
+      await showDialog('alert', 'Error', `Failed to save template concept: ${err.message}`);
+    } finally {
+      setSavingConcept(false);
+    }
+  };
+
+  const handleDeleteTemplateConcept = async (id: string) => {
+    const confirmed = await showDialog('confirm', 'Confirm Deletion', 'Are you sure you want to delete this template concept?');
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase
+        .from('template_concepts')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setTemplateConcepts(templateConcepts.filter(c => c.id !== id));
+      await showDialog('alert', 'Success', 'Template concept deleted successfully.');
+    } catch (err: any) {
+      await showDialog('alert', 'Error', `Failed to delete template concept: ${err.message}`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center text-white">
@@ -235,6 +442,24 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT false;
 
 -- Add storage_folder to events table
 ALTER TABLE events ADD COLUMN IF NOT EXISTS storage_folder TEXT;
+
+-- Add template_event_id to global_settings table
+ALTER TABLE global_settings ADD COLUMN IF NOT EXISTS template_event_id UUID REFERENCES events(id) ON DELETE SET NULL;
+
+-- Create template_concepts table
+CREATE TABLE IF NOT EXISTS template_concepts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  thumbnail TEXT NOT NULL,
+  ref_image TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- RLS for template_concepts
+ALTER TABLE template_concepts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read template concepts" ON template_concepts FOR SELECT USING (true);
+CREATE POLICY "Super admin can do everything on template concepts" ON template_concepts FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
 
 -- 2. Update default free credits to 5
 -- If your global_settings table uses an integer ID, run this instead: UPDATE global_settings SET default_free_credits = 5 WHERE id = 1;
@@ -387,6 +612,13 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                           ) : (
                             <div className="flex justify-end gap-2">
                               <button 
+                                onClick={() => navigate(`/dashboard?vendorId=${v.id}`)} 
+                                className="p-2 bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30"
+                                title="Enter Vendor Dashboard"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </button>
+                              <button 
                                 onClick={() => handleToggleBlock(v)} 
                                 className={`p-2 rounded ${v.is_blocked ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' : 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'}`}
                                 title={v.is_blocked ? "Unblock Vendor" : "Block Vendor"}
@@ -454,9 +686,250 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                 </button>
               </div>
             </div>
+
+            <div className="glass-card p-6 rounded-2xl border border-white/10">
+              <h2 className="text-xl font-bold mb-4">Template Management</h2>
+              <p className="text-sm text-gray-400 mb-6">
+                Create a default event template. New events will copy settings and concepts from the default template.
+              </p>
+              
+              <div className="space-y-4">
+                <button 
+                  onClick={handleCreateTemplateEvent}
+                  className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                >
+                  + CREATE TEMPLATE FOR DEFAULT
+                </button>
+
+                <div className="mt-6">
+                  <h3 className="text-sm font-bold text-gray-300 mb-3">Available Events</h3>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                    {events.map(event => (
+                      <div key={event.id} className={`p-3 rounded-lg border flex flex-col gap-2 ${globalSettings.template_event_id === event.id ? 'bg-[#bc13fe]/20 border-[#bc13fe]/50' : 'bg-black/30 border-white/5'}`}>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-bold text-sm">{event.name}</p>
+                            <p className="text-xs text-gray-500">Vendor: {vendors.find(v => v.id === event.vendor_id)?.name || 'Unknown'}</p>
+                          </div>
+                          {globalSettings.template_event_id === event.id && (
+                            <span className="text-[10px] bg-[#bc13fe] text-white px-2 py-1 rounded-full font-bold">DEFAULT</span>
+                          )}
+                        </div>
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => navigate(`/admin/${event.id}`)}
+                            className="flex-1 py-1.5 bg-white/5 hover:bg-white/10 text-xs font-bold rounded transition-colors"
+                          >
+                            EDIT SETUP
+                          </button>
+                          {globalSettings.template_event_id !== event.id && (
+                            <button
+                              onClick={() => handleSetDefaultTemplate(event.id)}
+                              className="flex-1 py-1.5 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] text-xs font-bold rounded transition-colors"
+                            >
+                              SET TO DEFAULT
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {events.length === 0 && (
+                      <p className="text-xs text-gray-500 text-center py-4">No events found.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="glass-card p-6 rounded-2xl border border-white/10">
+              <h2 className="text-xl font-bold mb-4">Template Concepts Gallery</h2>
+              <p className="text-sm text-gray-400 mb-6">
+                Create reusable concepts that vendors can load directly into their events.
+              </p>
+              
+              <div className="space-y-4">
+                <button 
+                  onClick={() => {
+                    setEditingConcept(null);
+                    setConceptForm({ name: '', prompt: '', thumbnail: '', ref_image: '' });
+                    setShowConceptModal(true);
+                  }}
+                  className="w-full py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                >
+                  + ADD NEW TEMPLATE CONCEPT
+                </button>
+
+                <div className="mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    {templateConcepts.map(concept => (
+                      <div key={concept.id} className="bg-black/30 border border-white/5 rounded-xl overflow-hidden group">
+                        <div className="aspect-square relative">
+                          <img src={concept.thumbnail} alt={concept.name} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingConcept(concept);
+                                setConceptForm({
+                                  name: concept.name,
+                                  prompt: concept.prompt,
+                                  thumbnail: concept.thumbnail,
+                                  ref_image: concept.ref_image || ''
+                                });
+                                setShowConceptModal(true);
+                              }}
+                              className="p-2 bg-blue-500/80 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTemplateConcept(concept.id)}
+                              className="p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-3">
+                          <h3 className="font-bold text-sm truncate">{concept.name}</h3>
+                          <p className="text-xs text-gray-500 truncate mt-1">{concept.prompt}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {templateConcepts.length === 0 && (
+                      <p className="text-xs text-gray-500 text-center py-4 col-span-full">No template concepts found.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Template Concept Modal */}
+      {showConceptModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#111] z-10">
+              <h2 className="text-xl font-bold">{editingConcept ? 'Edit Template Concept' : 'Add Template Concept'}</h2>
+              <button onClick={() => setShowConceptModal(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            
+            <div className="p-6 space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-300">Concept Name</label>
+                <input
+                  type="text"
+                  value={conceptForm.name}
+                  onChange={e => setConceptForm({ ...conceptForm, name: e.target.value })}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:border-[#bc13fe] outline-none"
+                  placeholder="e.g., Cyberpunk Neon"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-300">Prompt</label>
+                <textarea
+                  value={conceptForm.prompt}
+                  onChange={e => setConceptForm({ ...conceptForm, prompt: e.target.value })}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white focus:border-[#bc13fe] outline-none h-32 resize-none"
+                  placeholder="Enter the generation prompt..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-300">Thumbnail Image</label>
+                  <div className="aspect-square rounded-xl border-2 border-dashed border-white/20 overflow-hidden relative group bg-black/50">
+                    {conceptForm.thumbnail ? (
+                      <>
+                        <img src={conceptForm.thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <label className="cursor-pointer px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-bold backdrop-blur-sm transition-colors">
+                            Change Image
+                            <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'thumbnail')} />
+                          </label>
+                        </div>
+                      </>
+                    ) : (
+                      <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors">
+                        <span className="text-3xl mb-2">+</span>
+                        <span className="text-sm text-gray-400">Upload Thumbnail</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'thumbnail')} />
+                      </label>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-gray-500 font-bold whitespace-nowrap">OR URL:</span>
+                    <input
+                      type="text"
+                      value={conceptForm.thumbnail}
+                      onChange={e => setConceptForm({ ...conceptForm, thumbnail: e.target.value })}
+                      className="flex-1 bg-black/50 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#bc13fe] outline-none"
+                      placeholder="Paste image URL here..."
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-300">Reference Image (Optional)</label>
+                  <div className="aspect-square rounded-xl border-2 border-dashed border-white/20 overflow-hidden relative group bg-black/50">
+                    {conceptForm.ref_image ? (
+                      <>
+                        <img src={conceptForm.ref_image} alt="Reference" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <label className="cursor-pointer px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-bold backdrop-blur-sm transition-colors">
+                            Change
+                            <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'ref_image')} />
+                          </label>
+                          <button 
+                            onClick={() => setConceptForm({ ...conceptForm, ref_image: '' })}
+                            className="px-4 py-2 bg-red-500/50 hover:bg-red-500/80 rounded-lg text-sm font-bold backdrop-blur-sm transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors">
+                        <span className="text-3xl mb-2">+</span>
+                        <span className="text-sm text-gray-400">Upload Reference</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'ref_image')} />
+                      </label>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-xs text-gray-500 font-bold whitespace-nowrap">OR URL:</span>
+                    <input
+                      type="text"
+                      value={conceptForm.ref_image}
+                      onChange={e => setConceptForm({ ...conceptForm, ref_image: e.target.value })}
+                      className="flex-1 bg-black/50 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#bc13fe] outline-none"
+                      placeholder="Paste image URL here..."
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-white/10 flex justify-end gap-4 sticky bottom-0 bg-[#111] z-10">
+              <button
+                onClick={() => setShowConceptModal(false)}
+                className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl font-bold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveTemplateConcept}
+                disabled={savingConcept}
+                className="px-6 py-2 bg-[#bc13fe] hover:bg-[#a010d8] rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {savingConcept ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save Concept
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

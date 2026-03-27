@@ -1,25 +1,72 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Concept } from '../types';
+import { Concept, PhotoboothSettings, TemplateConcept } from '../types';
 import { saveConceptsToGas } from '../lib/appsScript';
 import { supabase } from '../lib/supabase';
 import { useDialog } from '../components/DialogProvider';
+import { Loader2 } from 'lucide-react';
 
 interface AdminConceptsTabProps {
   concepts: Concept[];
   onSaveConcepts: (concepts: Concept[]) => void;
   adminPin: string;
+  settings: PhotoboothSettings;
 }
 
-const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveConcepts, adminPin }) => {
+const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveConcepts, adminPin, settings }) => {
   const [localConcepts, setLocalConcepts] = useState(concepts);
   const { eventId } = useParams<{ eventId: string }>();
   const [isSavingConcepts, setIsSavingConcepts] = useState(false);
   const { showDialog } = useDialog();
 
+  // Template Concept State
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateConcepts, setTemplateConcepts] = useState<TemplateConcept[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
   useEffect(() => {
     setLocalConcepts(concepts);
   }, [concepts]);
+
+  const fetchTemplateConcepts = async () => {
+    try {
+      setLoadingTemplates(true);
+      const { data, error } = await supabase
+        .from('template_concepts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        if (error.code !== '42P01' && error.code !== 'PGRST205') { // Ignore if table doesn't exist yet
+          console.error("Error fetching template concepts:", error);
+        }
+      } else if (data) {
+        setTemplateConcepts(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch template concepts:", err);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  const handleOpenTemplateModal = () => {
+    fetchTemplateConcepts();
+    setShowTemplateModal(true);
+  };
+
+  const handleUseTemplate = (template: TemplateConcept) => {
+    const newId = `concept_${Date.now()}`;
+    const newConcept: Concept = {
+      id: newId,
+      name: template.name,
+      prompt: template.prompt,
+      thumbnail: template.thumbnail,
+      refImage: template.ref_image || undefined
+    };
+    setLocalConcepts(prev => [...prev, newConcept]);
+    setShowTemplateModal(false);
+  };
 
   const handleAddConcept = () => {
     const newId = `concept_${Date.now()}`;
@@ -58,6 +105,46 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
     }));
   };
 
+  const handleUploadAsset = async (file: File, type: 'thumbnail' | 'refImage', index: number) => {
+    if (eventId) {
+      try {
+        const fileExt = file.name.split('.').pop();
+        const folderName = settings.storage_folder || eventId;
+        const fileName = `${folderName}/assets/${type}-${Date.now()}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('photobooth')
+          .upload(fileName, file, { upsert: true });
+          
+        if (error) throw error;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('photobooth')
+          .getPublicUrl(fileName);
+          
+        if (type === 'thumbnail') {
+          handleThumbChange(index, publicUrl);
+        } else {
+          handleRefImageChange(index, publicUrl);
+        }
+      } catch (err) {
+        console.error(`Error uploading ${type}:`, err);
+        await showDialog('alert', 'Error', `Failed to upload ${type} to Database.`);
+      }
+    } else {
+      // Fallback to base64 for GAS
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (type === 'thumbnail') {
+          handleThumbChange(index, reader.result as string);
+        } else {
+          handleRefImageChange(index, reader.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSyncConcepts = async () => {
     setIsSavingConcepts(true);
     try {
@@ -77,15 +164,29 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
           event_id: eventId
         }));
         
-        // Delete existing concepts for this event first to handle removals
-        await supabase.from('concepts').delete().eq('event_id', eventId);
+        // Get existing concepts from DB to find which ones to delete
+        const { data: existingConcepts } = await supabase
+          .from('concepts')
+          .select('id')
+          .eq('event_id', eventId);
+
+        const localConceptIds = localConcepts.map(c => c.id);
+        const conceptsToDelete = existingConcepts
+          ?.filter(c => !localConceptIds.includes(c.id))
+          .map(c => c.id) || [];
+
+        // Delete removed concepts
+        if (conceptsToDelete.length > 0) {
+          await supabase.from('concepts').delete().in('id', conceptsToDelete);
+        }
         
+        // Upsert concepts
         const { error } = await supabase
           .from('concepts')
-          .insert(conceptsToSave);
+          .upsert(conceptsToSave, { onConflict: 'id' });
           
         if (error) throw error;
-        await showDialog('alert', 'Success', 'SUCCESS: Concepts saved locally AND synced to Supabase.');
+        await showDialog('alert', 'Success', 'SUCCESS: Concepts saved locally AND synced to Database.');
       } else {
         const ok = await saveConceptsToGas(localConcepts, adminPin);
         
@@ -119,14 +220,14 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
                {/* THUMBNAIL */}
                <div className="w-24 aspect-[9/16] bg-white/5 border border-white/10 rounded-xl shrink-0 overflow-hidden relative group/thumb shadow-lg">
                   <img src={concept.thumbnail} className="w-full h-full object-cover" />
-                  <label className="absolute inset-0 bg-purple-600/80 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1">
+                  <label className="absolute inset-0 bg-[#bc13fe]/80 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1">
                      Update Thumbnail
-                     <input type="file" className="hidden" onChange={(e) => {
+                     <input type="file" className="hidden" onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                           const reader = new FileReader();
-                           reader.onload = () => handleThumbChange(index, reader.result as string);
-                           reader.readAsDataURL(file);
+                           setIsSavingConcepts(true);
+                           await handleUploadAsset(file, 'thumbnail', index);
+                           setIsSavingConcepts(false);
                         }
                      }} />
                   </label>
@@ -157,9 +258,9 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
                               await showDialog('alert', 'Error', "File too large! Max size is 1MB.");
                               return;
                            }
-                           const reader = new FileReader();
-                           reader.onload = () => handleRefImageChange(index, reader.result as string);
-                           reader.readAsDataURL(file);
+                           setIsSavingConcepts(true);
+                           await handleUploadAsset(file, 'refImage', index);
+                           setIsSavingConcepts(false);
                         }
                      }} />
                   </label>
@@ -168,7 +269,7 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
                {/* TEXT INPUTS */}
                <div className="flex-1 flex flex-col gap-4">
                   <input 
-                     className="bg-transparent border-b border-white/10 p-2 font-heading uppercase italic text-white outline-none focus:border-purple-500 w-full" 
+                     className="bg-transparent border-b border-white/10 p-2 font-heading uppercase italic text-white outline-none focus:border-[#bc13fe] w-full" 
                      value={concept.name} 
                      onChange={e => handleConceptChange(index, 'name', e.target.value)} 
                      placeholder="Concept Name"
@@ -189,18 +290,79 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
             </div>
           </div>
         ))}
-        <button onClick={handleAddConcept} className="glass-card p-6 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-white/10 hover:border-purple-500/50 hover:bg-white/5 transition-all min-h-[200px] rounded-xl backdrop-blur-sm">
-          <div className="w-12 h-12 rounded-full border-2 border-white/20 flex items-center justify-center text-white/50 group-hover:text-purple-500 group-hover:border-purple-500 transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+        <div className="glass-card p-6 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-white/10 hover:border-[#bc13fe]/50 hover:bg-white/5 transition-all min-h-[200px] rounded-xl backdrop-blur-sm">
+          <button onClick={handleAddConcept} className="flex flex-col items-center justify-center gap-4 w-full h-full group">
+            <div className="w-12 h-12 rounded-full border-2 border-white/20 flex items-center justify-center text-white/50 group-hover:text-[#bc13fe] group-hover:border-[#bc13fe] transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+            </div>
+            <span className="font-heading text-xs tracking-[0.3em] text-white/40 uppercase italic">ADD_NEW_CONCEPT</span>
+          </button>
+          
+          <div className="w-full border-t border-white/10 pt-4 mt-2">
+            <button 
+              onClick={handleOpenTemplateModal}
+              className="w-full py-2 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+            >
+              USE TEMPLATE CONCEPT
+            </button>
           </div>
-          <span className="font-heading text-xs tracking-[0.3em] text-white/40 uppercase italic">ADD_NEW_CONCEPT</span>
-        </button>
+        </div>
       </div>
       <div className="flex justify-center mt-10">
-        <button onClick={handleSyncConcepts} disabled={isSavingConcepts} className="px-20 py-6 bg-purple-600 font-heading tracking-widest uppercase italic shadow-2xl hover:bg-purple-500 transition-all disabled:opacity-50 rounded-lg">
+        <button onClick={handleSyncConcepts} disabled={isSavingConcepts} className="px-20 py-6 bg-[#bc13fe] font-heading tracking-widest uppercase italic shadow-2xl hover:bg-[#a010d8] transition-all disabled:opacity-50 rounded-lg">
           {isSavingConcepts ? 'SINKRONISASI...' : 'SYNC ALL CONCEPTS TO CLOUD'}
         </button>
       </div>
+
+      {/* Template Concept Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#111] z-10">
+              <h2 className="text-xl font-bold">Load Template Concept</h2>
+              <button onClick={() => setShowTemplateModal(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            
+            <div className="p-6">
+              {loadingTemplates ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#bc13fe]" />
+                </div>
+              ) : templateConcepts.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p>No template concepts available.</p>
+                  <p className="text-sm mt-2">Super Admin can create templates in their dashboard.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {templateConcepts.map(template => (
+                    <div key={template.id} className="bg-black/30 border border-white/5 rounded-xl overflow-hidden group hover:border-[#bc13fe]/50 transition-colors flex flex-col">
+                      <div className="aspect-square relative">
+                        <img src={template.thumbnail} alt={template.name} className="w-full h-full object-cover" />
+                        {template.ref_image && (
+                          <div className="absolute top-2 right-2 bg-black/80 text-[10px] px-2 py-1 rounded border border-white/10">
+                            Has Ref Image
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-4 flex flex-col flex-1">
+                        <h3 className="font-bold text-sm mb-1">{template.name}</h3>
+                        <p className="text-xs text-gray-500 line-clamp-3 mb-4 flex-1">{template.prompt}</p>
+                        <button
+                          onClick={() => handleUseTemplate(template)}
+                          className="w-full py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-xs font-bold transition-colors"
+                        >
+                          LOAD CONCEPT
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

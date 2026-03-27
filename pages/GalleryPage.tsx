@@ -200,13 +200,9 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
   };
 
   const executeClearGallery = async () => {
-      if (String(clearPin) !== String(settings?.adminPin)) {
-          await showDialog('alert', 'Error', "PIN INVALID!");
-          return;
-      }
       setIsClearing(true);
       try {
-          await deleteAllPhotosFromGas(clearPin, activeEventId);
+          await deleteAllPhotosFromGas(settings?.adminPin || "1234", activeEventId);
           setItems([]);
           onUpdateCache([]);
           setShowClearDialog(false);
@@ -406,8 +402,10 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
                   <div className="w-16 h-16 rounded-full bg-red-900/20 flex items-center justify-center border-2 border-red-500 text-red-500 mb-2">
                       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                   </div>
-                  <div className="text-center"><h3 className="text-xl font-heading text-red-500 uppercase tracking-widest">SECURITY CHECK</h3></div>
-                  <input type="password" className="w-full bg-black border-2 border-white/10 p-4 text-center text-2xl text-white tracking-[0.5em] focus:border-red-500 outline-none rounded-lg" placeholder="PIN" value={clearPin} onChange={(e) => setClearPin(e.target.value)} maxLength={8} />
+                  <div className="text-center">
+                    <h3 className="text-xl font-heading text-red-500 uppercase tracking-widest">PURGE GALLERY?</h3>
+                    <p className="text-gray-400 text-xs mt-2 uppercase tracking-widest">This action cannot be undone. All photos will be permanently deleted.</p>
+                  </div>
                   <div className="flex flex-col gap-3 w-full">
                       <button onClick={executeClearGallery} disabled={isClearing} className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-bold uppercase tracking-widest rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">{isClearing ? 'DELETING...' : 'CONFIRM PURGE'}</button>
                       <button onClick={() => setShowClearDialog(false)} disabled={isClearing} className="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-400 font-bold uppercase tracking-widest rounded-lg transition-all">CANCEL</button>

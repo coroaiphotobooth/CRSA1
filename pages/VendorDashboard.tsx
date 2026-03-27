@@ -1,25 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert } from 'lucide-react';
+import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft } from 'lucide-react';
 import { Vendor, Event } from '../types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { robustFetch } from '../lib/appsScript';
 import { useDialog } from '../components/DialogProvider';
+import { DEFAULT_SETTINGS, DEFAULT_CONCEPTS } from '../constants';
 
 export default function VendorDashboard() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
   const [newEventName, setNewEventName] = useState('');
   const [newEventDescription, setNewEventDescription] = useState('AI PHOTOBOOTH EXPERIENCE');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ current: number, total: number } | null>(null);
   const [backupProgress, setBackupProgress] = useState<{ current: number, total: number, success: number, fail: number } | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const { showDialog } = useDialog();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const impersonatedVendorId = searchParams.get('vendorId');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -31,18 +36,23 @@ export default function VendorDashboard() {
           return;
         }
 
+        const isSuper = user.email === 'coroaiphotobooth@gmail.com';
+        setIsSuperAdmin(isSuper);
+
+        const targetUserId = (isSuper && impersonatedVendorId) ? impersonatedVendorId : user.id;
+
         // Fetch Vendor Profile
         const { data: vendorData, error: vendorError } = await supabase
           .from('vendors')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', targetUserId)
           .single();
 
         let currentVendor = vendorData;
 
         if (vendorError) {
-          if (vendorError.code === 'PGRST116') {
-            // Vendor doesn't exist, create it
+          if (vendorError.code === 'PGRST116' && targetUserId === user.id) {
+            // Vendor doesn't exist, create it (only if not impersonating)
             const newVendor = {
               id: user.id,
               email: user.email || '',
@@ -68,15 +78,17 @@ export default function VendorDashboard() {
             }
           } else {
             console.error("Error fetching vendor:", vendorError);
-            currentVendor = {
-              id: user.id,
-              email: user.email || '',
-              name: user.user_metadata?.full_name || 'Vendor',
-              plan: 'free',
-              credits: 5,
-              created_at: new Date().toISOString(),
-              is_blocked: false
-            } as any;
+            if (targetUserId === user.id) {
+              currentVendor = {
+                id: user.id,
+                email: user.email || '',
+                name: user.user_metadata?.full_name || 'Vendor',
+                plan: 'free',
+                credits: 5,
+                created_at: new Date().toISOString(),
+                is_blocked: false
+              } as any;
+            }
           }
         }
 
@@ -88,7 +100,7 @@ export default function VendorDashboard() {
         const { data: eventsData, error: eventsError } = await supabase
           .from('events')
           .select('*')
-          .eq('vendor_id', user.id)
+          .eq('vendor_id', targetUserId)
           .order('created_at', { ascending: false });
 
         if (eventsError) {
@@ -97,44 +109,42 @@ export default function VendorDashboard() {
           setEvents(eventsData || []);
         }
 
-        // Check if we need to update existing vendor with metadata
-        const metadataName = user.user_metadata?.full_name || user.user_metadata?.name;
-        if (currentVendor && (currentVendor.name === 'Vendor' || !currentVendor.company_name || currentVendor.credits === 0 || currentVendor.credits === 100)) {
-            const updateData: any = {};
-            if (currentVendor.name === 'Vendor' && metadataName) updateData.name = metadataName;
-            if (!currentVendor.company_name && user.user_metadata?.company_name) updateData.company_name = user.user_metadata.company_name;
-            if (!currentVendor.country && user.user_metadata?.country) updateData.country = user.user_metadata.country;
-            if (!currentVendor.phone && user.user_metadata?.phone) updateData.phone = user.user_metadata.phone;
-            
-            let grantingCredits = false;
-            // If the vendor has 0 or 100 credits (from old trigger) and hasn't been granted credits yet
-            // We also check if they have no events to prevent giving existing users who ran out of credits a bonus
-            if ((currentVendor.credits === 0 || currentVendor.credits === 100) && (!eventsData || eventsData.length === 0)) {
-                // Only grant if they haven't been granted before
-                if (!user.user_metadata?.credits_granted) {
-                    updateData.credits = 5;
-                    grantingCredits = true;
-                }
-            }
+        // Check if we need to update existing vendor with metadata (only if not impersonating)
+        if (targetUserId === user.id) {
+          const metadataName = user.user_metadata?.full_name || user.user_metadata?.name;
+          if (currentVendor && (currentVendor.name === 'Vendor' || !currentVendor.company_name || currentVendor.credits === 0 || currentVendor.credits === 100)) {
+              const updateData: any = {};
+              if (currentVendor.name === 'Vendor' && metadataName) updateData.name = metadataName;
+              if (!currentVendor.company_name && user.user_metadata?.company_name) updateData.company_name = user.user_metadata.company_name;
+              if (!currentVendor.country && user.user_metadata?.country) updateData.country = user.user_metadata.country;
+              if (!currentVendor.phone && user.user_metadata?.phone) updateData.phone = user.user_metadata.phone;
+              
+              let grantingCredits = false;
+              if ((currentVendor.credits === 0 || currentVendor.credits === 100) && (!eventsData || eventsData.length === 0)) {
+                  if (!user.user_metadata?.credits_granted) {
+                      updateData.credits = 5;
+                      grantingCredits = true;
+                  }
+              }
 
-            if (Object.keys(updateData).length > 0) {
-                const { data: updatedVendor, error: updateError } = await supabase
-                  .from('vendors')
-                  .update(updateData)
-                  .eq('id', user.id)
-                  .select()
-                  .single();
-                  
-                if (!updateError && updatedVendor) {
-                    currentVendor = updatedVendor;
-                    if (grantingCredits) {
-                        // Update user metadata so we don't grant credits again
-                        await supabase.auth.updateUser({
-                            data: { credits_granted: true }
-                        });
-                    }
-                }
-            }
+              if (Object.keys(updateData).length > 0) {
+                  const { data: updatedVendor, error: updateError } = await supabase
+                    .from('vendors')
+                    .update(updateData)
+                    .eq('id', user.id)
+                    .select()
+                    .single();
+                    
+                  if (!updateError && updatedVendor) {
+                      currentVendor = updatedVendor;
+                      if (grantingCredits) {
+                          await supabase.auth.updateUser({
+                              data: { credits_granted: true }
+                          });
+                      }
+                  }
+              }
+          }
         }
 
         setVendor(currentVendor);
@@ -146,7 +156,7 @@ export default function VendorDashboard() {
     };
 
     fetchDashboardData();
-  }, [navigate]);
+  }, [navigate, impersonatedVendorId]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -169,6 +179,39 @@ export default function VendorDashboard() {
       const companyName = vendor.company_name || vendor.name || 'vendor';
       const folderName = `${sanitizeName(companyName)}_${sanitizeName(newEventName.trim())}`;
 
+      // Fetch global settings to see if there's a template event
+      const { data: globalSettings } = await supabase
+        .from('global_settings')
+        .select('template_event_id')
+        .eq('id', 1)
+        .single();
+
+      let initialSettings = { ...DEFAULT_SETTINGS };
+      let initialConcepts: any[] = [...DEFAULT_CONCEPTS];
+
+      if (globalSettings?.template_event_id) {
+        // Fetch template event settings
+        const { data: templateEvent } = await supabase
+          .from('events')
+          .select('settings')
+          .eq('id', globalSettings.template_event_id)
+          .single();
+        
+        if (templateEvent?.settings) {
+          initialSettings = { ...initialSettings, ...templateEvent.settings };
+        }
+
+        // Fetch template event concepts
+        const { data: templateConcepts } = await supabase
+          .from('concepts')
+          .select('*')
+          .eq('event_id', globalSettings.template_event_id);
+        
+        if (templateConcepts && templateConcepts.length > 0) {
+          initialConcepts = templateConcepts;
+        }
+      }
+
       // Create folders in Supabase Storage by uploading a dummy .keep file
       const emptyBlob = new Blob([''], { type: 'text/plain' });
       
@@ -184,14 +227,41 @@ export default function VendorDashboard() {
             vendor_id: vendor.id,
             name: newEventName.trim(),
             description: newEventDescription.trim(),
-            storage_folder: folderName
+            storage_folder: folderName,
+            settings: {
+              ...initialSettings,
+              eventName: newEventName.trim(),
+              eventDescription: newEventDescription.trim(),
+              storage_folder: folderName
+            }
           }
         ])
         .select();
 
       if (error) throw error;
-      if (data) {
-        setEvents([data[0], ...events]);
+      if (data && data[0]) {
+        const newEvent = data[0];
+        
+        // Insert default concepts for this event
+        const conceptsToInsert = initialConcepts.map(concept => ({
+          event_id: newEvent.id,
+          concept_id: concept.concept_id || concept.id, // Handle both DB format and constant format
+          name: concept.name,
+          prompt: concept.prompt,
+          thumbnail: concept.thumbnail,
+          ref_image: concept.ref_image || concept.refImage || null
+        }));
+
+        const { error: conceptsError } = await supabase
+          .from('concepts')
+          .insert(conceptsToInsert);
+
+        if (conceptsError) {
+          console.error("Failed to insert default concepts:", conceptsError);
+          // Don't fail the whole event creation, just log it
+        }
+
+        setEvents([newEvent, ...events]);
         setShowCreateModal(false);
         setNewEventName('');
         setNewEventDescription('AI PHOTOBOOTH EXPERIENCE');
@@ -460,11 +530,22 @@ export default function VendorDashboard() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
           <div>
-            <h1 className="text-3xl font-heading font-bold neon-text mb-1">DASHBOARD</h1>
-            <p className="text-gray-400">Welcome back, {vendor?.name}</p>
+            <div className="flex items-center gap-3 mb-1">
+              {isSuperAdmin && impersonatedVendorId && (
+                <button
+                  onClick={() => navigate('/superadmin')}
+                  className="p-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                  title="Back to Super Admin"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              )}
+              <h1 className="text-3xl font-heading font-bold neon-text">DASHBOARD</h1>
+            </div>
+            <p className="text-gray-400">Welcome back, {vendor?.name} {isSuperAdmin && impersonatedVendorId && <span className="text-yellow-400 text-xs ml-2 px-2 py-0.5 bg-yellow-400/10 rounded-full border border-yellow-400/30">Impersonating</span>}</p>
           </div>
           <div className="flex items-center gap-4">
-            {vendor?.email === 'coroaiphotobooth@gmail.com' && (
+            {isSuperAdmin && !impersonatedVendorId && (
               <button
                 onClick={() => navigate('/superadmin')}
                 className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 rounded-full font-bold transition-all text-sm"
@@ -520,7 +601,7 @@ export default function VendorDashboard() {
             <div className="mt-auto pt-4 flex items-center justify-between">
               <p className="text-xs text-gray-500">1 Credit = 1 AI Generation</p>
               <button 
-                onClick={() => showDialog('alert', 'Coming Soon', "Payment gateway integration coming soon! (Stripe/Xendit)")}
+                onClick={() => setShowBuyCreditsModal(true)}
                 className="text-xs bg-[#bc13fe] hover:bg-[#a010d8] text-white px-3 py-1.5 rounded-md font-bold transition-colors"
               >
                 BUY CREDITS
@@ -658,6 +739,43 @@ export default function VendorDashboard() {
             <div className="flex justify-center gap-4 text-xs">
               <span className="text-green-400">Success: {backupProgress.success}</span>
               <span className="text-red-400">Failed: {backupProgress.fail}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Buy Credits Modal */}
+      {showBuyCreditsModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md relative">
+            <button 
+              onClick={() => setShowBuyCreditsModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-white">BUY CREDIT</h2>
+            <p className="text-gray-300 mb-2 text-sm">Auto Payment gateway integration coming soon!</p>
+            <p className="text-gray-300 mb-6 text-sm">Please make a manual purchase via WhatsApp message</p>
+            
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowBuyCreditsModal(false)}
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-bold transition-colors"
+              >
+                CANCEL
+              </button>
+              <a
+                href="https://wa.me/6282381230888?text=Hi%20I%20want%20to%20buy%20credit"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                </svg>
+                WHATSAPP
+              </a>
             </div>
           </div>
         </div>

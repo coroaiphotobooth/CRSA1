@@ -78,7 +78,7 @@ export default async function handler(req: any, res: any) {
                 videoPrompt: session.video_prompt,
                 videoTaskId: session.video_task_id,
                 sessionFolderId: session.id,
-                storageFolder: session.events?.storage_folder,
+                storageFolder: (session.events as any)?.storage_folder,
                 source: 'supabase' // Mark source to know where to update
             }));
             items = [...items, ...supabaseItems];

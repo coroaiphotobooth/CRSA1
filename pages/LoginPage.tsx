@@ -75,12 +75,36 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white p-4">
-      <div className="glass-card p-8 rounded-2xl border border-white/10 max-w-md w-full">
+    <div className="min-h-screen flex flex-col items-center justify-center text-white p-4 relative overflow-hidden">
+      {/* Background Video */}
+      <div className="fixed inset-0 -z-10 overflow-hidden bg-black">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 min-w-full min-h-full object-cover transition-all duration-700 landscape:rotate-90 landscape:min-w-[100vh] landscape:min-h-[100vw]"
+          src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO/CC2.mp4"
+        />
+        {/* Dark Overlay for readability */}
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+      </div>
+
+      <div className="glass-card p-8 rounded-2xl border border-white/10 max-w-md w-full relative z-10">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-heading font-bold neon-text mb-2">
-            {isSignUp ? 'REGISTRATION' : 'LOGIN'}
-          </h1>
+          <div className="flex items-center justify-center gap-4 mb-2">
+            <img 
+              src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOGO/ICON%20S.png" 
+              alt="Logo" 
+              className="w-12 h-12 object-contain"
+            />
+            <h1 
+              className="text-3xl font-heading font-bold neon-text"
+              style={{ textShadow: '0 0 5px #bc13fe, 0 0 10px #bc13fe' }}
+            >
+              {isSignUp ? 'REGISTRATION' : 'LOGIN'}
+            </h1>
+          </div>
           <p className="text-gray-400 text-sm">AI PHOTOBOOTH APP</p>
         </div>
 
@@ -189,12 +213,18 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 flex flex-col items-center gap-4">
+          <div className="flex items-center w-full gap-4">
+            <div className="h-px bg-white/10 flex-1" />
+            <span className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">OR</span>
+            <div className="h-px bg-white/10 flex-1" />
+          </div>
+          
           <button 
             onClick={() => setIsSignUp(!isSignUp)}
-            className="text-sm text-gray-400 hover:text-white transition-colors"
+            className="w-full py-4 border border-white/20 hover:bg-white/5 text-white rounded-xl font-bold tracking-widest transition-all uppercase text-sm"
           >
-            {isSignUp ? 'Already have an account? Sign in' : "Register new account"}
+            {isSignUp ? 'Back to Login' : 'Register New Account'}
           </button>
         </div>
       </div>
