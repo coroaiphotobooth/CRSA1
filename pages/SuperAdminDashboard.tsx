@@ -22,6 +22,10 @@ export default function SuperAdminDashboard() {
   const [conceptForm, setConceptForm] = useState({ name: '', prompt: '', thumbnail: '', ref_image: '' });
   const [savingConcept, setSavingConcept] = useState(false);
 
+  // Message Form State
+  const [messageForm, setMessageForm] = useState({ vendorId: 'all', message: '' });
+  const [sendingMessage, setSendingMessage] = useState(false);
+
   const [showSqlModal, setShowSqlModal] = useState(false);
   const navigate = useNavigate();
   const { showDialog } = useDialog();
@@ -384,6 +388,43 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!messageForm.message.trim()) {
+      await showDialog('alert', 'Error', 'Message cannot be empty.');
+      return;
+    }
+
+    setSendingMessage(true);
+    try {
+      if (messageForm.vendorId === 'all') {
+        const { error } = await supabase
+          .from('vendors')
+          .update({ admin_message: messageForm.message })
+          .neq('id', '00000000-0000-0000-0000-000000000000'); // Update all vendors
+        if (error) throw error;
+        
+        // Update local state
+        setVendors(vendors.map(v => ({ ...v, admin_message: messageForm.message })));
+      } else {
+        const { error } = await supabase
+          .from('vendors')
+          .update({ admin_message: messageForm.message })
+          .eq('id', messageForm.vendorId);
+        if (error) throw error;
+        
+        // Update local state
+        setVendors(vendors.map(v => v.id === messageForm.vendorId ? { ...v, admin_message: messageForm.message } : v));
+      }
+      
+      await showDialog('alert', 'Success', 'Message sent successfully!');
+      setMessageForm({ vendorId: 'all', message: '' });
+    } catch (err: any) {
+      await showDialog('alert', 'Error', `Failed to send message: ${err.message}`);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center text-white">
@@ -439,6 +480,7 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS company_name TEXT;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS country TEXT;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT false;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS admin_message TEXT;
 
 -- Add storage_folder to events table
 ALTER TABLE events ADD COLUMN IF NOT EXISTS storage_folder TEXT;
@@ -645,6 +687,68 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                 </table>
               </div>
             </div>
+
+            <div className="glass-card p-6 rounded-2xl border border-white/10">
+              <h2 className="text-xl font-bold mb-4">Template Concepts Gallery</h2>
+              <p className="text-sm text-gray-400 mb-6">
+                Create reusable concepts that vendors can load directly into their events.
+              </p>
+              
+              <div className="space-y-4">
+                <button 
+                  onClick={() => {
+                    setEditingConcept(null);
+                    setConceptForm({ name: '', prompt: '', thumbnail: '', ref_image: '' });
+                    setShowConceptModal(true);
+                  }}
+                  className="w-full py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                >
+                  + ADD NEW TEMPLATE CONCEPT
+                </button>
+
+                <div className="mt-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    {templateConcepts.map(concept => (
+                      <div key={concept.id} className="bg-black/30 border border-white/5 rounded-xl overflow-hidden group">
+                        <div className="aspect-square relative">
+                          <img src={concept.thumbnail} alt={concept.name} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingConcept(concept);
+                                setConceptForm({
+                                  name: concept.name,
+                                  prompt: concept.prompt,
+                                  thumbnail: concept.thumbnail,
+                                  ref_image: concept.ref_image || ''
+                                });
+                                setShowConceptModal(true);
+                              }}
+                              className="p-2 bg-blue-500/80 hover:bg-blue-500 text-white rounded-lg transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTemplateConcept(concept.id)}
+                              className="p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-3">
+                          <h3 className="font-bold text-sm truncate">{concept.name}</h3>
+                          <p className="text-xs text-gray-500 truncate mt-1">{concept.prompt}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {templateConcepts.length === 0 && (
+                      <p className="text-xs text-gray-500 text-center py-4 col-span-full">No template concepts found.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -683,6 +787,47 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                   className="w-full py-3 mt-4 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold tracking-wider transition-all disabled:opacity-50 flex justify-center items-center gap-2"
                 >
                   {savingSettings ? <Loader2 className="w-5 h-5 animate-spin" /> : 'SAVE SETTINGS'}
+                </button>
+              </div>
+            </div>
+
+            <div className="glass-card p-6 rounded-2xl border border-white/10">
+              <h2 className="text-xl font-bold mb-4">Vendor Messaging</h2>
+              <p className="text-sm text-gray-400 mb-6">
+                Send a message or information to vendors. It will appear on their dashboard.
+              </p>
+              
+              <div className="space-y-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs text-gray-400 uppercase tracking-widest font-bold">Select Vendor</label>
+                  <select 
+                    value={messageForm.vendorId}
+                    onChange={(e) => setMessageForm({...messageForm, vendorId: e.target.value})}
+                    className="bg-black/50 border border-white/10 p-3 rounded-lg text-white focus:border-[#bc13fe] outline-none transition-colors"
+                  >
+                    <option value="all">All Vendors</option>
+                    {vendors.map(v => (
+                      <option key={v.id} value={v.id}>{v.name} ({v.email})</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs text-gray-400 uppercase tracking-widest font-bold">Message</label>
+                  <textarea
+                    value={messageForm.message}
+                    onChange={(e) => setMessageForm({...messageForm, message: e.target.value})}
+                    placeholder="Type your message here..."
+                    className="bg-black/50 border border-white/10 p-3 rounded-lg text-white focus:border-[#bc13fe] outline-none transition-colors h-32 resize-none"
+                  />
+                </div>
+
+                <button 
+                  onClick={handleSendMessage}
+                  disabled={sendingMessage}
+                  className="w-full py-3 mt-4 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold tracking-wider transition-all disabled:opacity-50 flex justify-center items-center gap-2"
+                >
+                  {sendingMessage ? <Loader2 className="w-5 h-5 animate-spin" /> : 'SEND MESSAGE'}
                 </button>
               </div>
             </div>
@@ -740,67 +885,7 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                 </div>
               </div>
             </div>
-            <div className="glass-card p-6 rounded-2xl border border-white/10">
-              <h2 className="text-xl font-bold mb-4">Template Concepts Gallery</h2>
-              <p className="text-sm text-gray-400 mb-6">
-                Create reusable concepts that vendors can load directly into their events.
-              </p>
-              
-              <div className="space-y-4">
-                <button 
-                  onClick={() => {
-                    setEditingConcept(null);
-                    setConceptForm({ name: '', prompt: '', thumbnail: '', ref_image: '' });
-                    setShowConceptModal(true);
-                  }}
-                  className="w-full py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-                >
-                  + ADD NEW TEMPLATE CONCEPT
-                </button>
 
-                <div className="mt-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {templateConcepts.map(concept => (
-                      <div key={concept.id} className="bg-black/30 border border-white/5 rounded-xl overflow-hidden group">
-                        <div className="aspect-square relative">
-                          <img src={concept.thumbnail} alt={concept.name} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => {
-                                setEditingConcept(concept);
-                                setConceptForm({
-                                  name: concept.name,
-                                  prompt: concept.prompt,
-                                  thumbnail: concept.thumbnail,
-                                  ref_image: concept.ref_image || ''
-                                });
-                                setShowConceptModal(true);
-                              }}
-                              className="p-2 bg-blue-500/80 hover:bg-blue-500 text-white rounded-lg transition-colors"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTemplateConcept(concept.id)}
-                              className="p-2 bg-red-500/80 hover:bg-red-500 text-white rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="p-3">
-                          <h3 className="font-bold text-sm truncate">{concept.name}</h3>
-                          <p className="text-xs text-gray-500 truncate mt-1">{concept.prompt}</p>
-                        </div>
-                      </div>
-                    ))}
-                    {templateConcepts.length === 0 && (
-                      <p className="text-xs text-gray-500 text-center py-4 col-span-full">No template concepts found.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

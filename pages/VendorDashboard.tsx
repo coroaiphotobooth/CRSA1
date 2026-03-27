@@ -587,6 +587,20 @@ export default function VendorDashboard() {
           </div>
         )}
 
+        {vendor?.admin_message && (
+          <div className="bg-blue-500/10 border border-blue-500/50 text-blue-400 p-6 rounded-xl mb-8 flex items-start gap-4">
+            <div className="w-8 h-8 flex-shrink-0 mt-1 flex items-center justify-center bg-blue-500/20 rounded-full">
+              <span className="text-blue-400 font-bold text-lg">i</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold mb-2">Message from coroai</h3>
+              <p className="text-sm opacity-90 whitespace-pre-wrap">
+                {vendor.admin_message}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Stats / Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <div className="glass-card p-6 rounded-2xl border border-white/10">

@@ -5,8 +5,13 @@ CREATE TABLE vendors (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
   email TEXT NOT NULL,
   name TEXT NOT NULL,
+  company_name TEXT,
+  country TEXT,
+  phone TEXT,
   plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'pro', 'enterprise')),
   credits INTEGER DEFAULT 100,
+  is_blocked BOOLEAN DEFAULT false,
+  admin_message TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 

@@ -118,6 +118,7 @@ export interface Vendor {
   credits: number;
   created_at: string;
   is_blocked?: boolean;
+  admin_message?: string;
 }
 
 export interface Event {
