@@ -53,7 +53,7 @@ const PhotoboothFlow: React.FC = () => {
   const [regenUltraQuality, setRegenUltraQuality] = useState(false);
   
   // Session State for Regeneration (To keep same folder)
-  const [currentSession, setCurrentSession] = useState<{id: string, url: string} | null>(null);
+  const [currentSession, setCurrentSession] = useState<{id: string, url: string, originalId?: string} | null>(null);
 
   // Background Processing State
   const [notifications, setNotifications] = useState<ProcessNotification[]>([]);
@@ -237,7 +237,7 @@ const PhotoboothFlow: React.FC = () => {
     setCurrentSession(null); 
   };
 
-  const handleRegenerate = (image: string, concept: Concept, useUltra: boolean = false, sessionData?: {id: string, url: string}) => {
+  const handleRegenerate = (image: string, concept: Concept, useUltra: boolean = false, sessionData?: {id: string, url: string, originalId?: string}) => {
     setCapturedImage(image);
     setSelectedConcept(concept);
     setRegenUltraQuality(useUltra);
@@ -295,7 +295,7 @@ const PhotoboothFlow: React.FC = () => {
           
           try {
             let originalId: string | null = null;
-            if (settings.originalFolderId && settings.originalFolderId.trim() !== "") {
+            if (settings.originalFolderId || settings.activeEventId) {
                 try {
                     const origRes = await uploadToDrive(base64Image, {
                       conceptName: "ORIGINAL_CAPTURE",

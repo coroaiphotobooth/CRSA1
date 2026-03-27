@@ -89,6 +89,7 @@ CREATE TABLE sessions (
   status TEXT DEFAULT 'processing',
   video_status TEXT DEFAULT 'idle',
   video_prompt TEXT,
+  original_image_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 

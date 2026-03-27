@@ -17,7 +17,7 @@ interface ResultPageProps {
   onDone: () => void;
   onGallery: () => void;
   isUltraQuality?: boolean;
-  existingSession?: {id: string, url: string} | null;
+  existingSession?: {id: string, url: string, originalId?: string} | null;
 }
 
 const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initialConcept, settings, concepts, onDone, onGallery, isUltraQuality = false, existingSession }) => {
@@ -25,7 +25,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   const [isProcessing, setIsProcessing] = useState(true);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
-  const [sessionFolder, setSessionFolder] = useState<{id: string, url: string} | null>(existingSession || null);
+  const [sessionFolder, setSessionFolder] = useState<{id: string, url: string, originalId?: string} | null>(existingSession || null);
   const [photoId, setPhotoId] = useState<string | null>(null); 
   const [viewMode, setViewMode] = useState<'result' | 'original'>('result');
   const [showConceptSelector, setShowConceptSelector] = useState(false);
@@ -89,7 +89,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
            });
       }
 
-      const originalUploadTask = (!isRegeneration && settings.originalFolderId) 
+      const originalUploadTask = (!isRegeneration && (settings.originalFolderId || settings.activeEventId)) 
         ? uploadToDrive(capturedImage, {
              conceptName: "ORIGINAL_CAPTURE",
              eventName: settings.eventName,
@@ -149,7 +149,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
           sessionId: sessionRes.folderId,
           eventId: settings.activeEventId,
           resultImageUrl: directLink,
-          originalImageUrl: originalRes.id ? getGoogleDriveDirectLink(originalRes.id) : undefined
+          originalImageUrl: originalRes.id ? getGoogleDriveDirectLink(originalRes.id) : (existingSession?.originalId || undefined)
         });
       }
       

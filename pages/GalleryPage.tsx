@@ -8,7 +8,7 @@ import { useDialog } from '../components/DialogProvider';
 interface GalleryPageProps {
   onBack: () => void;
   activeEventId?: string;
-  onRegenerate: (image: string, concept: Concept, useUltra: boolean, sessionData?: {id: string, url: string}) => void;
+  onRegenerate: (image: string, concept: Concept, useUltra: boolean, sessionData?: {id: string, url: string, originalId?: string}) => void;
   concepts: Concept[];
   settings?: PhotoboothSettings;
   notifications?: ProcessNotification[]; 
@@ -296,7 +296,10 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
     return `https://drive.google.com/thumbnail?id=${item.id}&sz=w1200`;
   };
   
-  const getOriginalUrl = (id: string) => `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+  const getOriginalUrl = (id: string) => {
+    if (id && id.startsWith('http')) return id;
+    return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+  };
   
   // Logic updated: Prioritize providerUrl for instant playback
   const getVideoPlayUrl = (item: GalleryItem) => {
@@ -332,8 +335,8 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
       try {
           const base64 = await fetchImageBase64(selectedItem.originalId);
           if (base64) {
-             const sessionData = (selectedItem.sessionFolderId && selectedItem.sessionFolderUrl) 
-                ? { id: selectedItem.sessionFolderId, url: selectedItem.sessionFolderUrl }
+             const sessionData = selectedItem.sessionFolderId 
+                ? { id: selectedItem.sessionFolderId, url: selectedItem.sessionFolderUrl || selectedItem.sessionFolderId, originalId: selectedItem.originalId }
                 : undefined;
              onRegenerate(base64, concept, useUltraQuality, sessionData);
           } else {
