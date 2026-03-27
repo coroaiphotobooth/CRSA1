@@ -40,7 +40,6 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
       if (!merged.monitorImageSize) merged.monitorImageSize = 'medium';
       if (!merged.monitorTheme) merged.monitorTheme = 'physics';
       if (!merged.adminPin) merged.adminPin = '1234';
-      if (merged.enableOpenAI === undefined) merged.enableOpenAI = false;
       if (!merged.gptModelSize) merged.gptModelSize = '1024';
       if (!merged.processingMode) merged.processingMode = 'normal';
       if (!merged.videoResolution) merged.videoResolution = '480p';
@@ -209,19 +208,6 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
                   * <strong>Booth:</strong> Force outfit swap + face lock (Best for Ref Image). <br/>
                   * <strong>Raw:</strong> Direct prompt (Riskier).
                </p>
-          </div>
-
-          {/* Enable OpenAI Toggle */}
-          <div className="flex items-center justify-between bg-white/5 p-4 rounded border border-white/10 mb-4">
-            <label className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Enable OpenAI Provider</label>
-            <div className="flex items-center">
-              <input 
-                type="checkbox" 
-                className="w-5 h-5 accent-green-600 cursor-pointer"
-                checked={localSettings.enableOpenAI ?? false}
-                onChange={e => setLocalSettings({...localSettings, enableOpenAI: e.target.checked})}
-              />
-            </div>
           </div>
 
           {/* Quick Model Shortcut Toggle (NEW) */}

@@ -12,7 +12,6 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   originalFolderId: '', // New Default
   spreadsheetId: '',
   selectedModel: 'gemini-3.1-flash-image-preview',
-  enableOpenAI: false,
   gptModelSize: '1024',
   overlayImage: null,
   backgroundImage: null,

@@ -1,6 +1,7 @@
 
 export interface Concept {
   id: string;
+  concept_id?: string;
   name: string;
   prompt: string;
   thumbnail: string;
@@ -38,7 +39,6 @@ export interface PhotoboothSettings {
   storage_folder?: string;
   spreadsheetId?: string; 
   selectedModel: string;
-  enableOpenAI?: boolean; 
   gptModelSize?: '512' | '720' | '1024'; 
   overlayImage: string | null;
   backgroundImage: string | null;

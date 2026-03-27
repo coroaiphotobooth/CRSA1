@@ -56,9 +56,10 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
   };
 
   const handleUseTemplate = (template: TemplateConcept) => {
-    const newId = `concept_${Date.now()}`;
+    const newId = `template_${template.id}_${Date.now()}`;
     const newConcept: Concept = {
       id: newId,
+      concept_id: newId,
       name: template.name,
       prompt: template.prompt,
       thumbnail: template.thumbnail,
@@ -72,6 +73,7 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
     const newId = `concept_${Date.now()}`;
     const newConcept: Concept = {
       id: newId,
+      concept_id: newId,
       name: 'NEW CONCEPT',
       prompt: 'Describe the transformation here...',
       thumbnail: 'https://picsum.photos/seed/' + newId + '/300/500'
@@ -159,10 +161,22 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
         // Note: This assumes a 'concepts' table exists with event_id
         // For a full implementation, we'd need to handle deletions too,
         // but for now we'll just upsert the current list.
-        const conceptsToSave = localConcepts.map(c => ({
-          ...c,
-          event_id: eventId
-        }));
+        const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+        const conceptsToSave = localConcepts.map(c => {
+          const payload: any = {
+            event_id: eventId,
+            concept_id: c.concept_id || c.id,
+            name: c.name,
+            prompt: c.prompt,
+            thumbnail: c.thumbnail,
+            ref_image: c.refImage || (c as any).ref_image || null
+          };
+          if (isValidUUID(c.id)) {
+            payload.id = c.id;
+          }
+          return payload;
+        });
         
         // Get existing concepts from DB to find which ones to delete
         const { data: existingConcepts } = await supabase
@@ -186,6 +200,26 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
           .upsert(conceptsToSave, { onConflict: 'id' });
           
         if (error) throw error;
+
+        // Fetch back to get generated UUIDs
+        const { data: refreshedConcepts, error: refreshError } = await supabase
+          .from('concepts')
+          .select('*')
+          .eq('event_id', eventId);
+
+        if (!refreshError && refreshedConcepts) {
+          const mapped = refreshedConcepts.map(c => ({
+            id: c.id,
+            concept_id: c.concept_id,
+            name: c.name,
+            prompt: c.prompt,
+            thumbnail: c.thumbnail,
+            refImage: c.ref_image || undefined
+          }));
+          setLocalConcepts(mapped);
+          onSaveConcepts(mapped);
+        }
+
         await showDialog('alert', 'Success', 'SUCCESS: Concepts saved locally AND synced to Database.');
       } else {
         const ok = await saveConceptsToGas(localConcepts, adminPin);
@@ -274,12 +308,18 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
                      onChange={e => handleConceptChange(index, 'name', e.target.value)} 
                      placeholder="Concept Name"
                   />
-                  <textarea 
-                     className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
-                     value={concept.prompt} 
-                     onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
-                     placeholder="Prompt description..."
-                  />
+                  {(concept.concept_id?.startsWith('template_') || concept.id.startsWith('template_')) ? (
+                    <div className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-500 w-full rounded-lg flex items-center justify-center italic">
+                      COROAI CONCEPT TEMPLATE
+                    </div>
+                  ) : (
+                    <textarea 
+                       className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
+                       value={concept.prompt} 
+                       onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
+                       placeholder="Prompt description..."
+                    />
+                  )}
                </div>
             </div>
             
@@ -347,7 +387,7 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
                       </div>
                       <div className="p-4 flex flex-col flex-1">
                         <h3 className="font-bold text-sm mb-1">{template.name}</h3>
-                        <p className="text-xs text-gray-500 line-clamp-3 mb-4 flex-1">{template.prompt}</p>
+                        <p className="text-xs text-gray-500 mb-4 flex-1 italic">COROAI CONCEPT TEMPLATE</p>
                         <button
                           onClick={() => handleUseTemplate(template)}
                           className="w-full py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-xs font-bold transition-colors"
