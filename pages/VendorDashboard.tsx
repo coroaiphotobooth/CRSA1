@@ -589,19 +589,27 @@ export default function VendorDashboard() {
           </div>
         )}
 
-        {vendor?.admin_message && (
-          <div className="bg-blue-500/10 border border-blue-500/50 text-blue-400 p-6 rounded-xl mb-8 flex items-start gap-4">
-            <div className="w-8 h-8 flex-shrink-0 mt-1 flex items-center justify-center bg-blue-500/20 rounded-full">
-              <span className="text-blue-400 font-bold text-lg">i</span>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold mb-2">Message from coroai</h3>
-              <p className="text-sm opacity-90 whitespace-pre-wrap">
-                {vendor.admin_message}
-              </p>
-            </div>
+        <div className="bg-blue-500/10 border border-blue-500/50 text-blue-400 p-6 rounded-xl mb-8 flex items-start gap-4">
+          <div className="w-8 h-8 flex-shrink-0 mt-1 flex items-center justify-center bg-blue-500/20 rounded-full">
+            <span className="text-blue-400 font-bold text-lg">i</span>
           </div>
-        )}
+          <div>
+            <h3 className="text-lg font-bold mb-2">Message from coroai</h3>
+            <p className="text-sm opacity-90 whitespace-pre-wrap">
+              {vendor?.admin_message || (vendor?.country?.toLowerCase() === 'indonesia' ? `Hai, selamat datang di Coroai!
+- Silakan klik "CREATE EVENT" untuk memulai halaman photobooth.
+- Di halaman pengaturan, Anda dapat mengubah latar belakang, overlay branding, dan pengaturan lainnya.
+- Di "SETTINGS - CONCEPT ," Anda dapat membuat konsep sendiri dengan memasukkan prompt dan mengunggah gambar thumbnail, atau load template yang kami sediakan secara gratis.
+- Jika Anda membutuhkan konsep khusus dibuat untuk Anda, beri tahu kami melalui WhatsApp. Kami akan membuatkan konsep sesuai permintaan Anda secara gratis.
+- selamat mencoba, Terimakasih` : `Hi, welcome to Coroai!
+- Please click "Create Event" to start the photobooth page.
+- On the settings page, you can change the background, branding overlay, and other settings.
+- In "Settings - Concept," you can create your own concept by entering a prompt and uploading a thumbnail image, or load one we provide for free.
+- If you'd like a custom concept created for you, let us know via WhatsApp. We'll create a concept according to your request for free.
+- Good luck, have fun!`)}
+            </p>
+          </div>
+        </div>
 
         {/* Stats / Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">

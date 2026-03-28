@@ -181,8 +181,16 @@ const PhotoboothFlow: React.FC = () => {
               .eq('event_id', eventId);
               
             if (!conceptsError && conceptsData) {
-              setConcepts(conceptsData);
-              saveLargeData('pb_concepts', conceptsData).catch(err => 
+              const mappedConcepts = conceptsData.map(c => ({
+                id: c.id,
+                concept_id: c.concept_id,
+                name: c.name,
+                prompt: c.prompt,
+                thumbnail: c.thumbnail,
+                refImage: c.ref_image || undefined
+              }));
+              setConcepts(mappedConcepts);
+              saveLargeData('pb_concepts', mappedConcepts).catch(err => 
                   console.error("Failed to cache concepts to DB", err)
               );
             }

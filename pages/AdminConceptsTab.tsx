@@ -225,7 +225,7 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
         if (!refreshError && refreshedConcepts) {
           const mapped = refreshedConcepts.map(c => ({
             id: c.id,
-            concept_id: c.id,
+            concept_id: c.concept_id || c.id,
             name: c.name,
             prompt: c.prompt,
             thumbnail: c.thumbnail,
