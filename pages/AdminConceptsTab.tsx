@@ -120,7 +120,7 @@ Keep the core intent of the original prompt but add details about lighting, came
 Output ONLY the enhanced prompt text, nothing else.`;
 
       const response = await model.generateContent({
-        model: 'gemini-3.1-flash-preview',
+        model: 'gemini-3-flash-preview',
         contents: concept.prompt,
         config: {
           systemInstruction,
