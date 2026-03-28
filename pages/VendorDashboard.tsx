@@ -183,7 +183,7 @@ export default function VendorDashboard() {
       const { data: globalSettings } = await supabase
         .from('global_settings')
         .select('template_event_id')
-        .eq('id', 'default')
+        .eq('id', 1)
         .single();
 
       let initialSettings = { ...DEFAULT_SETTINGS };
