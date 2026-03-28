@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Loader2, LogOut, Trash2, Edit, Save, Settings, ShieldAlert, Lock, Unlock, ExternalLink } from 'lucide-react';
+import { Loader2, LogOut, Trash2, Edit, Save, Settings, ShieldAlert, Lock, Unlock, ExternalLink, Search, MessageSquare } from 'lucide-react';
 import { Vendor, TemplateConcept } from '../types';
 import { useDialog } from '../components/DialogProvider';
 
 export default function SuperAdminDashboard() {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'vendors'>('dashboard');
+  const [searchQuery, setSearchQuery] = useState('');
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [templateConcepts, setTemplateConcepts] = useState<TemplateConcept[]>([]);
@@ -25,6 +27,10 @@ export default function SuperAdminDashboard() {
   // Message Form State
   const [messageForm, setMessageForm] = useState({ vendorId: 'all', message: '' });
   const [sendingMessage, setSendingMessage] = useState(false);
+
+  // Template Event State
+  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState('');
 
   const [showSqlModal, setShowSqlModal] = useState(false);
   const navigate = useNavigate();
@@ -66,7 +72,7 @@ export default function SuperAdminDashboard() {
       const { data: settingsData, error: settingsError } = await supabase
         .from('global_settings')
         .select('*')
-        .eq('id', 1)
+        .eq('id', 'default')
         .single();
       
       if (!settingsError && settingsData) {
@@ -123,7 +129,7 @@ export default function SuperAdminDashboard() {
       const { error } = await supabase
         .from('global_settings')
         .upsert({
-          id: 1,
+          id: 'default',
           default_free_credits: globalSettings.default_free_credits,
           system_status: globalSettings.system_status,
           template_event_id: globalSettings.template_event_id || null,
@@ -230,7 +236,7 @@ export default function SuperAdminDashboard() {
       const { error } = await supabase
         .from('global_settings')
         .upsert({
-          id: 1,
+          id: 'default',
           default_free_credits: globalSettings.default_free_credits,
           system_status: globalSettings.system_status,
           template_event_id: eventId,
@@ -248,6 +254,11 @@ export default function SuperAdminDashboard() {
   };
 
   const handleCreateTemplateEvent = async () => {
+    if (!newTemplateName.trim()) {
+      await showDialog('alert', 'Validation Error', 'Template name is required.');
+      return;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -271,7 +282,7 @@ export default function SuperAdminDashboard() {
       }
 
       // Create a new event
-      const eventName = 'Default Template ' + new Date().toLocaleDateString();
+      const eventName = newTemplateName.trim();
       const folderName = `template_${Date.now()}`;
       
       // Create folders in Supabase Storage by uploading a dummy .keep file
@@ -295,6 +306,9 @@ export default function SuperAdminDashboard() {
 
       if (eventError) throw eventError;
 
+      setShowCreateTemplateModal(false);
+      setNewTemplateName('');
+      
       // Navigate to the event admin page
       navigate(`/admin/${newEvent.id}`);
     } catch (err: any) {
@@ -312,7 +326,7 @@ export default function SuperAdminDashboard() {
         await supabase
           .from('global_settings')
           .upsert({
-            id: 1,
+            id: 'default',
             default_free_credits: globalSettings.default_free_credits,
             system_status: globalSettings.system_status,
             template_event_id: null,
@@ -463,6 +477,17 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleMessageVendor = (vendorId: string) => {
+    setMessageForm({ ...messageForm, vendorId });
+    setActiveTab('dashboard');
+  };
+
+  const filteredVendors = vendors.filter(v => 
+    (v.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (v.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (v.company_name || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center text-white">
@@ -499,6 +524,49 @@ export default function SuperAdminDashboard() {
         {errorMsg && (
           <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-4 rounded-xl mb-8">
             {errorMsg}
+          </div>
+        )}
+
+        {showCreateTemplateModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 w-full max-w-md overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-white/10 flex justify-between items-center">
+                <h2 className="text-xl font-bold">Create Template Event</h2>
+                <button 
+                  onClick={() => setShowCreateTemplateModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Template Name</label>
+                  <input
+                    type="text"
+                    value={newTemplateName}
+                    onChange={(e) => setNewTemplateName(e.target.value)}
+                    placeholder="e.g., Wedding Template 2026"
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+                  />
+                </div>
+                <div className="pt-4 flex gap-3">
+                  <button
+                    onClick={() => setShowCreateTemplateModal(false)}
+                    className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-all"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    onClick={handleCreateTemplateEvent}
+                    disabled={!newTemplateName.trim()}
+                    className="flex-1 py-3 bg-[#bc13fe] hover:bg-[#bc13fe]/80 text-white rounded-xl font-bold transition-all disabled:opacity-50"
+                  >
+                    CREATE
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -587,150 +655,24 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="glass-card p-6 rounded-2xl border border-white/10">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                <Settings className="w-6 h-6 text-[#bc13fe]" />
-                Vendor Management
-              </h2>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/10 text-gray-400 text-sm">
-                      <th className="pb-4 font-medium">Email</th>
-                      <th className="pb-4 font-medium">Name</th>
-                      <th className="pb-4 font-medium">Company</th>
-                      <th className="pb-4 font-medium">Country</th>
-                      <th className="pb-4 font-medium">Phone</th>
-                      <th className="pb-4 font-medium">Plan</th>
-                      <th className="pb-4 font-medium">Credits</th>
-                      <th className="pb-4 font-medium text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {vendors.map(v => (
-                      <tr key={v.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="py-4">{v.email || 'N/A'}</td>
-                        <td className="py-4">
-                          {editingVendor?.id === v.id ? (
-                            <input 
-                              type="text" 
-                              value={editForm.name} 
-                              onChange={e => setEditForm({...editForm, name: e.target.value})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
-                            />
-                          ) : (v.name || 'N/A')}
-                        </td>
-                        <td className="py-4 text-gray-400">
-                          {editingVendor?.id === v.id ? (
-                            <input 
-                              type="text" 
-                              value={editForm.company_name} 
-                              onChange={e => setEditForm({...editForm, company_name: e.target.value})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
-                            />
-                          ) : (v.company_name || '-')}
-                        </td>
-                        <td className="py-4 text-gray-400">
-                          {editingVendor?.id === v.id ? (
-                            <input 
-                              type="text" 
-                              value={editForm.country} 
-                              onChange={e => setEditForm({...editForm, country: e.target.value})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
-                            />
-                          ) : (v.country || '-')}
-                        </td>
-                        <td className="py-4 text-gray-400">
-                          {editingVendor?.id === v.id ? (
-                            <input 
-                              type="text" 
-                              value={editForm.phone} 
-                              onChange={e => setEditForm({...editForm, phone: e.target.value})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
-                            />
-                          ) : (v.phone || '-')}
-                        </td>
-                        <td className="py-4">
-                          {editingVendor?.id === v.id ? (
-                            <select 
-                              value={editForm.plan} 
-                              onChange={e => setEditForm({...editForm, plan: e.target.value})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1"
-                            >
-                              <option value="free">Free</option>
-                              <option value="pro">Pro</option>
-                              <option value="enterprise">Enterprise</option>
-                            </select>
-                          ) : (
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              v.plan === 'pro' ? 'bg-[#bc13fe]/20 text-[#bc13fe]' : 
-                              v.plan === 'enterprise' ? 'bg-blue-500/20 text-blue-400' : 
-                              'bg-gray-500/20 text-gray-400'
-                            }`}>
-                              {v.plan?.toUpperCase() || 'FREE'}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-4">
-                          {editingVendor?.id === v.id ? (
-                            <input 
-                              type="number" 
-                              value={editForm.credits} 
-                              onChange={e => setEditForm({...editForm, credits: parseInt(e.target.value) || 0})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-20"
-                            />
-                          ) : (v.credits || 0)}
-                        </td>
-                        <td className="py-4 text-right">
-                          {editingVendor?.id === v.id ? (
-                            <div className="flex justify-end gap-2">
-                              <button onClick={saveEdit} className="p-2 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30">
-                                <Save className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => setEditingVendor(null)} className="p-2 bg-gray-500/20 text-gray-400 rounded hover:bg-gray-500/30">
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex justify-end gap-2">
-                              <button 
-                                onClick={() => navigate(`/dashboard?vendorId=${v.id}`)} 
-                                className="p-2 bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30"
-                                title="Enter Vendor Dashboard"
-                              >
-                                <ExternalLink className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleToggleBlock(v)} 
-                                className={`p-2 rounded ${v.is_blocked ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' : 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'}`}
-                                title={v.is_blocked ? "Unblock Vendor" : "Block Vendor"}
-                              >
-                                {v.is_blocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                              </button>
-                              <button onClick={() => startEdit(v)} className="p-2 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30">
-                                <Edit className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => handleDeleteVendor(v.id)} className="p-2 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {vendors.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="py-8 text-center text-gray-500">No vendors found</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+        <div className="flex gap-4 mb-8 border-b border-white/10 pb-4">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'dashboard' ? 'bg-[#bc13fe] text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+          >
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('vendors')}
+            className={`px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'vendors' ? 'bg-[#bc13fe] text-white' : 'bg-white/5 text-gray-400 hover:bg-white/10'}`}
+          >
+            Vendor Management
+          </button>
+        </div>
 
+        {activeTab === 'dashboard' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-6">
             <div className="glass-card p-6 rounded-2xl border border-white/10">
               <h2 className="text-xl font-bold mb-4">Template Concepts Gallery</h2>
               <p className="text-sm text-gray-400 mb-6">
@@ -883,7 +825,7 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
               
               <div className="space-y-4">
                 <button 
-                  onClick={handleCreateTemplateEvent}
+                  onClick={() => setShowCreateTemplateModal(true)}
                   className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
                 >
                   + CREATE TEMPLATE FOR DEFAULT
@@ -935,9 +877,172 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                 </div>
               </div>
             </div>
-
           </div>
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="glass-card p-6 rounded-2xl border border-white/10">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <Settings className="w-6 h-6 text-[#bc13fe]" />
+                  Vendor Management
+                </h2>
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search vendors..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white focus:border-[#bc13fe] outline-none transition-colors"
+                  />
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 text-gray-400 text-sm">
+                      <th className="pb-4 font-medium">Email</th>
+                      <th className="pb-4 font-medium">Name</th>
+                      <th className="pb-4 font-medium">Company</th>
+                      <th className="pb-4 font-medium">Country</th>
+                      <th className="pb-4 font-medium">Phone</th>
+                      <th className="pb-4 font-medium">Plan</th>
+                      <th className="pb-4 font-medium">Credits</th>
+                      <th className="pb-4 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-sm">
+                    {filteredVendors.map(v => (
+                      <tr key={v.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <td className="py-4">{v.email || 'N/A'}</td>
+                        <td className="py-4">
+                          {editingVendor?.id === v.id ? (
+                            <input 
+                              type="text" 
+                              value={editForm.name} 
+                              onChange={e => setEditForm({...editForm, name: e.target.value})}
+                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
+                            />
+                          ) : (v.name || 'N/A')}
+                        </td>
+                        <td className="py-4 text-gray-400">
+                          {editingVendor?.id === v.id ? (
+                            <input 
+                              type="text" 
+                              value={editForm.company_name} 
+                              onChange={e => setEditForm({...editForm, company_name: e.target.value})}
+                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
+                            />
+                          ) : (v.company_name || '-')}
+                        </td>
+                        <td className="py-4 text-gray-400">
+                          {editingVendor?.id === v.id ? (
+                            <input 
+                              type="text" 
+                              value={editForm.country} 
+                              onChange={e => setEditForm({...editForm, country: e.target.value})}
+                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
+                            />
+                          ) : (v.country || '-')}
+                        </td>
+                        <td className="py-4 text-gray-400">
+                          {editingVendor?.id === v.id ? (
+                            <input 
+                              type="text" 
+                              value={editForm.phone} 
+                              onChange={e => setEditForm({...editForm, phone: e.target.value})}
+                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
+                            />
+                          ) : (v.phone || '-')}
+                        </td>
+                        <td className="py-4">
+                          {editingVendor?.id === v.id ? (
+                            <select 
+                              value={editForm.plan} 
+                              onChange={e => setEditForm({...editForm, plan: e.target.value})}
+                              className="bg-black/50 border border-white/20 rounded px-2 py-1"
+                            >
+                              <option value="free">Free</option>
+                              <option value="pro">Pro</option>
+                              <option value="enterprise">Enterprise</option>
+                            </select>
+                          ) : (
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              v.plan === 'pro' ? 'bg-[#bc13fe]/20 text-[#bc13fe]' : 
+                              v.plan === 'enterprise' ? 'bg-blue-500/20 text-blue-400' : 
+                              'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {v.plan?.toUpperCase() || 'FREE'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4">
+                          {editingVendor?.id === v.id ? (
+                            <input 
+                              type="number" 
+                              value={editForm.credits} 
+                              onChange={e => setEditForm({...editForm, credits: parseInt(e.target.value) || 0})}
+                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-20"
+                            />
+                          ) : (v.credits || 0)}
+                        </td>
+                        <td className="py-4 text-right">
+                          {editingVendor?.id === v.id ? (
+                            <div className="flex justify-end gap-2">
+                              <button onClick={saveEdit} className="p-2 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30">
+                                <Save className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => setEditingVendor(null)} className="p-2 bg-gray-500/20 text-gray-400 rounded hover:bg-gray-500/30">
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-end gap-2">
+                              <button 
+                                onClick={() => handleMessageVendor(v.id)} 
+                                className="p-2 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30"
+                                title="Send Message"
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => navigate(`/dashboard?vendorId=${v.id}`)} 
+                                className="p-2 bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30"
+                                title="Enter Vendor Dashboard"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => handleToggleBlock(v)} 
+                                className={`p-2 rounded ${v.is_blocked ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' : 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'}`}
+                                title={v.is_blocked ? "Unblock Vendor" : "Block Vendor"}
+                              >
+                                {v.is_blocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                              </button>
+                              <button onClick={() => startEdit(v)} className="p-2 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30">
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleDeleteVendor(v.id)} className="p-2 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredVendors.length === 0 && (
+                      <tr>
+                        <td colSpan={8} className="py-8 text-center text-gray-500">No vendors found</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Template Concept Modal */}

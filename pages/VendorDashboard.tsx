@@ -13,6 +13,7 @@ export default function VendorDashboard() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [templateEvents, setTemplateEvents] = useState<Event[]>([]);
+  const [defaultTemplateId, setDefaultTemplateId] = useState<string | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('default');
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -130,6 +131,17 @@ export default function VendorDashboard() {
           }
         }
 
+        // Fetch global settings for default template
+        const { data: globalSettings } = await supabase
+          .from('global_settings')
+          .select('template_event_id')
+          .eq('id', 'default')
+          .single();
+        
+        if (globalSettings?.template_event_id) {
+          setDefaultTemplateId(globalSettings.template_event_id);
+        }
+
         // Check if we need to update existing vendor with metadata (only if not impersonating)
         if (targetUserId === user.id) {
           const metadataName = user.user_metadata?.full_name || user.user_metadata?.name;
@@ -208,7 +220,7 @@ export default function VendorDashboard() {
         const { data: globalSettings } = await supabase
           .from('global_settings')
           .select('template_event_id')
-          .eq('id', 1)
+          .eq('id', 'default')
           .single();
         targetTemplateId = globalSettings?.template_event_id || null;
       } else if (selectedTemplateId !== 'empty') {
@@ -870,11 +882,13 @@ export default function VendorDashboard() {
                   onChange={(e) => setSelectedTemplateId(e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
                 >
-                  <option value="default">Default Template</option>
+                  <option value="default">
+                    Default Template {defaultTemplateId && templateEvents.find(t => t.id === defaultTemplateId) ? `(${templateEvents.find(t => t.id === defaultTemplateId)?.name})` : ''}
+                  </option>
                   <option value="empty">Empty - No Template</option>
                   {templateEvents.map(template => (
                     <option key={template.id} value={template.id}>
-                      {template.name}
+                      {template.name} {template.id === defaultTemplateId ? '(Default)' : ''}
                     </option>
                   ))}
                 </select>

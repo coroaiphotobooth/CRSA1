@@ -195,7 +195,7 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
     }
 
     // --- GEMINI FLOW ---
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
     if (!apiKey) {
         console.error("CRITICAL: No API Key found (checked GEMINI_API_KEY and API_KEY)");
         throw new Error("API Key not configured");

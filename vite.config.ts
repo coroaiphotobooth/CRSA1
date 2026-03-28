@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => {
     // Ini PENTING agar Vercel Env Vars terbaca oleh Client Side code
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY || env.GEMINI_API_KEY),
-      'process.env.API_KEY': JSON.stringify(env.API_KEY),
-      'process.env.APPS_SCRIPT_BASE_URL': JSON.stringify(env.APPS_SCRIPT_BASE_URL),
+      'process.env.API_KEY': JSON.stringify(process.env.API_KEY || env.API_KEY),
+      'process.env.APPS_SCRIPT_BASE_URL': JSON.stringify(process.env.APPS_SCRIPT_BASE_URL || env.APPS_SCRIPT_BASE_URL),
       // Mencegah crash jika env variable tidak ada
       'process.env': JSON.stringify(env)
     }
