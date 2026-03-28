@@ -223,16 +223,20 @@ export default function VendorDashboard() {
     navigate('/login');
   };
 
+  const [isCreating, setIsCreating] = useState(false);
+
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vendor) return;
     if (!newEventName.trim()) return;
+    if (isCreating) return;
 
     if (vendor.is_blocked) {
       await showDialog('alert', 'Account Blocked', 'Your account has been temporarily blocked by coro.ai. Please contact the admin at coroaiphotobooth@gmail.com or send a message on WhatsApp at +6282381230888');
       return;
     }
 
+    setIsCreating(true);
     try {
       // Generate folder name: companyname_eventname
       const sanitizeName = (name: string) => name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
@@ -341,6 +345,8 @@ export default function VendorDashboard() {
     } catch (err: any) {
       console.error("Failed to create event:", err);
       setErrorMsg(`Failed to create event: ${err.message || 'Unknown error'}. Please ensure your Supabase tables and policies are correctly set up.`);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -930,9 +936,10 @@ export default function VendorDashboard() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold transition-colors"
+                  disabled={isCreating}
+                  className={`px-4 py-2 ${isCreating ? 'bg-gray-600 cursor-not-allowed' : 'bg-[#bc13fe] hover:bg-[#a010d8]'} text-white rounded-lg text-sm font-bold transition-colors`}
                 >
-                  CREATE
+                  {isCreating ? 'CREATING...' : 'CREATE'}
                 </button>
               </div>
             </form>
