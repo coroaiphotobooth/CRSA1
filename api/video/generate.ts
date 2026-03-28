@@ -71,10 +71,10 @@ export default async function handler(req: any, res: any) {
        inputImageUrl = imageUrl;
        console.log(`[API Video] Using provided imageUrl`);
     } else if (driveFileId) {
-       // Check if driveFileId is a UUID (Supabase session ID)
-       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(driveFileId);
-       if (isUUID) {
-           // If it's a UUID but no imageUrl was provided, we need to fetch it from Supabase
+       // Check if driveFileId is a UUID or starts with 'session_' (Supabase session ID)
+       const isSupabaseId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(driveFileId) || driveFileId.startsWith('session_');
+       if (isSupabaseId) {
+           // If it's a Supabase ID but no imageUrl was provided, we need to fetch it from Supabase
            try {
                const { createClient } = await import('@supabase/supabase-js');
                const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -124,9 +124,9 @@ export default async function handler(req: any, res: any) {
     // 4. REGISTER TO GOOGLE SHEET (QUEUE) - WITH AWAIT & RETRY
     // Critical: If this fails, the frontend won't track the video properly.
     const gasUrl = process.env.APPS_SCRIPT_BASE_URL;
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(driveFileId || '');
+    const isSupabaseIdForGas = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(driveFileId || '') || (driveFileId || '').startsWith('session_');
     
-    if (!isUUID && gasUrl && driveFileId) {
+    if (!isSupabaseIdForGas && gasUrl && driveFileId) {
         try {
             await fetchGasWithRetry(gasUrl, {
                 action: 'updateVideoStatus',

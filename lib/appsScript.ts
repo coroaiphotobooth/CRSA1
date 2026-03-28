@@ -375,10 +375,10 @@ export const fetchGallery = async (eventId?: string, since?: number): Promise<{ 
 };
 
 export const deletePhotoFromGas = async (id: string, pin: string) => {
-    // Check if ID is a UUID (Supabase session ID)
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    // Check if ID is a UUID or starts with 'session_' (Supabase session ID)
+    const isSupabaseId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id) || id.startsWith('session_');
     
-    if (isUUID) {
+    if (isSupabaseId) {
       try {
         const { error } = await supabase.from('sessions').delete().eq('id', id);
         if (error) throw error;
