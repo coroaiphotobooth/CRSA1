@@ -7,7 +7,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { robustFetch } from '../lib/appsScript';
 import { useDialog } from '../components/DialogProvider';
-import { DEFAULT_SETTINGS, DEFAULT_CONCEPTS } from '../constants';
+import { DEFAULT_SETTINGS, DEFAULT_CONCEPTS, DEFAULT_GAS_URL } from '../constants';
 
 export default function VendorDashboard() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
@@ -183,7 +183,7 @@ export default function VendorDashboard() {
       const { data: globalSettings } = await supabase
         .from('global_settings')
         .select('template_event_id')
-        .eq('id', 1)
+        .eq('id', 'default')
         .single();
 
       let initialSettings = { ...DEFAULT_SETTINGS };
@@ -423,8 +423,7 @@ export default function VendorDashboard() {
         return;
       }
 
-      const { data: globalSettings } = await supabase.from('global_settings').select('gas_url').single();
-      const gasUrl = globalSettings?.gas_url;
+      const gasUrl = DEFAULT_GAS_URL;
 
       if (!gasUrl) {
         await showDialog('alert', 'Error', "Google Apps Script URL not configured. Cannot backup to Google Drive.");
