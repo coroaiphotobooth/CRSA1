@@ -591,6 +591,38 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS admin_message TEXT;
 -- Add storage_folder to events table
 ALTER TABLE events ADD COLUMN IF NOT EXISTS storage_folder TEXT;
 
+-- 2. Update RLS Policies for Events (Secure Access)
+-- Remove old policies
+DROP POLICY IF EXISTS "Anyone can view events" ON events;
+DROP POLICY IF EXISTS "Vendors can view own events" ON events;
+DROP POLICY IF EXISTS "Superadmin can view all events" ON events;
+DROP POLICY IF EXISTS "Anyone can view templates" ON events;
+DROP POLICY IF EXISTS "Anyone can view superadmin events" ON events;
+DROP POLICY IF EXISTS "Guests can view events" ON events;
+
+-- Create a secure function to get the superadmin ID
+CREATE OR REPLACE FUNCTION get_superadmin_id()
+RETURNS UUID AS $$
+  SELECT id FROM vendors WHERE email = 'coroaiphotobooth@gmail.com' LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Vendor only sees their own events
+CREATE POLICY "Vendors can view own events" ON events FOR SELECT USING (vendor_id = auth.uid());
+
+-- Superadmin sees all events
+CREATE POLICY "Superadmin can view all events" ON events FOR SELECT USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+
+-- Anyone (including vendors) can see ALL events created by the Super Admin (these act as templates)
+CREATE POLICY "Anyone can view superadmin events" ON events FOR SELECT USING (vendor_id = get_superadmin_id());
+
+-- Guests (unauthenticated) can view events (needed for the public photobooth app to load settings)
+-- This is safe because event IDs are unguessable UUIDs
+CREATE POLICY "Guests can view events" ON events FOR SELECT USING (auth.role() = 'anon');
+
+-- Allow reading concepts if the parent event is readable
+DROP POLICY IF EXISTS "Anyone can read concepts" ON concepts;
+CREATE POLICY "Anyone can read concepts" ON concepts FOR SELECT USING (true);
+
 -- Add template_event_id to global_settings table
 ALTER TABLE global_settings ADD COLUMN IF NOT EXISTS template_event_id UUID REFERENCES events(id) ON DELETE SET NULL;
 

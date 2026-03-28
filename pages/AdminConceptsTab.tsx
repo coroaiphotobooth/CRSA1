@@ -117,6 +117,14 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
 Your task is to take a simple user prompt and enhance it into a highly detailed, descriptive, and optimized prompt.
 ${hasRefImage ? 'The user has provided a reference image. Ensure the prompt explicitly mentions integrating the subject with the style, clothing, or environment of the reference image.' : ''}
 Keep the core intent of the original prompt but add details about lighting, camera angle, texture, and photorealism.
+
+CRITICAL INSTRUCTIONS TO INCLUDE IN THE ENHANCED PROMPT:
+- Deteksi semua subjek manusia dalam foto (1 orang, pasangan, atau grup)
+- Terapkan transformasi ke SELURUH subjek yang terdeteksi. Semua subjek diperlakukan setara.
+- Pertahankan wajah asli setiap subjek 100%. Struktur wajah, warna kulit, usia, gender, dan ekspresi tetap natural.
+- Jika subjek memakai hijab, PERTAHANKAN hijab. Jika subjek TIDAK memakai hijab, JANGAN menambahkan hijab.
+- Jika subjek memakai kacamata, PERTAHANKAN kacamata. Jika subjek TIDAK memakai kacamata, JANGAN menambahkan kacamata.
+
 Output ONLY the enhanced prompt text, nothing else.`;
 
       const response = await model.generateContent({

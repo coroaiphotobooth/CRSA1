@@ -113,50 +113,56 @@ export default function VendorDashboard() {
         }
 
         // Fetch global settings for default template
-        const { data: globalSettings } = await supabase
+        const { data: globalSettings, error: globalSettingsError } = await supabase
           .from('global_settings')
           .select('template_event_id')
           .eq('id', 1)
-          .single();
+          .maybeSingle();
+          
+        if (globalSettingsError) {
+          console.error("Error fetching global settings:", globalSettingsError);
+        }
         
-        let superAdminVendorId = null;
-
         if (globalSettings?.template_event_id) {
           setDefaultTemplateId(globalSettings.template_event_id);
-          
-          // Get the vendor_id from the default template
-          const { data: defaultEvent } = await supabase
-            .from('events')
-            .select('vendor_id')
-            .eq('id', globalSettings.template_event_id)
-            .single();
-            
-          if (defaultEvent) {
-            superAdminVendorId = defaultEvent.vendor_id;
+        }
+
+        // Fetch all templates (events owned by the super admin)
+        const { data: superAdminId, error: rpcError } = await supabase.rpc('get_superadmin_id');
+        
+        if (rpcError) {
+          // PGRST202 means the function doesn't exist yet (user hasn't run the SQL setup).
+          // We silently fall back in this case to avoid alarming console errors.
+          if (rpcError.code !== 'PGRST202') {
+            console.error("Error calling get_superadmin_id RPC:", rpcError);
           }
         }
 
-        // If we couldn't get it from the default template, try finding any template by description
-        if (!superAdminVendorId) {
-          const { data: anyTemplate } = await supabase
-            .from('events')
-            .select('vendor_id')
-            .eq('description', 'Template for default event settings')
-            .limit(1)
-            .single();
-            
-          if (anyTemplate) {
-            superAdminVendorId = anyTemplate.vendor_id;
-          }
-        }
-
-        // Fetch all templates owned by the super admin
-        if (superAdminVendorId) {
-          const { data: templatesData } = await supabase
+        if (superAdminId) {
+          const { data: templatesData, error: templatesError } = await supabase
             .from('events')
             .select('*')
-            .eq('vendor_id', superAdminVendorId)
+            .eq('vendor_id', superAdminId)
             .order('created_at', { ascending: false });
+            
+          if (templatesError) {
+            console.error("Error fetching templates:", templatesError);
+          }
+          
+          if (templatesData) {
+            setTemplateEvents(templatesData);
+          }
+        } else {
+          // Fallback if RPC fails or isn't created yet
+          const { data: templatesData, error: templatesError } = await supabase
+            .from('events')
+            .select('*')
+            .eq('description', 'Template for default event settings')
+            .order('created_at', { ascending: false });
+            
+          if (templatesError) {
+            console.error("Error fetching templates fallback:", templatesError);
+          }
           
           if (templatesData) {
             setTemplateEvents(templatesData);
