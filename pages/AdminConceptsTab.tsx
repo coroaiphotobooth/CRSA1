@@ -106,7 +106,11 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
 
     setIsEnhancing(index);
     try {
-      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+      if (!apiKey) {
+        throw new Error("API Key not configured");
+      }
+      const ai = new GoogleGenAI({ apiKey });
       const model = ai.models;
       const hasRefImage = !!concept.refImage;
       const systemInstruction = `You are an expert prompt engineer for photorealistic AI image generation. 
