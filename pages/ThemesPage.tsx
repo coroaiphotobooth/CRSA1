@@ -30,7 +30,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack }) =
         {concepts.length === 0 ? (
           <div className="text-center bg-black/50 p-8 rounded-2xl border border-white/10 backdrop-blur-md">
             <h3 className="text-xl font-bold text-white mb-2">No Concepts Available</h3>
-            <p className="text-gray-400 text-sm">Please ask the admin to add some concepts in the settings.</p>
+            <p className="text-gray-400 text-sm">Go to SETTINGS - CONCEPT<br/>Create a concept there or use the one we provide.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full animate-[popIn_0.5s_ease-out]">
