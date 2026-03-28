@@ -56,10 +56,10 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
   };
 
   const handleUseTemplate = (template: TemplateConcept) => {
-    const newId = `template_${template.id}_${Date.now()}`;
+    const newId = crypto.randomUUID();
     const newConcept: Concept = {
       id: newId,
-      concept_id: newId,
+      concept_id: `template_${template.id}`,
       name: template.name,
       prompt: template.prompt,
       thumbnail: template.thumbnail,
@@ -70,13 +70,13 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
   };
 
   const handleAddConcept = () => {
-    const newId = `concept_${Date.now()}`;
+    const newId = crypto.randomUUID();
     const newConcept: Concept = {
       id: newId,
       concept_id: newId,
       name: 'NEW CONCEPT',
       prompt: 'Describe the transformation here...',
-      thumbnail: 'https://picsum.photos/seed/' + newId + '/300/500'
+      thumbnail: 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500'
     };
     setLocalConcepts(prev => [...prev, newConcept]);
   };
@@ -161,30 +161,45 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
         // Note: This assumes a 'concepts' table exists with event_id
         // For a full implementation, we'd need to handle deletions too,
         // but for now we'll just upsert the current list.
-        const isValidUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        // Helper to check if string is a valid UUID
+        const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
 
-        const conceptsToSave = localConcepts.map(c => {
+        // Fix any invalid UUIDs in local concepts before saving to Supabase
+        const fixedLocalConcepts = localConcepts.map(c => {
+          if (!isUUID(c.id)) {
+            return { ...c, id: crypto.randomUUID() };
+          }
+          return c;
+        });
+
+        // Update local state with fixed IDs
+        setLocalConcepts(fixedLocalConcepts);
+        onSaveConcepts(fixedLocalConcepts);
+
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
+
+        const conceptsToSave = fixedLocalConcepts.map(c => {
           const payload: any = {
+            id: c.id,
+            concept_id: c.concept_id || null,
+            vendor_id: user.id,
             event_id: eventId,
-            concept_id: c.concept_id || c.id,
             name: c.name,
             prompt: c.prompt,
             thumbnail: c.thumbnail,
             ref_image: c.refImage || (c as any).ref_image || null
           };
-          if (isValidUUID(c.id)) {
-            payload.id = c.id;
-          }
           return payload;
         });
-        
+
         // Get existing concepts from DB to find which ones to delete
         const { data: existingConcepts } = await supabase
           .from('concepts')
           .select('id')
           .eq('event_id', eventId);
 
-        const localConceptIds = localConcepts.map(c => c.id);
+        const localConceptIds = fixedLocalConcepts.map(c => c.id);
         const conceptsToDelete = existingConcepts
           ?.filter(c => !localConceptIds.includes(c.id))
           .map(c => c.id) || [];
@@ -210,7 +225,7 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
         if (!refreshError && refreshedConcepts) {
           const mapped = refreshedConcepts.map(c => ({
             id: c.id,
-            concept_id: c.concept_id,
+            concept_id: c.id,
             name: c.name,
             prompt: c.prompt,
             thumbnail: c.thumbnail,
@@ -230,8 +245,8 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
           await showDialog('alert', 'Warning', 'WARNING: Concepts saved LOCALLY only. Cloud sync failed (Data might be too large), but items are safe on this machine.');
         }
       }
-    } catch (e) {
-        await showDialog('alert', 'Warning', 'Local save successful. Cloud error: ' + e);
+    } catch (e: any) {
+        await showDialog('alert', 'Warning', 'Local save successful. Cloud error: ' + (e.message || JSON.stringify(e)));
     } finally {
       setIsSavingConcepts(false);
     }

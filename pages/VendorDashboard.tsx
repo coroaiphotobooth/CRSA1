@@ -243,9 +243,11 @@ export default function VendorDashboard() {
         const newEvent = data[0];
         
         // Insert default concepts for this event
-        const conceptsToInsert = initialConcepts.map(concept => ({
+        const conceptsToInsert = initialConcepts.map((concept, index) => ({
+          id: crypto.randomUUID(),
+          concept_id: concept.concept_id || null,
+          vendor_id: vendor.id,
           event_id: newEvent.id,
-          concept_id: concept.concept_id || concept.id, // Handle both DB format and constant format
           name: concept.name,
           prompt: concept.prompt,
           thumbnail: concept.thumbnail,

@@ -72,7 +72,8 @@ CREATE TABLE concepts (
   name TEXT NOT NULL,
   prompt TEXT NOT NULL,
   thumbnail TEXT,
-  "refImage" TEXT,
+  ref_image TEXT,
+  concept_id TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
