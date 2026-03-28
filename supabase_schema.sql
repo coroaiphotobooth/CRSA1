@@ -210,3 +210,18 @@ CREATE POLICY "Anyone can view template concepts" ON template_concepts FOR SELEC
 
 -- Allow super admin to manage template concepts
 CREATE POLICY "Super admin can manage template concepts" ON template_concepts FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+
+-- Enable Realtime for sessions table
+-- Note: Supabase creates the 'supabase_realtime' publication by default.
+-- We just need to add our table to it.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'sessions'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE sessions;
+  END IF;
+END
+$$;

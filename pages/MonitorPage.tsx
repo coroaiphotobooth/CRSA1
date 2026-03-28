@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GalleryItem, MonitorTheme } from '../types';
 import { fetchGallery } from '../lib/appsScript';
+import { supabase } from '../lib/supabase';
 
 interface MonitorPageProps {
   onBack: () => void;
@@ -101,8 +102,38 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
     };
 
     loadData();
-    const interval = setInterval(loadData, 10000); 
-    return () => clearInterval(interval);
+    
+    // Fallback polling just in case
+    const interval = setInterval(loadData, 30000); 
+
+    // Realtime subscription for instant updates
+    let subscription: any;
+    if (activeEventId) {
+      subscription = supabase
+        .channel(`monitor_sessions_${activeEventId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'sessions',
+            filter: `event_id=eq.${activeEventId}`
+          },
+          (payload) => {
+            console.log('Realtime update received in monitor:', payload);
+            // When a new session is inserted or updated (e.g., result_image_url is added), reload data
+            loadData();
+          }
+        )
+        .subscribe();
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (subscription) {
+        supabase.removeChannel(subscription);
+      }
+    };
   }, [activeEventId, theme]); // Added sliderActiveItem to deps if needed, but handled via ref logic
 
   // -- Physics Engine Setup --

@@ -318,52 +318,96 @@ Output ONLY the enhanced prompt text, nothing else.`;
 
             <div className="flex gap-4">
                {/* THUMBNAIL */}
-               <div className="w-24 aspect-[9/16] bg-white/5 border border-white/10 rounded-xl shrink-0 overflow-hidden relative group/thumb shadow-lg">
-                  <img src={concept.thumbnail} className="w-full h-full object-cover" />
-                  <label className="absolute inset-0 bg-[#bc13fe]/80 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1">
-                     Update Thumbnail
-                     <input type="file" className="hidden" onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                           setIsSavingConcepts(true);
-                           await handleUploadAsset(file, 'thumbnail', index);
-                           setIsSavingConcepts(false);
-                        }
-                     }} />
-                  </label>
+               <div className="flex flex-col gap-2 items-center w-24 shrink-0">
+                 <div className="w-full aspect-[9/16] bg-white/5 border border-white/10 rounded-xl overflow-hidden relative group/thumb shadow-lg">
+                    <img src={concept.thumbnail} className="w-full h-full object-cover" />
+                    <label className="absolute inset-0 bg-[#bc13fe]/80 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1">
+                       Update Thumbnail
+                       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                             if (file.size > 1024 * 1024) {
+                                await showDialog('alert', 'Error', "File too large! Max size is 1MB.");
+                                return;
+                             }
+                             setIsSavingConcepts(true);
+                             await handleUploadAsset(file, 'thumbnail', index);
+                             setIsSavingConcepts(false);
+                          }
+                       }} />
+                    </label>
+                 </div>
+                 <div className="text-[8px] text-gray-400 font-bold text-center uppercase tracking-wider leading-tight">
+                   UPLOAD IMAGE THUMBNAIL PREVIEW
+                 </div>
+                 <label className="bg-white/10 hover:bg-[#bc13fe]/80 text-[9px] px-2 py-1.5 rounded cursor-pointer transition-colors text-white uppercase font-bold text-center w-full">
+                   Upload
+                   <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                         if (file.size > 1024 * 1024) {
+                            await showDialog('alert', 'Error', "File too large! Max size is 1MB.");
+                            return;
+                         }
+                         setIsSavingConcepts(true);
+                         await handleUploadAsset(file, 'thumbnail', index);
+                         setIsSavingConcepts(false);
+                      }
+                   }} />
+                 </label>
                </div>
 
                {/* REFERENCE IMAGE (NEW) */}
-               <div className="w-24 aspect-[9/16] bg-white/5 border border-dashed border-white/20 rounded-xl shrink-0 overflow-hidden relative group/ref shadow-lg flex items-center justify-center">
-                  {concept.refImage ? (
-                     <>
-                        <img src={concept.refImage} className="w-full h-full object-cover" />
-                        <button 
-                           onClick={() => handleRemoveRefImage(index)}
-                           className="absolute top-1 right-1 bg-red-600 rounded-full w-4 h-4 flex items-center justify-center text-white z-20 hover:scale-110"
-                        >
-                           <span className="text-[10px]">✕</span>
-                        </button>
-                     </>
-                  ) : (
-                     <span className="text-[8px] text-white/30 text-center px-2">Ref Image (Style)</span>
-                  )}
-                  
-                  <label className="absolute inset-0 bg-blue-600/80 opacity-0 group-hover/ref:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
-                     {concept.refImage ? 'Change Reference' : 'Add Reference'}
-                     <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                           if (file.size > 1024 * 1024) {
-                              await showDialog('alert', 'Error', "File too large! Max size is 1MB.");
-                              return;
-                           }
-                           setIsSavingConcepts(true);
-                           await handleUploadAsset(file, 'refImage', index);
-                           setIsSavingConcepts(false);
-                        }
-                     }} />
-                  </label>
+               <div className="flex flex-col gap-2 items-center w-24 shrink-0">
+                 <div className="w-full aspect-[9/16] bg-white/5 border border-dashed border-white/20 rounded-xl overflow-hidden relative group/ref shadow-lg flex items-center justify-center">
+                    {concept.refImage ? (
+                       <>
+                          <img src={concept.refImage} className="w-full h-full object-cover" />
+                          <button 
+                             onClick={() => handleRemoveRefImage(index)}
+                             className="absolute top-1 right-1 bg-red-600 rounded-full w-4 h-4 flex items-center justify-center text-white z-20 hover:scale-110"
+                          >
+                             <span className="text-[10px]">✕</span>
+                          </button>
+                       </>
+                    ) : (
+                       <span className="text-[8px] text-white/30 text-center px-2">Ref Image (Style)</span>
+                    )}
+                    
+                    <label className="absolute inset-0 bg-blue-600/80 opacity-0 group-hover/ref:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
+                       {concept.refImage ? 'Change Reference' : 'Add Reference'}
+                       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                             if (file.size > 2 * 1024 * 1024) {
+                                await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
+                                return;
+                             }
+                             setIsSavingConcepts(true);
+                             await handleUploadAsset(file, 'refImage', index);
+                             setIsSavingConcepts(false);
+                          }
+                       }} />
+                    </label>
+                 </div>
+                 <div className="text-[8px] text-gray-400 font-bold text-center uppercase tracking-wider leading-tight">
+                   REFERENCE IMAGE (MAX 2MB)
+                 </div>
+                 <label className="bg-white/10 hover:bg-blue-600/80 text-[9px] px-2 py-1.5 rounded cursor-pointer transition-colors text-white uppercase font-bold text-center w-full">
+                   Upload
+                   <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                         if (file.size > 2 * 1024 * 1024) {
+                            await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
+                            return;
+                         }
+                         setIsSavingConcepts(true);
+                         await handleUploadAsset(file, 'refImage', index);
+                         setIsSavingConcepts(false);
+                      }
+                   }} />
+                 </label>
                </div>
 
                {/* TEXT INPUTS */}
