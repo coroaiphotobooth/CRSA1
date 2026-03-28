@@ -112,25 +112,6 @@ export default function VendorDashboard() {
           setEvents(eventsData || []);
         }
 
-        // Fetch template events from Super Admin
-        const { data: superAdmin } = await supabase
-          .from('vendors')
-          .select('id')
-          .eq('email', 'coroaiphotobooth@gmail.com')
-          .single();
-
-        if (superAdmin) {
-          const { data: templatesData } = await supabase
-            .from('events')
-            .select('*')
-            .eq('vendor_id', superAdmin.id)
-            .order('created_at', { ascending: false });
-          
-          if (templatesData) {
-            setTemplateEvents(templatesData);
-          }
-        }
-
         // Fetch global settings for default template
         const { data: globalSettings } = await supabase
           .from('global_settings')
@@ -138,8 +119,48 @@ export default function VendorDashboard() {
           .eq('id', 1)
           .single();
         
+        let superAdminVendorId = null;
+
         if (globalSettings?.template_event_id) {
           setDefaultTemplateId(globalSettings.template_event_id);
+          
+          // Get the vendor_id from the default template
+          const { data: defaultEvent } = await supabase
+            .from('events')
+            .select('vendor_id')
+            .eq('id', globalSettings.template_event_id)
+            .single();
+            
+          if (defaultEvent) {
+            superAdminVendorId = defaultEvent.vendor_id;
+          }
+        }
+
+        // If we couldn't get it from the default template, try finding any template by description
+        if (!superAdminVendorId) {
+          const { data: anyTemplate } = await supabase
+            .from('events')
+            .select('vendor_id')
+            .eq('description', 'Template for default event settings')
+            .limit(1)
+            .single();
+            
+          if (anyTemplate) {
+            superAdminVendorId = anyTemplate.vendor_id;
+          }
+        }
+
+        // Fetch all templates owned by the super admin
+        if (superAdminVendorId) {
+          const { data: templatesData } = await supabase
+            .from('events')
+            .select('*')
+            .eq('vendor_id', superAdminVendorId)
+            .order('created_at', { ascending: false });
+          
+          if (templatesData) {
+            setTemplateEvents(templatesData);
+          }
         }
 
         // Check if we need to update existing vendor with metadata (only if not impersonating)
