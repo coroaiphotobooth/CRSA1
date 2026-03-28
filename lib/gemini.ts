@@ -83,8 +83,6 @@ const cropOpenAIResult = async (base64Result: string, cropInfo: { x: number, y: 
 
 // --- GEMINI & MAIN LOGIC ---
 
-
-
 let isGeneratingGlobal = false;
 
 export const generateAIImage = async (base64Source: string, concept: Concept, outputRatio: AspectRatio = '9:16', forceUltraQuality: boolean = false) => {
@@ -106,6 +104,8 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
       if (parsedSettings.selectedModel) selectedModel = parsedSettings.selectedModel;
       if (parsedSettings.promptMode) promptMode = parsedSettings.promptMode;
     }
+    
+    let finalPrompt = prompt;
 
     // Default to 'booth' mode if a reference image is provided and mode is 'wrapped' (default)
     if (concept.refImage && promptMode === 'wrapped') {
@@ -122,9 +122,9 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
     if (selectedModel.startsWith('seedream-') && !forceUltraQuality) {
         console.log(`Using Seedream (BytePlus) | Model: ${selectedModel}`);
         
-        let finalSeedreamPrompt = prompt;
+        let finalSeedreamPrompt = finalPrompt;
         if (promptMode === 'wrapped') {
-             finalSeedreamPrompt = `Consistent character, high quality, photorealistic. ${prompt}`;
+             finalSeedreamPrompt = `Consistent character, high quality, photorealistic. ${finalPrompt}`;
         }
 
         try {
@@ -220,12 +220,12 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
       // A. imageConfig optimization: No imageSize for Ultra unless explicitly requested (not in UI)
       const imageConfig: any = { aspectRatio: apiAspectRatio };
 
-      let finalPrompt = prompt;
+      let executionPrompt = finalPrompt;
       const parts: any[] = [];
 
       // 1. Construct Prompt based on Mode
       if (promptMode === 'booth') {
-          finalPrompt = `[SYSTEM INSTRUCTION]
+          executionPrompt = `[SYSTEM INSTRUCTION]
 You are a professional photobooth AI. Your task is to place the person from the FIRST image into the background/environment of the SECOND image (Reference), while changing their clothing based on the THEME INSTRUCTION.
 
 [CRITICAL RULES]
@@ -241,18 +241,18 @@ You are a professional photobooth AI. Your task is to place the person from the 
 - IMAGE 2: THE REFERENCE (Source of Background and Environment)
 
 [THEME INSTRUCTION]
-${prompt}`;
+${finalPrompt}`;
       } else if (promptMode === 'wrapped') {
-          finalPrompt = `Edit the provided photo.
+          executionPrompt = `Edit the provided photo.
 Rules:
 - Detect ALL people in the photo and keep the SAME number of people.
 - Preserve each person’s identity (face, skin tone, age, gender, expression).
 - Do not remove, merge, replace, or add any person.
-Instruction: ${prompt}`;
+Instruction: ${finalPrompt}`;
       }
 
       // 2. Add Text Prompt (First)
-      parts.push({ text: finalPrompt });
+      parts.push({ text: executionPrompt });
 
       // 3. Add Person Image (Image 1)
       parts.push({ inlineData: { data: cleanBase64, mimeType: mimeType } });

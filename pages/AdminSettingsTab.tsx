@@ -185,8 +185,8 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
                     onClick={() => setLocalSettings({...localSettings, promptMode: 'wrapped'})}
                     className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.promptMode === 'wrapped' ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                   >
-                    <span className="font-bold">WRAPPED</span>
-                    <span className="text-[8px] opacity-60">Face Lock</span>
+                    <span className="font-bold">OPTIMAL</span>
+                    <span className="text-[8px] opacity-60 text-center">Face lock<br/>using simple prompt</span>
                   </button>
                   <button
                     onClick={() => setLocalSettings({...localSettings, promptMode: 'booth'})}
@@ -204,7 +204,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
                   </button>
                </div>
                <p className="text-[9px] text-gray-500 mt-1 italic">
-                  * <strong>Wrapped:</strong> Standard face lock. <br/>
+                  * <strong>Optimal:</strong> Face lock using simple prompt. <br/>
                   * <strong>Booth:</strong> Force outfit swap + face lock (Best for Ref Image). <br/>
                   * <strong>Raw:</strong> Direct prompt (Riskier).
                </p>

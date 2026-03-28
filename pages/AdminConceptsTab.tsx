@@ -4,7 +4,8 @@ import { Concept, PhotoboothSettings, TemplateConcept } from '../types';
 import { saveConceptsToGas } from '../lib/appsScript';
 import { supabase } from '../lib/supabase';
 import { useDialog } from '../components/DialogProvider';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 
 interface AdminConceptsTabProps {
   concepts: Concept[];
@@ -95,6 +96,44 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
 
   const handleRefImageChange = (index: number, base64: string) => {
     setLocalConcepts(prev => prev.map((c, i) => i === index ? { ...c, refImage: base64 } : c));
+  };
+
+  const [isEnhancing, setIsEnhancing] = useState<number | null>(null);
+
+  const handleEnhancePrompt = async (index: number) => {
+    const concept = localConcepts[index];
+    if (!concept || !concept.prompt.trim()) return;
+
+    setIsEnhancing(index);
+    try {
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+      const model = ai.models;
+      const hasRefImage = !!concept.refImage;
+      const systemInstruction = `You are an expert prompt engineer for photorealistic AI image generation. 
+Your task is to take a simple user prompt and enhance it into a highly detailed, descriptive, and optimized prompt.
+${hasRefImage ? 'The user has provided a reference image. Ensure the prompt explicitly mentions integrating the subject with the style, clothing, or environment of the reference image.' : ''}
+Keep the core intent of the original prompt but add details about lighting, camera angle, texture, and photorealism.
+Output ONLY the enhanced prompt text, nothing else.`;
+
+      const response = await model.generateContent({
+        model: 'gemini-3.1-flash-preview',
+        contents: concept.prompt,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        }
+      });
+      
+      const enhancedPrompt = response.text?.trim();
+      if (enhancedPrompt) {
+        handleConceptChange(index, 'prompt', enhancedPrompt);
+      }
+    } catch (err) {
+      console.error("Failed to enhance prompt:", err);
+      await showDialog('alert', 'Error', 'Failed to enhance prompt. Please check your API key or try again.');
+    } finally {
+      setIsEnhancing(null);
+    }
   };
 
   const handleRemoveRefImage = (index: number) => {
@@ -328,12 +367,30 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
                       COROAI CONCEPT TEMPLATE
                     </div>
                   ) : (
-                    <textarea 
-                       className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
-                       value={concept.prompt} 
-                       onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
-                       placeholder="Prompt description..."
-                    />
+                    <div className="w-full flex flex-col gap-2">
+                      <textarea 
+                         className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
+                         value={concept.prompt} 
+                         onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
+                         placeholder="Prompt description..."
+                      />
+                      <div className="flex flex-col items-end gap-1">
+                        <button
+                          onClick={() => handleEnhancePrompt(index)}
+                          disabled={isEnhancing === index || !concept.prompt.trim()}
+                          className="bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] border border-[#bc13fe]/30 rounded px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Optimize prompt using AI"
+                        >
+                          {isEnhancing === index ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <Sparkles className="w-3.5 h-3.5" />
+                          )}
+                          Optimize
+                        </button>
+                        <span className="text-[8px] text-gray-500 italic">use OPTIMIZE if you use a simple prompt, we will make it better</span>
+                      </div>
+                    </div>
                   )}
                </div>
             </div>
