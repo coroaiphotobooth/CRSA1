@@ -259,8 +259,33 @@ Instruction: ${prompt}`;
 
       // 4. Add Reference Image (Image 2) - if exists
       if (concept.refImage && concept.refImage.trim() !== '') {
-         const refClean = concept.refImage.includes(',') ? concept.refImage.split(',')[1] : concept.refImage;
-         parts.push({ inlineData: { data: refClean, mimeType: 'image/png' } });
+         let refClean = concept.refImage;
+         let refMimeType = 'image/jpeg';
+         
+         if (concept.refImage.startsWith('http')) {
+             try {
+                 const response = await fetch(concept.refImage);
+                 const blob = await response.blob();
+                 refMimeType = blob.type || 'image/jpeg';
+                 const base64data = await new Promise<string>((resolve) => {
+                     const reader = new FileReader();
+                     reader.onloadend = () => resolve(reader.result as string);
+                     reader.readAsDataURL(blob);
+                 });
+                 refClean = base64data.split(',')[1];
+             } catch (err) {
+                 console.error("Failed to fetch reference image URL:", err);
+                 // Fallback to original behavior if fetch fails
+                 refClean = concept.refImage.includes(',') ? concept.refImage.split(',')[1] : concept.refImage;
+             }
+         } else {
+             refClean = concept.refImage.includes(',') ? concept.refImage.split(',')[1] : concept.refImage;
+             if (concept.refImage.startsWith('data:')) {
+                 refMimeType = concept.refImage.split(';')[0].split(':')[1];
+             }
+         }
+         
+         parts.push({ inlineData: { data: refClean, mimeType: refMimeType } });
          
          if (promptMode === 'wrapped') {
              parts[0].text += `\n\n[IMPORTANT]: The SECOND image provided is a VISUAL REFERENCE for the style, background, or clothing. Combine the person from the FIRST image with the style/aesthetics of the SECOND image.`;

@@ -14,28 +14,47 @@ export default function GuestResultPage() {
   } | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadSession = async () => {
       if (!sessionId) return;
       try {
         const res = await fetchSessionFromCloud(sessionId);
-        if (res.success && res.data) {
-          setSessionData(res.data);
-        } else {
-          setError("Sesi tidak ditemukan atau masih diproses.");
+        if (isMounted) {
+          if (res.success && res.data) {
+            setSessionData(res.data);
+          } else {
+            setError("Sesi tidak ditemukan atau masih diproses.");
+          }
         }
       } catch (err) {
-        setError("Gagal mengambil data sesi.");
+        if (isMounted) setError("Gagal mengambil data sesi.");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     loadSession();
-    
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+
     // Auto-refresh every 5 seconds if video is requested but not yet available
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       if (sessionData && sessionData.isVideoRequested && !sessionData.resultVideoUrl) {
-        loadSession();
+        try {
+          const res = await fetchSessionFromCloud(sessionId);
+          if (res.success && res.data) {
+            setSessionData(res.data);
+          }
+        } catch (err) {
+          console.error("Interval fetch error:", err);
+        }
       }
     }, 5000);
 
@@ -44,6 +63,23 @@ export default function GuestResultPage() {
 
   const handleDownload = async (url: string, filename: string) => {
     try {
+      // For Supabase storage URLs, we can use the built-in download parameter
+      // which forces the browser to download instead of opening the file
+      let downloadUrl = url;
+      if (url.includes('supabase.co/storage/v1/object/public/')) {
+        const separator = url.includes('?') ? '&' : '?';
+        downloadUrl = `${url}${separator}download=${encodeURIComponent(filename)}`;
+        
+        // On iOS Safari, direct navigation to a download URL works best
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
+        if (isIOS) {
+          window.location.href = downloadUrl;
+          return;
+        }
+      }
+
+      // Standard fetch approach for other browsers/URLs
       const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
@@ -55,8 +91,15 @@ export default function GuestResultPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
     } catch (err) {
-      // Fallback to opening in new tab
-      window.open(url, '_blank');
+      // Fallback: open in new tab if fetch fails (e.g., CORS)
+      // Note: This might be blocked by popup blockers on iOS if not triggered directly by user action
+      const link = document.createElement('a');
+      link.href = url;
+      link.target = '_blank';
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
