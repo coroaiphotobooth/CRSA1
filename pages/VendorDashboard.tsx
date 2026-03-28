@@ -12,6 +12,8 @@ import { DEFAULT_SETTINGS, DEFAULT_CONCEPTS, DEFAULT_GAS_URL } from '../constant
 export default function VendorDashboard() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
+  const [templateEvents, setTemplateEvents] = useState<Event[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('default');
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
@@ -109,6 +111,25 @@ export default function VendorDashboard() {
           setEvents(eventsData || []);
         }
 
+        // Fetch template events from Super Admin
+        const { data: superAdmin } = await supabase
+          .from('vendors')
+          .select('id')
+          .eq('email', 'coroaiphotobooth@gmail.com')
+          .single();
+
+        if (superAdmin) {
+          const { data: templatesData } = await supabase
+            .from('events')
+            .select('*')
+            .eq('vendor_id', superAdmin.id)
+            .order('created_at', { ascending: false });
+          
+          if (templatesData) {
+            setTemplateEvents(templatesData);
+          }
+        }
+
         // Check if we need to update existing vendor with metadata (only if not impersonating)
         if (targetUserId === user.id) {
           const metadataName = user.user_metadata?.full_name || user.user_metadata?.name;
@@ -179,22 +200,27 @@ export default function VendorDashboard() {
       const companyName = vendor.company_name || vendor.name || 'vendor';
       const folderName = `${sanitizeName(companyName)}_${sanitizeName(newEventName.trim())}`;
 
-      // Fetch global settings to see if there's a template event
-      const { data: globalSettings } = await supabase
-        .from('global_settings')
-        .select('template_event_id')
-        .eq('id', 1)
-        .single();
-
       let initialSettings = { ...DEFAULT_SETTINGS };
       let initialConcepts: any[] = [...DEFAULT_CONCEPTS];
+      let targetTemplateId: string | null = null;
 
-      if (globalSettings?.template_event_id) {
+      if (selectedTemplateId === 'default') {
+        const { data: globalSettings } = await supabase
+          .from('global_settings')
+          .select('template_event_id')
+          .eq('id', 1)
+          .single();
+        targetTemplateId = globalSettings?.template_event_id || null;
+      } else if (selectedTemplateId !== 'empty') {
+        targetTemplateId = selectedTemplateId;
+      }
+
+      if (targetTemplateId) {
         // Fetch template event settings
         const { data: templateEvent } = await supabase
           .from('events')
           .select('settings')
-          .eq('id', globalSettings.template_event_id)
+          .eq('id', targetTemplateId)
           .single();
         
         if (templateEvent?.settings) {
@@ -205,7 +231,7 @@ export default function VendorDashboard() {
         const { data: templateConcepts } = await supabase
           .from('concepts')
           .select('*')
-          .eq('event_id', globalSettings.template_event_id);
+          .eq('event_id', targetTemplateId);
         
         if (templateConcepts && templateConcepts.length > 0) {
           initialConcepts = templateConcepts;
@@ -836,6 +862,22 @@ export default function VendorDashboard() {
                   className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#bc13fe]"
                   placeholder="e.g., AI PHOTOBOOTH EXPERIENCE"
                 />
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm text-gray-400 mb-2">Template</label>
+                <select
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
+                >
+                  <option value="default">Default Template</option>
+                  <option value="empty">Empty - No Template</option>
+                  {templateEvents.map(template => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="flex justify-end gap-2">
                 <button

@@ -302,6 +302,39 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const handleDeleteTemplateEvent = async (eventId: string) => {
+    const confirmed = await showDialog('confirm', 'Confirm Deletion', 'Are you sure you want to delete this template event?');
+    if (!confirmed) return;
+
+    try {
+      // If it's the default template, remove it from global settings first
+      if (globalSettings.template_event_id === eventId) {
+        await supabase
+          .from('global_settings')
+          .upsert({
+            id: 1,
+            default_free_credits: globalSettings.default_free_credits,
+            system_status: globalSettings.system_status,
+            template_event_id: null,
+            updated_at: new Date().toISOString()
+          });
+        setGlobalSettings({ ...globalSettings, template_event_id: '' });
+      }
+
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventId);
+
+      if (error) throw error;
+      
+      setEvents(events.filter(e => e.id !== eventId));
+      await showDialog('alert', 'Success', 'Template event deleted successfully!');
+    } catch (err: any) {
+      await showDialog('alert', 'Error', `Failed to delete template event: ${err.message}`);
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'thumbnail' | 'ref_image') => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -882,6 +915,13 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                               SET TO DEFAULT
                             </button>
                           )}
+                          <button
+                            onClick={() => handleDeleteTemplateEvent(event.id)}
+                            className="py-1.5 px-3 bg-red-500/20 hover:bg-red-500/40 text-red-500 text-xs font-bold rounded transition-colors"
+                            title="Delete Template Event"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </div>
                     ))}
