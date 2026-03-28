@@ -243,16 +243,19 @@ export default function VendorDashboard() {
         const newEvent = data[0];
         
         // Insert default concepts for this event
-        const conceptsToInsert = initialConcepts.map((concept, index) => ({
-          id: crypto.randomUUID(),
-          concept_id: `template_${concept.id}`,
-          vendor_id: vendor.id,
-          event_id: newEvent.id,
-          name: concept.name,
-          prompt: concept.prompt,
-          thumbnail: concept.thumbnail,
-          ref_image: concept.ref_image || concept.refImage || null
-        }));
+        const conceptsToInsert = initialConcepts.map((concept, index) => {
+          const isAlreadyTemplate = concept.concept_id?.startsWith('template_') || concept.id.startsWith('template_');
+          return {
+            id: crypto.randomUUID(),
+            concept_id: isAlreadyTemplate ? (concept.concept_id || concept.id) : `template_${concept.id}`,
+            vendor_id: vendor.id,
+            event_id: newEvent.id,
+            name: concept.name,
+            prompt: concept.prompt,
+            thumbnail: concept.thumbnail,
+            ref_image: concept.ref_image || concept.refImage || null
+          };
+        });
 
         if (conceptsToInsert.length > 0) {
           const { error: conceptsError } = await supabase

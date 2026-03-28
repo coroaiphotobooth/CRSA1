@@ -84,7 +84,12 @@ export default function SuperAdminDashboard() {
         .order('created_at', { ascending: false });
       
       if (eventsData) {
-        setEvents(eventsData);
+        const superAdminVendor = vendorsData?.find(v => v.email === 'coroaiphotobooth@gmail.com');
+        if (superAdminVendor) {
+          setEvents(eventsData.filter(e => e.vendor_id === superAdminVendor.id));
+        } else {
+          setEvents(eventsData);
+        }
       }
 
       // Fetch template concepts
@@ -512,6 +517,7 @@ CREATE POLICY "Super admin can do everything on vendors" ON vendors FOR ALL USIN
 CREATE POLICY "Super admin can do everything on events" ON events FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
 CREATE POLICY "Super admin can do everything on concepts" ON concepts FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
 CREATE POLICY "Super admin can do everything on global_settings" ON global_settings FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+CREATE POLICY "Anyone can read global_settings" ON global_settings FOR SELECT USING (true);
 
 -- 4. Create a secure function to delete users (requires super admin privileges)
 CREATE OR REPLACE FUNCTION delete_user(user_id UUID)
