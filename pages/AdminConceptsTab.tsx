@@ -4,7 +4,7 @@ import { Concept, PhotoboothSettings, TemplateConcept } from '../types';
 import { saveConceptsToGas } from '../lib/appsScript';
 import { supabase } from '../lib/supabase';
 import { useDialog } from '../components/DialogProvider';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, Plus } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
 interface AdminConceptsTabProps {
@@ -461,12 +461,13 @@ Output ONLY the enhanced prompt text, nothing else.`;
             </div>
           </div>
         ))}
-        <div className="glass-card p-6 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-white/10 transition-all min-h-[200px] rounded-xl backdrop-blur-sm">
-          <button onClick={handleAddConcept} className="flex flex-col items-center justify-center gap-4 w-full h-full group hover:bg-white/5 rounded-xl p-4 transition-all">
-            <div className="w-12 h-12 rounded-full border-2 border-white/20 flex items-center justify-center text-white/50 group-hover:text-[#bc13fe] group-hover:border-[#bc13fe] transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-            </div>
-            <span className="font-heading text-xs tracking-[0.3em] text-white/40 uppercase italic group-hover:text-white/80">ADD NEW CONCEPT</span>
+        <div className="glass-card p-8 flex flex-col items-center justify-center gap-6 border-2 border-dashed border-white/10 rounded-xl backdrop-blur-sm">
+          <button 
+            onClick={handleAddConcept} 
+            className="w-full py-4 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 border border-white/10"
+          >
+            <Plus className="w-4 h-4" />
+            CREATE YOUR OWN CONCEPT
           </button>
           
           <div className="w-full flex items-center justify-center gap-4">
@@ -477,15 +478,16 @@ Output ONLY the enhanced prompt text, nothing else.`;
 
           <button 
             onClick={handleOpenTemplateModal}
-            className="w-full py-4 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+            className="w-full py-4 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] rounded-lg text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 border border-[#bc13fe]/20"
           >
+            <Sparkles className="w-4 h-4" />
             USE TEMPLATE CONCEPT
           </button>
         </div>
       </div>
       <div className="flex justify-center mt-10">
         <button onClick={handleSyncConcepts} disabled={isSavingConcepts} className="px-20 py-6 bg-[#bc13fe] font-heading tracking-widest uppercase italic shadow-2xl hover:bg-[#a010d8] transition-all disabled:opacity-50 rounded-lg">
-          {isSavingConcepts ? 'SINKRONISASI...' : 'SYNC ALL CONCEPTS TO CLOUD'}
+          {isSavingConcepts ? 'SAVING...' : 'SAVE CONCEPT'}
         </button>
       </div>
 
