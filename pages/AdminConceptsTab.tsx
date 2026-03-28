@@ -345,22 +345,26 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
             </div>
           </div>
         ))}
-        <div className="glass-card p-6 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-white/10 hover:border-[#bc13fe]/50 hover:bg-white/5 transition-all min-h-[200px] rounded-xl backdrop-blur-sm">
-          <button onClick={handleAddConcept} className="flex flex-col items-center justify-center gap-4 w-full h-full group">
+        <div className="glass-card p-6 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-white/10 transition-all min-h-[200px] rounded-xl backdrop-blur-sm">
+          <button onClick={handleAddConcept} className="flex flex-col items-center justify-center gap-4 w-full h-full group hover:bg-white/5 rounded-xl p-4 transition-all">
             <div className="w-12 h-12 rounded-full border-2 border-white/20 flex items-center justify-center text-white/50 group-hover:text-[#bc13fe] group-hover:border-[#bc13fe] transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
             </div>
-            <span className="font-heading text-xs tracking-[0.3em] text-white/40 uppercase italic">ADD_NEW_CONCEPT</span>
+            <span className="font-heading text-xs tracking-[0.3em] text-white/40 uppercase italic group-hover:text-white/80">ADD NEW CONCEPT</span>
           </button>
           
-          <div className="w-full border-t border-white/10 pt-4 mt-2">
-            <button 
-              onClick={handleOpenTemplateModal}
-              className="w-full py-2 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
-            >
-              USE TEMPLATE CONCEPT
-            </button>
+          <div className="w-full flex items-center justify-center gap-4">
+            <div className="h-px bg-white/10 flex-1"></div>
+            <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">OR</span>
+            <div className="h-px bg-white/10 flex-1"></div>
           </div>
+
+          <button 
+            onClick={handleOpenTemplateModal}
+            className="w-full py-4 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
+          >
+            USE TEMPLATE CONCEPT
+          </button>
         </div>
       </div>
       <div className="flex justify-center mt-10">
@@ -389,25 +393,25 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
                   <p className="text-sm mt-2">Super Admin can create templates in their dashboard.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                   {templateConcepts.map(template => (
                     <div key={template.id} className="bg-black/30 border border-white/5 rounded-xl overflow-hidden group hover:border-[#bc13fe]/50 transition-colors flex flex-col">
                       <div className="aspect-square relative">
                         <img src={template.thumbnail} alt={template.name} className="w-full h-full object-cover" />
                         {template.ref_image && (
-                          <div className="absolute top-2 right-2 bg-black/80 text-[10px] px-2 py-1 rounded border border-white/10">
-                            Has Ref Image
+                          <div className="absolute top-2 right-2 bg-black/80 text-[9px] px-1.5 py-0.5 rounded border border-white/10">
+                            + Ref
                           </div>
                         )}
                       </div>
-                      <div className="p-4 flex flex-col flex-1">
-                        <h3 className="font-bold text-sm mb-1">{template.name}</h3>
-                        <p className="text-xs text-gray-500 mb-4 flex-1 italic">COROAI CONCEPT TEMPLATE</p>
+                      <div className="p-3 flex flex-col flex-1">
+                        <h3 className="font-bold text-xs mb-1 truncate" title={template.name}>{template.name}</h3>
+                        <p className="text-[9px] text-gray-500 mb-3 flex-1 italic">TEMPLATE</p>
                         <button
                           onClick={() => handleUseTemplate(template)}
-                          className="w-full py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-xs font-bold transition-colors"
+                          className="w-full py-1.5 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-md text-[10px] font-bold transition-colors"
                         >
-                          LOAD CONCEPT
+                          LOAD
                         </button>
                       </div>
                     </div>
