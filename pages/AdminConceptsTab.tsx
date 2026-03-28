@@ -76,7 +76,7 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
       id: newId,
       concept_id: newId,
       name: 'NEW CONCEPT',
-      prompt: 'Describe the transformation here...',
+      prompt: '',
       thumbnail: 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500'
     };
     setLocalConcepts(prev => [...prev, newConcept]);
@@ -322,7 +322,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                  <div className="w-full aspect-[9/16] bg-white/5 border border-white/10 rounded-xl overflow-hidden relative group/thumb shadow-lg">
                     <img src={concept.thumbnail} className="w-full h-full object-cover" />
                     <label className="absolute inset-0 bg-[#bc13fe]/80 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1">
-                       Update Thumbnail
+                       UPLOAD THUMBNAIL
                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
@@ -375,7 +375,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                     )}
                     
                     <label className="absolute inset-0 bg-blue-600/80 opacity-0 group-hover/ref:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
-                       {concept.refImage ? 'Change Reference' : 'Add Reference'}
+                       UPLOAD REFERENCE
                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
@@ -412,12 +412,15 @@ Output ONLY the enhanced prompt text, nothing else.`;
 
                {/* TEXT INPUTS */}
                <div className="flex-1 flex flex-col gap-4">
-                  <input 
-                     className="bg-transparent border-b border-white/10 p-2 font-heading uppercase italic text-white outline-none focus:border-[#bc13fe] w-full" 
-                     value={concept.name} 
-                     onChange={e => handleConceptChange(index, 'name', e.target.value)} 
-                     placeholder="Concept Name"
-                  />
+                  <div className="relative flex items-center group">
+                    <input 
+                       className="bg-black/30 border border-white/10 p-3 rounded-lg font-heading uppercase italic text-white outline-none focus:border-[#bc13fe] w-full transition-colors" 
+                       value={concept.name} 
+                       onChange={e => handleConceptChange(index, 'name', e.target.value)} 
+                       placeholder="Concept Name"
+                       title="Edit concept name"
+                    />
+                  </div>
                   {(concept.concept_id?.startsWith('template_') || concept.id.startsWith('template_')) ? (
                     <div className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-500 w-full rounded-lg flex items-center justify-center italic">
                       COROAI CONCEPT TEMPLATE
@@ -428,7 +431,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                          className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
                          value={concept.prompt} 
                          onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
-                         placeholder="Prompt description..."
+                         placeholder="Describe the transformation here..."
                       />
                       <div className="flex flex-col items-end gap-1">
                         <button
@@ -442,9 +445,9 @@ Output ONLY the enhanced prompt text, nothing else.`;
                           ) : (
                             <Sparkles className="w-3.5 h-3.5" />
                           )}
-                          Optimize
+                          OPTIMIZE PROMPT
                         </button>
-                        <span className="text-[8px] text-gray-500 italic">use OPTIMIZE if you use a simple prompt, we will make it better</span>
+                        <span className="text-[8px] text-gray-500 italic">use OPTIMIZE PROMPT if you use a simple prompt, we will make it better</span>
                       </div>
                     </div>
                   )}

@@ -80,14 +80,15 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
         
         // Physics Mode specific logic
         if (theme === 'physics') {
-           photos.forEach(item => {
+           const physicsPhotos = photos.slice(0, 15);
+           physicsPhotos.forEach(item => {
              if (!itemsRef.current.has(item.id) && containerRef.current) {
                createPhysicsItem(item);
              }
            });
            
-           // Remove deleted items
-           const currentIds = new Set(photos.map(i => i.id));
+           // Remove deleted items or items beyond the 15 limit
+           const currentIds = new Set(physicsPhotos.map(i => i.id));
            itemsRef.current.forEach((val, key) => {
                if (!currentIds.has(key)) {
                    val.element.remove();
