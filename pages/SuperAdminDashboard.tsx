@@ -552,6 +552,9 @@ CREATE POLICY "Super admin can do everything on concepts" ON concepts FOR ALL US
 CREATE POLICY "Super admin can do everything on global_settings" ON global_settings FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
 CREATE POLICY "Anyone can read global_settings" ON global_settings FOR SELECT USING (true);
 
+-- 3.5. Allow deleting sessions (photos) from the gallery
+CREATE POLICY "Anyone can delete sessions" ON sessions FOR DELETE USING (true);
+
 -- 4. Create a secure function to delete users (requires super admin privileges)
 CREATE OR REPLACE FUNCTION delete_user(user_id UUID)
 RETURNS void

@@ -202,13 +202,19 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
   const executeClearGallery = async () => {
       setIsClearing(true);
       try {
-          await deleteAllPhotosFromGas(settings?.adminPin || "1234", activeEventId);
+          const res = await deleteAllPhotosFromGas(settings?.adminPin || "1234", activeEventId);
+          if (!res.ok) throw new Error(res.error || "Failed to clear gallery");
+          
+          if (res.count === 0 && items.length > 0) {
+              throw new Error("Foto tidak terhapus. Ini biasanya karena aturan keamanan (RLS) di Supabase belum mengizinkan penghapusan sesi. Silakan jalankan perintah SQL ini di Supabase SQL Editor: CREATE POLICY \"Anyone can delete sessions\" ON sessions FOR DELETE USING (true);");
+          }
+          
           setItems([]);
           onUpdateCache([]);
           setShowClearDialog(false);
-      } catch (err) {
+      } catch (err: any) {
           console.error(err);
-          await showDialog('alert', 'Error', "Failed to clear gallery.");
+          await showDialog('alert', 'Error', `Failed to clear gallery: ${err.message}`);
       } finally {
           setIsClearing(false);
       }

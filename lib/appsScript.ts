@@ -380,8 +380,16 @@ export const deletePhotoFromGas = async (id: string, pin: string) => {
     
     if (isSupabaseId) {
       try {
-        const { error } = await supabase.from('sessions').delete().eq('id', id);
+        // We use count: 'exact' to verify if a row was actually deleted.
+        // If count is 0, it means RLS blocked it or the ID doesn't exist.
+        const { error, count } = await supabase.from('sessions').delete({ count: 'exact' }).eq('id', id);
+        
         if (error) throw error;
+        
+        if (count === 0) {
+            throw new Error("Foto tidak terhapus. Ini biasanya karena aturan keamanan (RLS) di Supabase belum mengizinkan penghapusan sesi. Silakan jalankan perintah SQL ini di Supabase SQL Editor: CREATE POLICY \"Anyone can delete sessions\" ON sessions FOR DELETE USING (true);");
+        }
+        
         return { ok: true };
       } catch (e: any) {
         console.error("Supabase Delete Failed:", e);
@@ -396,9 +404,18 @@ export const deletePhotoFromGas = async (id: string, pin: string) => {
 export const deleteAllPhotosFromGas = async (pin: string, eventId?: string) => {
     if (eventId) {
       try {
-        const { error } = await supabase.from('sessions').delete().eq('event_id', eventId);
+        const { error, count } = await supabase.from('sessions').delete({ count: 'exact' }).eq('event_id', eventId);
         if (error) throw error;
-        return { ok: true };
+        
+        // If count is 0, it might mean there were no photos, or RLS blocked it.
+        // We can't be 100% sure it's RLS if the gallery was empty, but if they clicked "Delete All"
+        // there were probably photos. We'll add a warning if count is 0.
+        if (count === 0) {
+            console.warn("No photos deleted. If photos exist, RLS might be blocking deletion.");
+            // Don't throw here because they might just be deleting an empty gallery
+        }
+        
+        return { ok: true, count };
       } catch (e: any) {
         console.error("Supabase Delete All Failed:", e);
         return { ok: false, error: e.message };
