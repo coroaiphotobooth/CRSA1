@@ -431,7 +431,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                          className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
                          value={concept.prompt} 
                          onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
-                         placeholder="Describe the transformation here..."
+                         placeholder="Write your concept or prompt here.. if it is simple, press optimize prompt, the system will make your prompt better."
                       />
                       <div className="flex flex-col items-end gap-1">
                         <button
