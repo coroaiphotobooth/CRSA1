@@ -8,6 +8,7 @@ import { saveAs } from 'file-saver';
 import { robustFetch } from '../lib/appsScript';
 import { useDialog } from '../components/DialogProvider';
 import { DEFAULT_SETTINGS, DEFAULT_CONCEPTS, DEFAULT_GAS_URL } from '../constants';
+import CinematicIntro from '../components/CinematicIntro';
 
 export default function VendorDashboard() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
@@ -24,10 +25,19 @@ export default function VendorDashboard() {
   const [downloadProgress, setDownloadProgress] = useState<{ current: number, total: number } | null>(null);
   const [backupProgress, setBackupProgress] = useState<{ current: number, total: number, success: number, fail: number } | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [language, setLanguage] = useState<'en' | 'id'>('en');
   const { showDialog } = useDialog();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const impersonatedVendorId = searchParams.get('vendorId');
+
+  useEffect(() => {
+    const savedLang = localStorage.getItem('vendor_language');
+    if (savedLang === 'en' || savedLang === 'id') {
+      setLanguage(savedLang);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -204,6 +214,12 @@ export default function VendorDashboard() {
                       }
                   }
               }
+          }
+        }
+
+        if (currentVendor) {
+          if (!localStorage.getItem(`has_seen_onboarding_${user.id}`)) {
+            setShowOnboarding(true);
           }
         }
 
@@ -592,6 +608,95 @@ export default function VendorDashboard() {
     }
   };
 
+  const translations = {
+    en: {
+      welcome: "Welcome back,",
+      credits: "Credits",
+      createEvent: "CREATE EVENT",
+      buyCredits: "BUY CREDITS",
+      totalEvents: "Total Events",
+      currentPlan: "Current Plan",
+      availableCredits: "Available Credits",
+      launch: "LAUNCH",
+      gallery: "GALLERY",
+      settings: "SETTINGS",
+      delete: "Delete",
+      backup: "Backup to Google Drive",
+      download: "Download All Data (ZIP)",
+      logout: "Logout",
+      backToAdmin: "Back to Super Admin",
+      impersonating: "Impersonating",
+      myEvents: "Your Events",
+      noEvents: "No events found. Create your first photobooth event!",
+      startEvent: "Please click \"Create Event\" to start the photobooth page.",
+      conceptTip: "In \"Settings - Concept,\" you can create your own concept by entering a prompt and uploading a thumbnail image, or load one we provide for free.",
+      downloading: "Downloading Data",
+      pleaseWait: "Please wait, this might take a while depending on the number of files.",
+      backingUp: "Backing up to Google Drive",
+      doNotClose: "Please do not close this window.",
+      createNewEvent: "Create New Event",
+      eventName: "Event Name",
+      eventDescription: "Event Description",
+      template: "Template",
+      cancel: "CANCEL",
+      create: "CREATE",
+      creating: "CREATING...",
+      error: "Error",
+      close: "CLOSE",
+      messageFromCoroai: "Message from coroai",
+      defaultAdminMessage: `Hi, welcome to Coroai!
+- Please click "Create Event" to start the photobooth page.
+- On the settings page, you can change the background, branding overlay, and other settings.
+- In "Settings - Concept," you can create your own concept by entering a prompt and uploading a thumbnail image, or load one we provide for free.
+- If you'd like a custom concept created for you, let us know via WhatsApp. We'll create a concept according to your request for free.
+- Good luck, have fun!`
+    },
+    id: {
+      welcome: "Selamat datang kembali,",
+      credits: "Kredit",
+      createEvent: "BUAT EVENT",
+      buyCredits: "BELI KREDIT",
+      totalEvents: "Total Event",
+      currentPlan: "Paket Saat Ini",
+      availableCredits: "Kredit Tersedia",
+      launch: "MULAI",
+      gallery: "GALERI",
+      settings: "PENGATURAN",
+      delete: "Hapus",
+      backup: "Cadangkan ke Google Drive",
+      download: "Unduh Semua Data (ZIP)",
+      logout: "Keluar",
+      backToAdmin: "Kembali ke Super Admin",
+      impersonating: "Menyamar",
+      myEvents: "Event Anda",
+      noEvents: "Belum ada event. Buat event photobooth pertama Anda!",
+      startEvent: "Silakan klik \"Buat Event\" untuk memulai halaman photobooth.",
+      conceptTip: "Di \"Pengaturan - Konsep,\" Anda dapat membuat konsep Anda sendiri dengan memasukkan prompt dan mengunggah gambar thumbnail, atau memuat konsep yang kami sediakan secara gratis.",
+      downloading: "Mengunduh Data",
+      pleaseWait: "Harap tunggu, ini mungkin memakan waktu tergantung pada jumlah file.",
+      backingUp: "Mencadangkan ke Google Drive",
+      doNotClose: "Harap jangan tutup jendela ini.",
+      createNewEvent: "Buat Event Baru",
+      eventName: "Nama Event",
+      eventDescription: "Deskripsi Event",
+      template: "Template",
+      cancel: "BATAL",
+      create: "BUAT",
+      creating: "MEMBUAT...",
+      error: "Kesalahan",
+      close: "TUTUP",
+      messageFromCoroai: "Pesan dari coroai",
+      defaultAdminMessage: `Hai, selamat datang di Coroai!
+- Silakan klik "BUAT EVENT" untuk memulai halaman photobooth.
+- Di halaman pengaturan, Anda dapat mengubah latar belakang, overlay branding, dan pengaturan lainnya.
+- Di "PENGATURAN - KONSEP," Anda dapat membuat konsep sendiri dengan memasukkan prompt dan mengunggah gambar thumbnail, atau load template yang kami sediakan secara gratis.
+- Jika Anda membutuhkan konsep khusus dibuat untuk Anda, beri tahu kami melalui WhatsApp. Kami akan membuatkan konsep sesuai permintaan Anda secara gratis.
+- selamat mencoba, Terimakasih`
+    }
+  };
+
+  const t = translations[language];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center text-white">
@@ -602,6 +707,17 @@ export default function VendorDashboard() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white p-4 md:p-8">
+      {showOnboarding && vendor && (
+        <CinematicIntro 
+          vendorName={vendor.name} 
+          onComplete={(lang) => {
+            setLanguage(lang);
+            localStorage.setItem('vendor_language', lang);
+            localStorage.setItem(`has_seen_onboarding_${vendor.id}`, 'true');
+            setShowOnboarding(false);
+          }} 
+        />
+      )}
       <div className="max-w-6xl mx-auto">
         
         {/* Header */}
@@ -612,14 +728,14 @@ export default function VendorDashboard() {
                 <button
                   onClick={() => navigate('/superadmin')}
                   className="p-1.5 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-                  title="Back to Super Admin"
+                  title={t.backToAdmin}
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </button>
               )}
               <h1 className="text-3xl font-heading font-bold neon-text">DASHBOARD</h1>
             </div>
-            <p className="text-gray-400">Welcome back, {vendor?.name} {isSuperAdmin && impersonatedVendorId && <span className="text-yellow-400 text-xs ml-2 px-2 py-0.5 bg-yellow-400/10 rounded-full border border-yellow-400/30">Impersonating</span>}</p>
+            <p className="text-gray-400">{t.welcome} {vendor?.name} {isSuperAdmin && impersonatedVendorId && <span className="text-yellow-400 text-xs ml-2 px-2 py-0.5 bg-yellow-400/10 rounded-full border border-yellow-400/30">{t.impersonating}</span>}</p>
           </div>
           <div className="flex items-center gap-4">
             {isSuperAdmin && !impersonatedVendorId && (
@@ -630,14 +746,34 @@ export default function VendorDashboard() {
                 Super Admin
               </button>
             )}
+            <div className="flex items-center gap-2 bg-white/5 p-1 rounded-full border border-white/10">
+              <button 
+                onClick={() => {
+                  setLanguage('en');
+                  localStorage.setItem('vendor_language', 'en');
+                }}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${language === 'en' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}
+              >
+                EN
+              </button>
+              <button 
+                onClick={() => {
+                  setLanguage('id');
+                  localStorage.setItem('vendor_language', 'id');
+                }}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${language === 'id' ? 'bg-white text-black' : 'text-gray-400 hover:text-white'}`}
+              >
+                ID
+              </button>
+            </div>
             <div className="glass-card px-4 py-2 rounded-full flex items-center gap-2 border border-[#bc13fe]/30">
               <Coins className="w-4 h-4 text-[#bc13fe]" />
-              <span className="font-bold">{vendor?.credits} Credits</span>
+              <span className="font-bold">{vendor?.credits} {t.credits}</span>
             </div>
             <button 
               onClick={handleLogout}
               className="p-2 bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-full transition-colors"
-              title="Logout"
+              title={t.logout}
             >
               <LogOut className="w-5 h-5" />
             </button>
@@ -667,19 +803,9 @@ export default function VendorDashboard() {
             <span className="text-blue-400 font-bold text-lg">i</span>
           </div>
           <div>
-            <h3 className="text-lg font-bold mb-2">Message from coroai</h3>
+            <h3 className="text-lg font-bold mb-2">{t.messageFromCoroai}</h3>
             <p className="text-sm opacity-90 whitespace-pre-wrap">
-              {vendor?.admin_message || (vendor?.country?.toLowerCase() === 'indonesia' ? `Hai, selamat datang di Coroai!
-- Silakan klik "CREATE EVENT" untuk memulai halaman photobooth.
-- Di halaman pengaturan, Anda dapat mengubah latar belakang, overlay branding, dan pengaturan lainnya.
-- Di "SETTINGS - CONCEPT ," Anda dapat membuat konsep sendiri dengan memasukkan prompt dan mengunggah gambar thumbnail, atau load template yang kami sediakan secara gratis.
-- Jika Anda membutuhkan konsep khusus dibuat untuk Anda, beri tahu kami melalui WhatsApp. Kami akan membuatkan konsep sesuai permintaan Anda secara gratis.
-- selamat mencoba, Terimakasih` : `Hi, welcome to Coroai!
-- Please click "Create Event" to start the photobooth page.
-- On the settings page, you can change the background, branding overlay, and other settings.
-- In "Settings - Concept," you can create your own concept by entering a prompt and uploading a thumbnail image, or load one we provide for free.
-- If you'd like a custom concept created for you, let us know via WhatsApp. We'll create a concept according to your request for free.
-- Good luck, have fun!`)}
+              {vendor?.admin_message || t.defaultAdminMessage}
             </p>
           </div>
         </div>
@@ -687,15 +813,15 @@ export default function VendorDashboard() {
         {/* Stats / Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <div className="glass-card p-6 rounded-2xl border border-white/10">
-            <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">Total Events</h3>
+            <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.totalEvents}</h3>
             <p className="text-4xl font-bold">{events.length}</p>
           </div>
           <div className="glass-card p-6 rounded-2xl border border-white/10">
-            <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">Current Plan</h3>
+            <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.currentPlan}</h3>
             <p className="text-4xl font-bold capitalize text-[#bc13fe]">{vendor?.plan}</p>
           </div>
           <div className="glass-card p-6 rounded-2xl border border-white/10 bg-gradient-to-br from-[#bc13fe]/10 to-transparent flex flex-col">
-            <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">Available Credits</h3>
+            <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.availableCredits}</h3>
             <p className="text-4xl font-bold">{vendor?.credits}</p>
             <div className="mt-auto pt-4 flex items-center justify-between">
               <p className="text-xs text-gray-500">1 Credit = 1 AI Generation</p>
@@ -703,7 +829,7 @@ export default function VendorDashboard() {
                 onClick={() => setShowBuyCreditsModal(true)}
                 className="text-xs bg-[#bc13fe] hover:bg-[#a010d8] text-white px-3 py-1.5 rounded-md font-bold transition-colors"
               >
-                BUY CREDITS
+                {t.buyCredits}
               </button>
             </div>
           </div>
@@ -711,13 +837,13 @@ export default function VendorDashboard() {
 
         {/* Events List */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-heading font-bold">Your Events</h2>
+          <h2 className="text-2xl font-heading font-bold">{t.myEvents}</h2>
           <button 
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            CREATE EVENT
+            {t.createEvent}
           </button>
         </div>
 
@@ -725,7 +851,7 @@ export default function VendorDashboard() {
           {events.length === 0 ? (
             <div className="col-span-full glass-card p-10 rounded-2xl border border-white/10 text-center text-gray-500 flex flex-col items-center justify-center">
               <ImageIcon className="w-12 h-12 mb-4 opacity-20" />
-              <p>No events found. Create your first photobooth event!</p>
+              <p>{t.noEvents}</p>
             </div>
           ) : (
             events.map(event => (
@@ -747,47 +873,47 @@ export default function VendorDashboard() {
                       className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
                     >
                       <Play className="w-3 h-3" />
-                      LAUNCH
+                      {t.launch}
                     </button>
                     <button 
                       onClick={() => navigate(`/admin/${event.id}`)}
                       className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
                     >
                       <Settings className="w-3 h-3" />
-                      SETTINGS
+                      {t.settings}
                     </button>
                     <button 
                       onClick={() => navigate(`/app/${event.id}?page=gallery`)}
                       className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
                     >
                       <ImageIcon className="w-3 h-3" />
-                      GALLERY
+                      {t.gallery}
                     </button>
                   </div>
                   <div className="flex gap-2 mt-1">
                     <button 
                       onClick={() => handleDownloadAllData(event.id)}
                       className="flex-1 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                      title="Download All Data (ZIP)"
+                      title={t.download}
                     >
                       <Download className="w-3 h-3" />
-                      DOWNLOAD
+                      {t.download}
                     </button>
                     <button 
                       onClick={() => handleBackupToDrive(event.id)}
                       className="flex-1 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                      title="Backup to Google Drive"
+                      title={t.backup}
                     >
                       <CloudUpload className="w-3 h-3" />
-                      BACKUP
+                      {t.backup}
                     </button>
                     <button 
                       onClick={() => handleDeleteEvent(event.id)}
                       className="flex-1 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                      title="Remove Event"
+                      title={t.delete}
                     >
                       <Trash2 className="w-3 h-3" />
-                      REMOVE
+                      {t.delete}
                     </button>
                   </div>
                 </div>
@@ -803,8 +929,8 @@ export default function VendorDashboard() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md text-center">
             <Loader2 className="w-12 h-12 text-[#bc13fe] animate-spin mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">Downloading Data</h2>
-            <p className="text-gray-400 mb-4">Please wait while we prepare your files...</p>
+            <h2 className="text-xl font-bold mb-2">{t.downloading}</h2>
+            <p className="text-gray-400 mb-4">{t.pleaseWait}</p>
             <div className="w-full bg-white/10 rounded-full h-4 mb-2 overflow-hidden">
               <div 
                 className="bg-[#bc13fe] h-full transition-all duration-300" 
@@ -823,8 +949,8 @@ export default function VendorDashboard() {
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md text-center">
             <Loader2 className="w-12 h-12 text-green-500 animate-spin mx-auto mb-4" />
-            <h2 className="text-xl font-bold mb-2">Backing up to Google Drive</h2>
-            <p className="text-gray-400 mb-4">Please do not close this window...</p>
+            <h2 className="text-xl font-bold mb-2">{t.backingUp}</h2>
+            <p className="text-gray-400 mb-4">{t.doNotClose}</p>
             <div className="w-full bg-white/10 rounded-full h-4 mb-2 overflow-hidden">
               <div 
                 className="bg-green-500 h-full transition-all duration-300" 
@@ -884,10 +1010,10 @@ export default function VendorDashboard() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Create New Event</h2>
+            <h2 className="text-xl font-bold mb-4">{t.createNewEvent}</h2>
             <form onSubmit={handleCreateEvent}>
               <div className="mb-4">
-                <label className="block text-sm text-gray-400 mb-2">Event Name</label>
+                <label className="block text-sm text-gray-400 mb-2">{t.eventName}</label>
                 <input
                   type="text"
                   value={newEventName}
@@ -899,7 +1025,7 @@ export default function VendorDashboard() {
                 />
               </div>
               <div className="mb-6">
-                <label className="block text-sm text-gray-400 mb-2">Event Description</label>
+                <label className="block text-sm text-gray-400 mb-2">{t.eventDescription}</label>
                 <input
                   type="text"
                   value={newEventDescription}
@@ -909,7 +1035,7 @@ export default function VendorDashboard() {
                 />
               </div>
               <div className="mb-6">
-                <label className="block text-sm text-gray-400 mb-2">Template</label>
+                <label className="block text-sm text-gray-400 mb-2">{t.template}</label>
                 <select
                   value={selectedTemplateId}
                   onChange={(e) => setSelectedTemplateId(e.target.value)}
@@ -932,14 +1058,14 @@ export default function VendorDashboard() {
                   onClick={() => setShowCreateModal(false)}
                   className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors"
                 >
-                  CANCEL
+                  {t.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isCreating}
                   className={`px-4 py-2 ${isCreating ? 'bg-gray-600 cursor-not-allowed' : 'bg-[#bc13fe] hover:bg-[#a010d8]'} text-white rounded-lg text-sm font-bold transition-colors`}
                 >
-                  {isCreating ? 'CREATING...' : 'CREATE'}
+                  {isCreating ? t.creating : t.create}
                 </button>
               </div>
             </form>
@@ -951,14 +1077,14 @@ export default function VendorDashboard() {
       {errorMsg && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-[#111] border border-red-500/30 p-6 rounded-2xl w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4 text-red-400">Error</h2>
+            <h2 className="text-xl font-bold mb-4 text-red-400">{t.error}</h2>
             <p className="text-gray-300 mb-6 text-sm">{errorMsg}</p>
             <div className="flex justify-end">
               <button
                 onClick={() => setErrorMsg(null)}
                 className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold transition-colors"
               >
-                CLOSE
+                {t.close}
               </button>
             </div>
           </div>

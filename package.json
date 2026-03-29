@@ -16,6 +16,7 @@
     "google-auth-library": "^9.6.3",
     "jszip": "^3.10.1",
     "lucide-react": "^1.7.0",
+    "motion": "^12.38.0",
     "openai": "^4.28.0",
     "p-queue": "^8.0.1",
     "react": "^19.2.3",
