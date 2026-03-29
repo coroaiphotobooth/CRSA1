@@ -88,7 +88,7 @@ export default function LoginPage() {
               company_name: companyName,
               country: country,
               phone: phone,
-              credits: 5
+              credits: 10
             }
           }
         });

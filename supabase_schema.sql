@@ -9,7 +9,7 @@ CREATE TABLE vendors (
   country TEXT,
   phone TEXT,
   plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'pro', 'enterprise')),
-  credits INTEGER DEFAULT 100,
+  credits INTEGER DEFAULT 10,
   is_blocked BOOLEAN DEFAULT false,
   admin_message TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
@@ -27,10 +27,10 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_default_credits INTEGER;
 BEGIN
-  -- Get default credits from global_settings, fallback to 5
+  -- Get default credits from global_settings, fallback to 10
   SELECT default_free_credits INTO v_default_credits FROM public.global_settings LIMIT 1;
   IF v_default_credits IS NULL THEN
-    v_default_credits := 5;
+    v_default_credits := 10;
   END IF;
 
   INSERT INTO public.vendors (id, email, name, credits)
@@ -117,13 +117,13 @@ CREATE POLICY "Anyone can delete" ON storage.objects FOR DELETE USING (bucket_id
 -- 7. Global Settings Table (For Super Admin)
 CREATE TABLE global_settings (
   id TEXT PRIMARY KEY DEFAULT 'default',
-  default_free_credits INTEGER DEFAULT 100,
+  default_free_credits INTEGER DEFAULT 10,
   system_status TEXT DEFAULT 'active' CHECK (system_status IN ('active', 'maintenance')),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
 -- Insert default settings
-INSERT INTO global_settings (id, default_free_credits, system_status) VALUES ('default', 100, 'active') ON CONFLICT (id) DO NOTHING;
+INSERT INTO global_settings (id, default_free_credits, system_status) VALUES ('default', 10, 'active') ON CONFLICT (id) DO NOTHING;
 
 -- Enable RLS for global_settings
 ALTER TABLE global_settings ENABLE ROW LEVEL SECURITY;

@@ -11,7 +11,7 @@ export default function SuperAdminDashboard() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [templateConcepts, setTemplateConcepts] = useState<TemplateConcept[]>([]);
-  const [globalSettings, setGlobalSettings] = useState({ default_free_credits: 100, system_status: 'active', template_event_id: '' });
+  const [globalSettings, setGlobalSettings] = useState({ default_free_credits: 10, system_status: 'active', template_event_id: '' });
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);

@@ -73,7 +73,7 @@ export default function VendorDashboard() {
               company_name: user.user_metadata?.company_name || null,
               country: user.user_metadata?.country || null,
               phone: user.user_metadata?.phone || null,
-              credits: user.user_metadata?.credits || 5,
+              credits: user.user_metadata?.credits || 10,
               is_blocked: false
             };
             const { data: createdVendor, error: createError } = await supabase
@@ -97,7 +97,7 @@ export default function VendorDashboard() {
                 email: user.email || '',
                 name: user.user_metadata?.full_name || 'Vendor',
                 plan: 'free',
-                credits: 5,
+                credits: 10,
                 created_at: new Date().toISOString(),
                 is_blocked: false
               } as any;
@@ -192,7 +192,7 @@ export default function VendorDashboard() {
               let grantingCredits = false;
               if ((currentVendor.credits === 0 || currentVendor.credits === 100) && (!eventsData || eventsData.length === 0)) {
                   if (!user.user_metadata?.credits_granted) {
-                      updateData.credits = 5;
+                      updateData.credits = 10;
                       grantingCredits = true;
                   }
               }
