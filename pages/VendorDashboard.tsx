@@ -218,7 +218,7 @@ export default function VendorDashboard() {
         }
 
         if (currentVendor) {
-          if (!localStorage.getItem(`has_seen_onboarding_${user.id}`)) {
+          if (!user.user_metadata?.has_seen_onboarding) {
             setShowOnboarding(true);
           }
         }
@@ -710,11 +710,18 @@ export default function VendorDashboard() {
       {showOnboarding && vendor && (
         <CinematicIntro 
           vendorName={vendor.name} 
-          onComplete={(lang) => {
+          onComplete={async (lang) => {
             setLanguage(lang);
             localStorage.setItem('vendor_language', lang);
-            localStorage.setItem(`has_seen_onboarding_${vendor.id}`, 'true');
             setShowOnboarding(false);
+            
+            try {
+              await supabase.auth.updateUser({
+                data: { has_seen_onboarding: true }
+              });
+            } catch (err) {
+              console.error("Failed to save onboarding status:", err);
+            }
           }} 
         />
       )}
