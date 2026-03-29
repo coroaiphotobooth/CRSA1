@@ -234,6 +234,12 @@ Output ONLY the enhanced prompt text, nothing else.`;
   };
 
   const handleSyncConcepts = async () => {
+    const hasEmptyPrompt = localConcepts.some(c => !c.prompt || c.prompt.trim() === '');
+    if (hasEmptyPrompt) {
+      await showDialog('alert', 'Warning', 'Please write your concept in the prompt box to save it.');
+      return;
+    }
+
     setIsSavingConcepts(true);
     try {
       // CRITICAL FIX: Simpan ke database lokal (IndexedDB) dulu!
