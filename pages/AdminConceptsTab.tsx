@@ -127,9 +127,44 @@ CRITICAL INSTRUCTIONS TO INCLUDE IN THE ENHANCED PROMPT:
 
 Output ONLY the enhanced prompt text, nothing else.`;
 
+      let contents: any = concept.prompt;
+      
+      if (hasRefImage && concept.refImage) {
+        try {
+          const imgResponse = await fetch(concept.refImage);
+          const blob = await imgResponse.blob();
+          
+          const base64Data = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              const base64String = reader.result as string;
+              resolve(base64String.split(',')[1]);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          
+          contents = {
+            parts: [
+              {
+                inlineData: {
+                  data: base64Data,
+                  mimeType: blob.type || 'image/jpeg'
+                }
+              },
+              {
+                text: concept.prompt
+              }
+            ]
+          };
+        } catch (imgErr) {
+          console.warn("Failed to fetch reference image for prompt enhancement:", imgErr);
+        }
+      }
+
       const response = await model.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: concept.prompt,
+        contents: contents,
         config: {
           systemInstruction,
           temperature: 0.7,
