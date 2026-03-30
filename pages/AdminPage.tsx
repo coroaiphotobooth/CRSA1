@@ -37,13 +37,13 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
             <button 
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 rounded-lg text-[10px] font-bold tracking-[0.3em] uppercase transition-all ${activeTab === tab ? 'bg-[#bc13fe] text-white shadow-xl shadow-[#bc13fe]/40' : 'text-gray-500 hover:text-white'}`}
+              className={`px-6 py-3 rounded-lg text-[10px] font-bold tracking-[0.3em] uppercase transition-all ${activeTab === tab ? 'bg-[#bc13fe] text-white shadow-xl shadow-[#bc13fe]/40' : 'text-gray-500 hover:text-white'} ${tab === 'concepts' ? 'tour-concept-tab' : ''}`}
             >
               {tab}
             </button>
           ))}
         </div>
-        <button onClick={onBack} className="px-10 py-4 border-2 border-white/10 text-white uppercase tracking-widest text-xs italic hover:bg-white/5 rounded-lg transition-colors">Back</button>
+        <button onClick={onBack} className="px-10 py-4 border-2 border-white/10 text-white uppercase tracking-widest text-xs italic hover:bg-white/5 rounded-lg transition-colors tour-back-btn">Back</button>
       </div>
 
       <div className="max-w-7xl mx-auto w-full pb-24">

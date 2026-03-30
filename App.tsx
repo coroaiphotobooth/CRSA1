@@ -22,6 +22,7 @@ import LoginPage from './pages/LoginPage';
 import VendorDashboard from './pages/VendorDashboard';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import { useDialog } from './components/DialogProvider';
+import { TourProvider } from './components/TourProvider';
 
 // Helper: Safe LocalStorage Set (Only for small settings, NOT concepts)
 const safeLocalStorageSet = (key: string, value: string) => {
@@ -480,6 +481,7 @@ const PhotoboothFlow: React.FC = () => {
 const App: React.FC = () => {
   return (
     <BrowserRouter>
+      <TourProvider />
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<LoginPage />} />

@@ -370,7 +370,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
 
             <div className="flex gap-4">
                {/* THUMBNAIL */}
-               <div className="flex flex-col gap-2 items-center w-24 shrink-0">
+               <div className="flex flex-col gap-2 items-center w-24 shrink-0 tour-thumbnail">
                  <div className="w-full aspect-[9/16] bg-white/5 border border-white/10 rounded-xl overflow-hidden relative group/thumb shadow-lg">
                     <img src={concept.thumbnail} className="w-full h-full object-cover" />
                     <label className="absolute inset-0 bg-[#bc13fe]/80 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1">
@@ -410,7 +410,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                </div>
 
                {/* REFERENCE IMAGE (NEW) */}
-               <div className="flex flex-col gap-2 items-center w-24 shrink-0">
+               <div className="flex flex-col gap-2 items-center w-24 shrink-0 tour-reference">
                  <div className="w-full aspect-[9/16] bg-white/5 border border-dashed border-white/20 rounded-xl overflow-hidden relative group/ref shadow-lg flex items-center justify-center">
                     {concept.refImage ? (
                        <>
@@ -478,7 +478,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                       COROAI CONCEPT TEMPLATE
                     </div>
                   ) : (
-                    <div className="w-full flex flex-col gap-2">
+                    <div className="w-full flex flex-col gap-2 tour-prompt">
                       <textarea 
                          className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
                          value={concept.prompt} 
@@ -516,7 +516,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
         <div className="glass-card p-8 flex flex-col items-center justify-center gap-6 border-2 border-dashed border-white/10 rounded-xl backdrop-blur-sm">
           <button 
             onClick={handleAddConcept} 
-            className="w-full py-4 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 border border-white/10"
+            className="w-full py-4 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 border border-white/10 tour-create-own"
           >
             <Plus className="w-4 h-4" />
             CREATE YOUR OWN CONCEPT
@@ -530,7 +530,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
 
           <button 
             onClick={handleOpenTemplateModal}
-            className="w-full py-4 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] rounded-lg text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 border border-[#bc13fe]/20"
+            className="w-full py-4 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] rounded-lg text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 border border-[#bc13fe]/20 tour-use-template"
           >
             <Sparkles className="w-4 h-4" />
             USE TEMPLATE CONCEPT
@@ -538,7 +538,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
         </div>
       </div>
       <div className="flex justify-center mt-10">
-        <button onClick={handleSyncConcepts} disabled={isSavingConcepts} className="px-20 py-6 bg-[#bc13fe] font-heading tracking-widest uppercase italic shadow-2xl hover:bg-[#a010d8] transition-all disabled:opacity-50 rounded-lg">
+        <button onClick={handleSyncConcepts} disabled={isSavingConcepts} className="px-20 py-6 bg-[#bc13fe] font-heading tracking-widest uppercase italic shadow-2xl hover:bg-[#a010d8] transition-all disabled:opacity-50 rounded-lg tour-save-concept">
           {isSavingConcepts ? 'SAVING...' : 'SAVE CONCEPT'}
         </button>
       </div>
@@ -579,7 +579,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                         <p className="text-[9px] text-gray-500 mb-3 flex-1 italic">TEMPLATE</p>
                         <button
                           onClick={() => handleUseTemplate(template)}
-                          className="w-full py-1.5 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-md text-[10px] font-bold transition-colors"
+                          className="w-full py-1.5 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-md text-[10px] font-bold transition-colors tour-load-template"
                         >
                           LOAD
                         </button>

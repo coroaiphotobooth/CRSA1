@@ -115,7 +115,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         <div className="flex flex-col gap-8">
           {/* Global Identity */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10">
+          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10 tour-global-identity">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Global Identity</h3>
             
             {/* Event Identity Inputs */}
@@ -191,7 +191,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           </div>
 
           {/* AI Model Config */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10">
+          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10 tour-ai-model">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">AI Model Configuration</h3>
             
             {/* Prompt Mode Selector */}
@@ -249,7 +249,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           </div>
 
           {/* Video Settings */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10">
+          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10 tour-video-settings">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Video Setting</h3>
             
             <div className="flex flex-col gap-3">
@@ -285,7 +285,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           </div>
 
           {/* Output Config */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10">
+          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10 tour-output-config">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Output Configuration</h3>
             <div className="flex flex-col gap-3">
               <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Output Aspect Ratio</label>
@@ -310,7 +310,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
         {/* Assets Column */}
         <div className="flex flex-col gap-8">
           {/* Overlay Asset */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit text-center backdrop-blur-md bg-black/60 rounded-xl">
+          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit text-center backdrop-blur-md bg-black/60 rounded-xl tour-overlay">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Overlay (PNG)</h3>
             <div className="flex flex-col gap-6">
               <div 
@@ -376,7 +376,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           </div>
 
           {/* Background Asset (Image/Video) */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit text-center backdrop-blur-md bg-black/60 rounded-xl">
+          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit text-center backdrop-blur-md bg-black/60 rounded-xl tour-background">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Background</h3>
             
             {/* Video Templates */}
@@ -529,7 +529,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           </div>
 
           {/* Camera Config */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit backdrop-blur-md bg-black/60 rounded-xl">
+          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit backdrop-blur-md bg-black/60 rounded-xl tour-camera-config">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Camera Configuration</h3>
             <div className="flex flex-col gap-3">
               <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Webcam Rotation</label>
@@ -562,7 +562,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
           </div>
 
           {/* Monitor Config */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit backdrop-blur-md bg-black/60 rounded-xl">
+          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit backdrop-blur-md bg-black/60 rounded-xl tour-output-monitor">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Monitor Config</h3>
             <div className="flex flex-col gap-3">
               <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Monitor Theme Layout</label>
@@ -599,7 +599,7 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
       </div>
 
       <div className="flex justify-center mt-8">
-        <button onClick={handleSaveSettings} className="px-20 py-6 bg-green-800 hover:bg-green-700 text-white font-heading tracking-widest uppercase italic transition-all rounded-lg shadow-xl">SAVE SETTINGS</button>
+        <button onClick={handleSaveSettings} className="px-20 py-6 bg-green-800 hover:bg-green-700 text-white font-heading tracking-widest uppercase italic transition-all rounded-lg shadow-xl tour-save-settings">SAVE SETTINGS</button>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft } from 'lucide-react';
@@ -9,6 +9,7 @@ import { robustFetch } from '../lib/appsScript';
 import { useDialog } from '../components/DialogProvider';
 import { DEFAULT_SETTINGS, DEFAULT_CONCEPTS, DEFAULT_GAS_URL } from '../constants';
 import CinematicIntro from '../components/CinematicIntro';
+import { useTourState } from '../lib/tourState';
 
 export default function VendorDashboard() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
@@ -26,11 +27,23 @@ export default function VendorDashboard() {
   const [backupProgress, setBackupProgress] = useState<{ current: number, total: number, success: number, fail: number } | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showTourPrompt, setShowTourPrompt] = useState(false);
+  const [showCreateEventTourPrompt, setShowCreateEventTourPrompt] = useState(false);
+  const [showTutorialMenu, setShowTutorialMenu] = useState(false);
   const [language, setLanguage] = useState<'en' | 'id'>('en');
   const { showDialog } = useDialog();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const impersonatedVendorId = searchParams.get('vendorId');
+  const { startTour, isActive, tourType } = useTourState();
+  const prevTourTypeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!isActive && prevTourTypeRef.current === 'dashboard_overview') {
+      setShowCreateEventTourPrompt(true);
+    }
+    prevTourTypeRef.current = tourType;
+  }, [isActive, tourType]);
 
   useEffect(() => {
     const savedLang = localStorage.getItem('vendor_language');
@@ -73,7 +86,7 @@ export default function VendorDashboard() {
               company_name: user.user_metadata?.company_name || null,
               country: user.user_metadata?.country || null,
               phone: user.user_metadata?.phone || null,
-              credits: user.user_metadata?.credits || 10,
+              credits: user.user_metadata?.credits || 5,
               is_blocked: false
             };
             const { data: createdVendor, error: createError } = await supabase
@@ -97,7 +110,7 @@ export default function VendorDashboard() {
                 email: user.email || '',
                 name: user.user_metadata?.full_name || 'Vendor',
                 plan: 'free',
-                credits: 10,
+                credits: 5,
                 created_at: new Date().toISOString(),
                 is_blocked: false
               } as any;
@@ -192,7 +205,7 @@ export default function VendorDashboard() {
               let grantingCredits = false;
               if ((currentVendor.credits === 0 || currentVendor.credits === 100) && (!eventsData || eventsData.length === 0)) {
                   if (!user.user_metadata?.credits_granted) {
-                      updateData.credits = 10;
+                      updateData.credits = 5;
                       grantingCredits = true;
                   }
               }
@@ -218,7 +231,8 @@ export default function VendorDashboard() {
         }
 
         if (currentVendor) {
-          if (!user.user_metadata?.has_seen_onboarding) {
+          const localSeen = localStorage.getItem('has_seen_onboarding') === 'true';
+          if (!user.user_metadata?.has_seen_onboarding && !localSeen) {
             setShowOnboarding(true);
           }
         }
@@ -713,12 +727,17 @@ export default function VendorDashboard() {
           onComplete={async (lang) => {
             setLanguage(lang);
             localStorage.setItem('vendor_language', lang);
+            localStorage.setItem('has_seen_onboarding', 'true');
             setShowOnboarding(false);
+            setShowTourPrompt(true);
             
             try {
-              await supabase.auth.updateUser({
+              const { error } = await supabase.auth.updateUser({
                 data: { has_seen_onboarding: true }
               });
+              if (error) {
+                console.error("Failed to save onboarding status:", error);
+              }
             } catch (err) {
               console.error("Failed to save onboarding status:", err);
             }
@@ -745,6 +764,57 @@ export default function VendorDashboard() {
             <p className="text-gray-400">{t.welcome} {vendor?.name} {isSuperAdmin && impersonatedVendorId && <span className="text-yellow-400 text-xs ml-2 px-2 py-0.5 bg-yellow-400/10 rounded-full border border-yellow-400/30">{t.impersonating}</span>}</p>
           </div>
           <div className="flex items-center gap-4">
+            <div className="relative">
+              <button
+                onClick={() => setShowTutorialMenu(!showTutorialMenu)}
+                className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-full font-bold transition-all text-sm border border-blue-500/30"
+              >
+                {language === 'id' ? 'Tutorial' : 'Tutorial'}
+              </button>
+              {showTutorialMenu && (
+                <div className="absolute right-0 mt-2 w-56 bg-[#111] border border-white/10 rounded-xl shadow-xl overflow-hidden z-50">
+                  <div className="py-2">
+                    <button 
+                      onClick={() => {
+                        setShowTutorialMenu(false);
+                        startTour('create_event');
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-white/5 text-sm transition-colors"
+                    >
+                      {language === 'id' ? 'Tutorial Create Event' : 'Create Event Tutorial'}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowTutorialMenu(false);
+                        if (events.length > 0) {
+                          navigate(`/admin/${events[0].id}`);
+                          setTimeout(() => startTour('settings'), 500);
+                        } else {
+                          startTour('create_event');
+                        }
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-white/5 text-sm transition-colors"
+                    >
+                      {language === 'id' ? 'Tutorial Settings App' : 'Settings App Tutorial'}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setShowTutorialMenu(false);
+                        if (events.length > 0) {
+                          navigate(`/admin/${events[0].id}?tab=concept`);
+                          setTimeout(() => startTour('concept'), 500);
+                        } else {
+                          startTour('create_event');
+                        }
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-white/5 text-sm transition-colors"
+                    >
+                      {language === 'id' ? 'Tutorial Create Concept' : 'Create Concept Tutorial'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             {isSuperAdmin && !impersonatedVendorId && (
               <button
                 onClick={() => navigate('/superadmin')}
@@ -819,15 +889,15 @@ export default function VendorDashboard() {
 
         {/* Stats / Overview */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <div className="glass-card p-6 rounded-2xl border border-white/10">
+          <div className="glass-card p-6 rounded-2xl border border-white/10 tour-total-events">
             <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.totalEvents}</h3>
             <p className="text-4xl font-bold">{events.length}</p>
           </div>
-          <div className="glass-card p-6 rounded-2xl border border-white/10">
+          <div className="glass-card p-6 rounded-2xl border border-white/10 tour-current-plan">
             <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.currentPlan}</h3>
             <p className="text-4xl font-bold capitalize text-[#bc13fe]">{vendor?.plan}</p>
           </div>
-          <div className="glass-card p-6 rounded-2xl border border-white/10 bg-gradient-to-br from-[#bc13fe]/10 to-transparent flex flex-col">
+          <div className="glass-card p-6 rounded-2xl border border-white/10 bg-gradient-to-br from-[#bc13fe]/10 to-transparent flex flex-col tour-available-credits">
             <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.availableCredits}</h3>
             <p className="text-4xl font-bold">{vendor?.credits}</p>
             <div className="mt-auto pt-4 flex items-center justify-between">
@@ -847,7 +917,7 @@ export default function VendorDashboard() {
           <h2 className="text-2xl font-heading font-bold">{t.myEvents}</h2>
           <button 
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2 tour-create-event-btn"
           >
             <Plus className="w-4 h-4" />
             {t.createEvent}
@@ -861,8 +931,8 @@ export default function VendorDashboard() {
               <p>{t.noEvents}</p>
             </div>
           ) : (
-            events.map(event => (
-              <div key={event.id} className="glass-card p-6 rounded-2xl border border-white/10 flex flex-col gap-4 hover:border-[#bc13fe]/50 transition-colors group">
+            events.map((event, index) => (
+              <div key={event.id} className={`glass-card p-6 rounded-2xl border border-white/10 flex flex-col gap-4 hover:border-[#bc13fe]/50 transition-colors group ${index === 0 ? 'tour-event-card' : ''}`}>
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-bold text-lg mb-1">{event.name}</h3>
@@ -877,7 +947,7 @@ export default function VendorDashboard() {
                   <div className="flex gap-2">
                     <button 
                       onClick={() => navigate(`/app/${event.id}`)}
-                      className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 tour-app-page"
                     >
                       <Play className="w-3 h-3" />
                       {t.launch}
@@ -1016,7 +1086,7 @@ export default function VendorDashboard() {
       {/* Create Event Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md">
+          <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md tour-create-event-modal">
             <h2 className="text-xl font-bold mb-4">{t.createNewEvent}</h2>
             <form onSubmit={handleCreateEvent}>
               <div className="mb-4">
@@ -1092,6 +1162,71 @@ export default function VendorDashboard() {
                 className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-bold transition-colors"
               >
                 {t.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tour Prompt Modal */}
+      {showTourPrompt && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+          <div className="bg-[#111] border border-white/10 p-8 rounded-2xl w-full max-w-md text-center">
+            <h2 className="text-2xl font-bold mb-4 text-white">
+              {language === 'id' ? 'Mulai Tour & Tutorial?' : 'Start Tour & Tutorial?'}
+            </h2>
+            <p className="text-gray-400 mb-8 text-sm">
+              {language === 'id' 
+                ? 'Kami akan memandu Anda mengenal fitur-fitur di dashboard ini.' 
+                : 'We will guide you through the features in this dashboard.'}
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <button
+                onClick={() => setShowTourPrompt(false)}
+                className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
+              >
+                {language === 'id' ? 'Tidak, Terima Kasih' : 'No, Thanks'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowTourPrompt(false);
+                  startTour('dashboard_overview');
+                }}
+                className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
+              >
+                {language === 'id' ? 'Ya, Mulai Tour' : 'Yes, Start Tour'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Create Event Tour Prompt Modal */}
+      {showCreateEventTourPrompt && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+          <div className="bg-[#111] border border-white/10 p-8 rounded-2xl w-full max-w-md text-center">
+            <h2 className="text-2xl font-bold mb-4 text-white">
+              {language === 'id' ? 'Lanjut ke Tutorial Membuat Event?' : 'Continue to Create Event Tutorial?'}
+            </h2>
+            <p className="text-gray-400 mb-8 text-sm">
+              {language === 'id' 
+                ? 'Apakah Anda mau lanjut ke Tutorial membuat event atau tidak?' 
+                : 'Do you want to continue to the Create Event Tutorial?'}
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <button
+                onClick={() => setShowCreateEventTourPrompt(false)}
+                className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
+              >
+                {language === 'id' ? 'Tidak' : 'No'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreateEventTourPrompt(false);
+                  startTour('create_event');
+                }}
+                className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
+              >
+                {language === 'id' ? 'Ya' : 'Yes'}
               </button>
             </div>
           </div>
