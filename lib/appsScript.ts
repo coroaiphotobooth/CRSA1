@@ -121,7 +121,7 @@ export const saveSessionToCloud = async (sessionData: any): Promise<{success: bo
 
 export const fetchSessionFromCloud = async (sessionId: string, eventId?: string): Promise<{success: boolean, data?: any}> => {
   try {
-    let query = supabase.from('sessions').select('*').eq('id', sessionId);
+    let query = supabase.from('sessions').select('*, events(name, description)').eq('id', sessionId);
     if (eventId) {
       query = query.eq('event_id', eventId);
     }
@@ -135,7 +135,9 @@ export const fetchSessionFromCloud = async (sessionId: string, eventId?: string)
           sessionId: data.id,
           resultImageUrl: data.result_image_url,
           resultVideoUrl: data.result_video_url,
-          isVideoRequested: data.status === 'processing'
+          isVideoRequested: data.status === 'processing',
+          eventName: data.events?.name || 'YOUR DIGITAL ART',
+          eventDescription: data.events?.description || 'COROAI PHOTOBOOTH'
         }
       };
     }

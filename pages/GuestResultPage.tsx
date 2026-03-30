@@ -11,6 +11,8 @@ export default function GuestResultPage() {
     resultImageUrl?: string;
     resultVideoUrl?: string;
     isVideoRequested?: boolean;
+    eventName?: string;
+    eventDescription?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -127,8 +129,12 @@ export default function GuestResultPage() {
     <div className="min-h-screen bg-[#050505] text-white p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10">
-          <h1 className="text-3xl md:text-5xl font-heading font-bold neon-text mb-2">YOUR DIGITAL ART</h1>
-          <p className="text-gray-400 tracking-widest text-sm md:text-base">COROAI PHOTOBOOTH</p>
+          <h1 className="text-3xl md:text-5xl font-heading font-bold neon-text mb-2">
+            {sessionData.eventName || 'YOUR DIGITAL ART'}
+          </h1>
+          <p className="text-gray-400 tracking-widest text-sm md:text-base">
+            {sessionData.eventDescription || 'COROAI PHOTOBOOTH'}
+          </p>
         </div>
 
         <div className={`grid grid-cols-1 ${sessionData.isVideoRequested || sessionData.resultVideoUrl ? 'md:grid-cols-2' : 'max-w-md mx-auto'} gap-8`}>
