@@ -230,7 +230,7 @@ export default async function handler(req: any, res: any) {
 
              // PATCH B: FORCE PROMPT FLAGS
              const duration = 5;
-             const basePrompt = task.videoPrompt || "Cinematic movement";
+             const basePrompt = task.videoPrompt || "Animate the image with very subtle and natural motion. Keep the subject stable and realistic. Add minimal camera movement and gentle breathing or blinking. Avoid any distortion, fast motion, or unrealistic effects. Preserve the original look and details.";
              const forcedPrompt = `${basePrompt} --rs ${finalRes} --dur ${duration}`;
 
              const payload = {
