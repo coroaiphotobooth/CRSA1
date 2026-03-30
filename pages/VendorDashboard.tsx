@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft } from 'lucide-react';
 import { Vendor, Event } from '../types';
@@ -9,7 +10,7 @@ import { robustFetch } from '../lib/appsScript';
 import { useDialog } from '../components/DialogProvider';
 import { DEFAULT_SETTINGS, DEFAULT_CONCEPTS, DEFAULT_GAS_URL } from '../constants';
 import CinematicIntro from '../components/CinematicIntro';
-import { useTourState } from '../lib/tourState';
+import { useTourState, setTourState } from '../lib/tourState';
 
 export default function VendorDashboard() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
@@ -35,8 +36,17 @@ export default function VendorDashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const impersonatedVendorId = searchParams.get('vendorId');
-  const { startTour, isActive, tourType } = useTourState();
+  const { startTour, isActive, tourType, stepIndex } = useTourState();
   const prevTourTypeRef = useRef<string | null>(null);
+  const prevIsActive = useRef(isActive);
+
+  // Close modal if tour is skipped and modal is empty
+  useEffect(() => {
+    if (prevIsActive.current && !isActive && showCreateModal && !newEventName) {
+      setShowCreateModal(false);
+    }
+    prevIsActive.current = isActive;
+  }, [isActive, showCreateModal, newEventName]);
 
   useEffect(() => {
     if (!isActive && prevTourTypeRef.current === 'dashboard_overview') {
@@ -44,6 +54,16 @@ export default function VendorDashboard() {
     }
     prevTourTypeRef.current = tourType;
   }, [isActive, tourType]);
+
+  useEffect(() => {
+    if (isActive && tourType === 'create_event') {
+      if (stepIndex === 1) {
+        setShowCreateModal(true);
+      } else if (stepIndex === 2) {
+        setShowCreateModal(false);
+      }
+    }
+  }, [isActive, tourType, stepIndex]);
 
   useEffect(() => {
     const savedLang = localStorage.getItem('vendor_language');
@@ -235,7 +255,7 @@ export default function VendorDashboard() {
           const localSeenTourPrompt = localStorage.getItem('has_seen_tour_prompt') === 'true';
           
           const needsOnboarding = !user.user_metadata?.has_seen_onboarding && !localSeenOnboarding;
-          const needsTourPrompt = !user.user_metadata?.has_seen_tour_prompt && !localSeenTourPrompt;
+          const needsTourPrompt = !user.user_metadata?.has_seen_tour_prompt && !localSeenTourPrompt && !isActive;
 
           if (needsOnboarding) {
             setShowOnboarding(true);
@@ -256,6 +276,7 @@ export default function VendorDashboard() {
   }, [navigate, impersonatedVendorId]);
 
   const handleLogout = async () => {
+    setTourState({ isActive: false, tourType: null, stepIndex: 0 });
     await supabase.auth.signOut();
     navigate('/login');
   };
@@ -393,6 +414,10 @@ export default function VendorDashboard() {
         setShowCreateModal(false);
         setNewEventName('');
         setNewEventDescription('AI PHOTOBOOTH EXPERIENCE');
+        
+        if (isActive && tourType === 'create_event') {
+          setTourState({ stepIndex: 2 });
+        }
       }
     } catch (err: any) {
       console.error("Failed to create event:", err);
@@ -751,7 +776,9 @@ export default function VendorDashboard() {
             localStorage.setItem('vendor_language', lang);
             localStorage.setItem('has_seen_onboarding', 'true');
             setShowOnboarding(false);
-            setShowTourPrompt(true);
+            if (!isActive) {
+              setShowTourPrompt(true);
+            }
             
             try {
               const { error } = await supabase.auth.updateUser({
@@ -948,7 +975,7 @@ export default function VendorDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {events.length === 0 ? (
-            <div className="col-span-full glass-card p-10 rounded-2xl border border-white/10 text-center text-gray-500 flex flex-col items-center justify-center">
+            <div className="col-span-full glass-card p-10 rounded-2xl border border-white/10 text-center text-gray-500 flex flex-col items-center justify-center tour-event-card">
               <ImageIcon className="w-12 h-12 mb-4 opacity-20" />
               <p>{t.noEvents}</p>
             </div>
@@ -1025,8 +1052,8 @@ export default function VendorDashboard() {
 
       {/* Progress Modals */}
       {downloadProgress && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md text-center">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
+          <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-md text-center">
             <Loader2 className="w-12 h-12 text-[#bc13fe] animate-spin mx-auto mb-4" />
             <h2 className="text-xl font-bold mb-2">{t.downloading}</h2>
             <p className="text-gray-400 mb-4">{t.pleaseWait}</p>
@@ -1045,8 +1072,8 @@ export default function VendorDashboard() {
       )}
 
       {backupProgress && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md text-center">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
+          <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-md text-center">
             <Loader2 className="w-12 h-12 text-green-500 animate-spin mx-auto mb-4" />
             <h2 className="text-xl font-bold mb-2">{t.backingUp}</h2>
             <p className="text-gray-400 mb-4">{t.doNotClose}</p>
@@ -1070,8 +1097,8 @@ export default function VendorDashboard() {
 
       {/* Buy Credits Modal */}
       {showBuyCreditsModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md relative">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
+          <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-md relative">
             <button 
               onClick={() => setShowBuyCreditsModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white"
@@ -1107,9 +1134,28 @@ export default function VendorDashboard() {
 
       {/* Create Event Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md tour-create-event-modal">
-            <h2 className="text-xl font-bold mb-4">{t.createNewEvent}</h2>
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => {
+            setShowCreateModal(false);
+            if (isActive && tourType === 'create_event') {
+              setTourState({ isActive: false, tourType: null, stepIndex: 0 });
+            }
+          }}></div>
+          <div className="relative bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-md tour-create-event-modal">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">{t.createNewEvent}</h2>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  if (isActive && tourType === 'create_event') {
+                    setTourState({ isActive: false, tourType: null, stepIndex: 0 });
+                  }
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
             <form onSubmit={handleCreateEvent}>
               <div className="mb-4">
                 <label className="block text-sm text-gray-400 mb-2">{t.eventName}</label>
@@ -1154,7 +1200,12 @@ export default function VendorDashboard() {
               <div className="flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    if (isActive && tourType === 'create_event') {
+                      setTourState({ isActive: false, tourType: null, stepIndex: 0 });
+                    }
+                  }}
                   className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors"
                 >
                   {t.cancel}
@@ -1174,8 +1225,8 @@ export default function VendorDashboard() {
 
       {/* Error Modal */}
       {errorMsg && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-[#111] border border-red-500/30 p-6 rounded-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
+          <div className="bg-[#111]/80 backdrop-blur-md border border-red-500/30 p-6 rounded-2xl w-full max-w-md">
             <h2 className="text-xl font-bold mb-4 text-red-400">{t.error}</h2>
             <p className="text-gray-300 mb-6 text-sm">{errorMsg}</p>
             <div className="flex justify-end">
@@ -1191,66 +1242,92 @@ export default function VendorDashboard() {
       )}
 
       {/* Tour Prompt Modal */}
-      {showTourPrompt && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-[#111] border border-white/10 p-8 rounded-2xl w-full max-w-md text-center">
-            <h2 className="text-2xl font-bold mb-4 text-white">
-              {language === 'id' ? 'Mulai Tour & Tutorial?' : 'Start Tour & Tutorial?'}
-            </h2>
-            <p className="text-gray-400 mb-8 text-sm">
-              {language === 'id' 
-                ? 'Kami akan memandu Anda mengenal fitur-fitur di dashboard ini.' 
-                : 'We will guide you through the features in this dashboard.'}
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button
-                onClick={() => handleCloseTourPrompt(false)}
-                className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
-              >
-                {language === 'id' ? 'Tidak' : 'No'}
-              </button>
-              <button
-                onClick={() => handleCloseTourPrompt(true)}
-                className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
-              >
-                {language === 'id' ? 'Ya' : 'Yes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {showTourPrompt && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-8 rounded-2xl w-full max-w-md text-center shadow-2xl shadow-[#bc13fe]/20"
+            >
+              <h2 className="text-2xl font-bold mb-4 text-white">
+                {language === 'id' ? 'Mulai Tour & Tutorial?' : 'Start Tour & Tutorial?'}
+              </h2>
+              <p className="text-gray-400 mb-8 text-sm">
+                {language === 'id' 
+                  ? 'Kami akan memandu Anda mengenal fitur-fitur di dashboard ini.' 
+                  : 'We will guide you through the features in this dashboard.'}
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <button
+                  onClick={() => handleCloseTourPrompt(false)}
+                  className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest text-white"
+                >
+                  {language === 'id' ? 'Tidak' : 'No'}
+                </button>
+                <button
+                  onClick={() => handleCloseTourPrompt(true)}
+                  className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
+                >
+                  {language === 'id' ? 'Ya' : 'Yes'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Create Event Tour Prompt Modal */}
-      {showCreateEventTourPrompt && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
-          <div className="bg-[#111] border border-white/10 p-8 rounded-2xl w-full max-w-md text-center">
-            <h2 className="text-2xl font-bold mb-4 text-white">
-              {language === 'id' ? 'Lanjut ke Tutorial Membuat Event?' : 'Continue to Create Event Tutorial?'}
-            </h2>
-            <p className="text-gray-400 mb-8 text-sm">
-              {language === 'id' 
-                ? 'Apakah Anda mau lanjut ke Tutorial membuat event atau tidak?' 
-                : 'Do you want to continue to the Create Event Tutorial?'}
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button
-                onClick={() => setShowCreateEventTourPrompt(false)}
-                className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
-              >
-                {language === 'id' ? 'Tidak' : 'No'}
-              </button>
-              <button
-                onClick={() => {
-                  setShowCreateEventTourPrompt(false);
-                  startTour('create_event');
-                }}
-                className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
-              >
-                {language === 'id' ? 'Ya' : 'Yes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {showCreateEventTourPrompt && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-8 rounded-2xl w-full max-w-md text-center shadow-2xl shadow-[#bc13fe]/20"
+            >
+              <h2 className="text-2xl font-bold mb-4 text-white">
+                {language === 'id' ? 'Lanjut ke Tutorial Membuat Event?' : 'Continue to Create Event Tutorial?'}
+              </h2>
+              <p className="text-gray-400 mb-8 text-sm">
+                {language === 'id' 
+                  ? 'Apakah Anda mau lanjut ke Tutorial membuat event atau tidak?' 
+                  : 'Do you want to continue to the Create Event Tutorial?'}
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <button
+                  onClick={() => setShowCreateEventTourPrompt(false)}
+                  className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest text-white"
+                >
+                  {language === 'id' ? 'Tidak' : 'No'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowCreateEventTourPrompt(false);
+                    startTour('create_event');
+                  }}
+                  className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
+                >
+                  {language === 'id' ? 'Ya' : 'Yes'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

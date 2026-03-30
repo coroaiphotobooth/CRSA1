@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Concept, PhotoboothSettings, TemplateConcept } from '../types';
 import { saveConceptsToGas } from '../lib/appsScript';
 import { supabase } from '../lib/supabase';
 import { useDialog } from '../components/DialogProvider';
-import { Loader2, Sparkles, Plus } from 'lucide-react';
+import { Loader2, Sparkles, Plus, X } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
+
+import { useTourState, setTourState } from '../lib/tourState';
 
 interface AdminConceptsTabProps {
   concepts: Concept[];
@@ -19,11 +21,21 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
   const { eventId } = useParams<{ eventId: string }>();
   const [isSavingConcepts, setIsSavingConcepts] = useState(false);
   const { showDialog } = useDialog();
+  const { isActive, tourType, stepIndex } = useTourState();
+  const prevIsActive = useRef(isActive);
 
   // Template Concept State
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateConcepts, setTemplateConcepts] = useState<TemplateConcept[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  // Close modal if tour is skipped
+  useEffect(() => {
+    if (prevIsActive.current && !isActive && showTemplateModal) {
+      setShowTemplateModal(false);
+    }
+    prevIsActive.current = isActive;
+  }, [isActive, showTemplateModal]);
 
   useEffect(() => {
     setLocalConcepts(concepts);
@@ -51,9 +63,14 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
     }
   };
 
-  const handleOpenTemplateModal = () => {
-    fetchTemplateConcepts();
+  const handleOpenTemplateModal = async () => {
     setShowTemplateModal(true);
+    await fetchTemplateConcepts();
+    if (isActive && tourType === 'concept' && stepIndex === 0) {
+      setTimeout(() => {
+        setTourState({ stepIndex: 1 });
+      }, 100);
+    }
   };
 
   const handleUseTemplate = (template: TemplateConcept) => {
@@ -68,6 +85,9 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
     };
     setLocalConcepts(prev => [...prev, newConcept]);
     setShowTemplateModal(false);
+    if (isActive && tourType === 'concept' && stepIndex === 1) {
+      setTourState({ stepIndex: 2 });
+    }
   };
 
   const handleAddConcept = () => {
@@ -80,6 +100,9 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
       thumbnail: 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500'
     };
     setLocalConcepts(prev => [...prev, newConcept]);
+    if (isActive && tourType === 'concept' && stepIndex === 2) {
+      setTourState({ stepIndex: 3 });
+    }
   };
 
   const handleDeleteConcept = (index: number) => {
@@ -174,6 +197,9 @@ Output ONLY the enhanced prompt text, nothing else.`;
       const enhancedPrompt = response.text?.trim();
       if (enhancedPrompt) {
         handleConceptChange(index, 'prompt', enhancedPrompt);
+        if (isActive && tourType === 'concept' && stepIndex === 5) {
+          setTourState({ stepIndex: 6 });
+        }
       }
     } catch (err) {
       console.error("Failed to enhance prompt:", err);
@@ -352,6 +378,9 @@ Output ONLY the enhanced prompt text, nothing else.`;
         await showDialog('alert', 'Warning', 'Local save successful. Cloud error: ' + (e.message || JSON.stringify(e)));
     } finally {
       setIsSavingConcepts(false);
+      if (isActive && tourType === 'concept' && stepIndex === 6) {
+        setTourState({ isActive: false, tourType: null, stepIndex: 0 });
+      }
     }
   };
 
@@ -370,7 +399,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
 
             <div className="flex gap-4">
                {/* THUMBNAIL */}
-               <div className="flex flex-col gap-2 items-center w-24 shrink-0 tour-thumbnail">
+               <div className={`flex flex-col gap-2 items-center w-24 shrink-0 ${index === localConcepts.length - 1 ? 'tour-thumbnail' : ''}`}>
                  <div className="w-full aspect-[9/16] bg-white/5 border border-white/10 rounded-xl overflow-hidden relative group/thumb shadow-lg">
                     <img src={concept.thumbnail} className="w-full h-full object-cover" />
                     <label className="absolute inset-0 bg-[#bc13fe]/80 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1">
@@ -410,7 +439,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                </div>
 
                {/* REFERENCE IMAGE (NEW) */}
-               <div className="flex flex-col gap-2 items-center w-24 shrink-0 tour-reference">
+               <div className={`flex flex-col gap-2 items-center w-24 shrink-0 ${index === localConcepts.length - 1 ? 'tour-reference' : ''}`}>
                  <div className="w-full aspect-[9/16] bg-white/5 border border-dashed border-white/20 rounded-xl overflow-hidden relative group/ref shadow-lg flex items-center justify-center">
                     {concept.refImage ? (
                        <>
@@ -478,7 +507,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                       COROAI CONCEPT TEMPLATE
                     </div>
                   ) : (
-                    <div className="w-full flex flex-col gap-2 tour-prompt">
+                    <div className={`w-full flex flex-col gap-2 ${index === localConcepts.length - 1 ? 'tour-prompt' : ''}`}>
                       <textarea 
                          className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
                          value={concept.prompt} 
@@ -489,7 +518,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                         <button
                           onClick={() => handleEnhancePrompt(index)}
                           disabled={isEnhancing === index || !concept.prompt.trim()}
-                          className="bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] border border-[#bc13fe]/30 rounded px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className={`bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] border border-[#bc13fe]/30 rounded px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${index === localConcepts.length - 1 ? 'tour-optimize-prompt' : ''}`}
                           title="Optimize prompt using AI"
                         >
                           {isEnhancing === index ? (
@@ -545,22 +574,44 @@ Output ONLY the enhanced prompt text, nothing else.`;
 
       {/* Template Concept Modal */}
       {showTemplateModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <div className="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#111] z-10">
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => {
+            setShowTemplateModal(false);
+            if (isActive && tourType === 'concept' && stepIndex === 1) {
+              setTourState({ stepIndex: 2 });
+            }
+          }}></div>
+          <div className="relative bg-[#111]/80 backdrop-blur-md border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden tour-template-modal">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#111]/80 backdrop-blur-md z-10">
               <h2 className="text-xl font-bold">Load Template Concept</h2>
-              <button onClick={() => setShowTemplateModal(false)} className="text-gray-400 hover:text-white">✕</button>
+              <button onClick={() => {
+                setShowTemplateModal(false);
+                if (isActive && tourType === 'concept' && stepIndex === 1) {
+                  setTourState({ stepIndex: 2 });
+                }
+              }} className="text-gray-400 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
             </div>
             
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto custom-scrollbar">
               {loadingTemplates ? (
                 <div className="flex justify-center items-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-[#bc13fe]" />
                 </div>
               ) : templateConcepts.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
+                <div 
+                  className="text-center py-12 text-gray-500 tour-load-template cursor-pointer"
+                  onClick={() => {
+                    setShowTemplateModal(false);
+                    if (isActive && tourType === 'concept' && stepIndex === 1) {
+                      setTourState({ stepIndex: 2 });
+                    }
+                  }}
+                >
                   <p>No template concepts available.</p>
                   <p className="text-sm mt-2">Super Admin can create templates in their dashboard.</p>
+                  <p className="text-xs mt-4 text-[#bc13fe]">Click here to close and continue tour</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">

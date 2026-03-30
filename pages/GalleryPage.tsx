@@ -370,7 +370,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
   const isSelectedVideoReady = selectedItem && (selectedItem.videoStatus === 'done' || selectedItem.videoStatus === 'ready_url');
 
   return (
-    <div className="w-full min-h-screen flex flex-col p-6 md:p-12 bg-transparent overflow-y-auto font-sans">
+    <div className="w-full min-h-screen flex flex-col p-6 md:p-12 bg-transparent font-sans">
       <div className="flex flex-col md:flex-row justify-between items-center w-full mb-8 max-w-7xl mx-auto gap-6 shrink-0 relative">
         <button onClick={onBack} className="text-white flex items-center gap-3 hover:text-purple-400 uppercase tracking-[0.3em] font-bold transition-all group shrink-0 bg-black/20 backdrop-blur px-4 py-2 rounded-lg">
           <svg className="w-6 h-6 transform group-hover:-translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>

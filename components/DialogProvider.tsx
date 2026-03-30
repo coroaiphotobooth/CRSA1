@@ -54,8 +54,8 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     <DialogContext.Provider value={{ showDialog }}>
       {children}
       {dialogConfig && dialogConfig.isOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
-          <div className="bg-[#111] border border-white/10 p-6 rounded-2xl w-full max-w-md relative">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
+          <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-md relative">
             <button 
               onClick={dialogConfig.onCancel}
               className="absolute top-4 right-4 text-gray-400 hover:text-white"

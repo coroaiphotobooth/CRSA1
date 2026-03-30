@@ -25,7 +25,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full min-h-screen relative p-6 md:p-10 text-center overflow-hidden">
+    <div className="flex flex-col items-center justify-center w-full min-h-screen relative p-6 md:p-10 text-center overflow-hidden tour-app-page">
       
       {/* Top Right Controls Group */}
       <div className="absolute top-6 right-6 z-50 flex items-center gap-6">

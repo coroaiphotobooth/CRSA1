@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Concept, PhotoboothSettings } from '../types';
 import { DEFAULT_GAS_URL } from '../constants';
 
@@ -19,7 +20,10 @@ interface AdminPageProps {
 
 const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSettings, onSaveConcepts, onBack, onLaunchMonitor }) => {
   const [gasUrl, setGasUrl] = useState('');
-  const [activeTab, setActiveTab] = useState<'settings' | 'concepts'>('settings');
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialTab = queryParams.get('tab') === 'concept' ? 'concepts' : 'settings';
+  const [activeTab, setActiveTab] = useState<'settings' | 'concepts'>(initialTab);
   const { showDialog } = useDialog();
 
   // Initialize GAS URL
@@ -29,7 +33,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
   }, []);
 
   return (
-    <div className="w-full min-h-screen flex flex-col p-6 md:p-10 bg-transparent overflow-y-auto">
+    <div className="w-full min-h-screen flex flex-col p-6 md:p-10 bg-transparent">
       <div className="flex flex-col md:flex-row justify-between items-center mb-10 max-w-7xl mx-auto w-full border-b border-white/5 pb-10 gap-8 bg-black/40 backdrop-blur-md p-6 rounded-xl">
         <h2 className="text-2xl font-heading text-white neon-text italic uppercase">SYSTEM_ROOT</h2>
         <div className="flex bg-white/5 p-1 rounded-xl">

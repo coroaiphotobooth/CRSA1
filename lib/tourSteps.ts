@@ -29,9 +29,9 @@ export const getTourSteps = (lang: 'en' | 'id'): Record<string, Step[]> => {
         conceptTab: "Click the concept tab to continue."
       },
       concept: {
-        useTemplate: "Click USE TEMPLATE.",
+        useTemplate: "Click USE TEMPLATE to load one of our ready-to-use concepts.",
         loadTemplate: "Choose to load one of our free concepts.",
-        createOwn: "Click CREATE YOUR OWN CONCEPT.",
+        createOwn: "Click CREATE YOUR OWN CONCEPT to build from scratch. You can upload a thumbnail, reference image, and write your own prompt. Use OPTIMIZE PROMPT to enhance your ideas.",
         thumbnail: "Upload a preview photo of the result, to be a preview when users enter the concept selection page or leave it default.",
         reference: "This is to upload a reference image or leave it blank if you only want to use a prompt. You can upload backgrounds, clothes, products, cars, etc., and you can also upload AI photo results to be used as references.",
         prompt: "Please enter the concept title in NEW CONCEPT and enter the prompt or command you want. If your prompt is detailed, just paste it here. You can use simple sentences, e.g., 'create a photo of a person wearing a neat black suit with a futuristic city background', then you need to press OPTIMIZE PROMPT, we will help make your prompt detailed and optimal. If you upload a reference photo, write it in the prompt, e.g., 'make everyone in the photo wear clothes like the reference, or use the product, or take a photo in this reference background', and click optimize prompt. If your reference photo is an AI photo, and you want to copy or follow the result like the reference photo, make a sentence in the prompt, 'make everyone in the photo exactly like the photo in this reference' and click the optimize button. The optimize button helps maximize or optimize your simple prompt to be more detailed and better.",
@@ -70,9 +70,9 @@ export const getTourSteps = (lang: 'en' | 'id'): Record<string, Step[]> => {
         conceptTab: "Klik tombol concept untuk melanjutkan."
       },
       concept: {
-        useTemplate: "Klik USE TEMPLATE.",
+        useTemplate: "Klik USE TEMPLATE untuk memilih konsep siap pakai dari kami.",
         loadTemplate: "Pilih load salah satu konsep gratis dari kami.",
-        createOwn: "Klik CREATE YOUR OWN CONCEPT.",
+        createOwn: "Klik CREATE YOUR OWN CONCEPT untuk membuat dari awal. Anda bisa upload thumbnail, gambar referensi, dan menulis prompt sendiri. Gunakan tombol OPTIMIZE PROMPT untuk menyempurnakan ide Anda.",
         thumbnail: "Upload foto preview hasilnya, untuk nanti jadi preview saat user masuk di halaman pilih konsep atau biarkan default.",
         reference: "Ini untuk upload gambar referensi atau kosongkan jika hanay ingin menggunakan prompt, anda bisa upload background, pakaian, produk, mobil dan lain2, dan juga anda dapat mengupload hasil foto ai untuk dijadikan sebagai referensi.",
         prompt: "Silakan masukan judul concept pada tulisan NEW CONCPET dan silakan masukan prompt atau perintah yang anda inginkan. Jika prompt anda sudah detail paste saja disini. Anda dapat menggunakan kalimat senderhana, misal 'buatkan foto orang menggunakan jas hitam yang rapi dengan latar kota futuristic', lalu anda perlu tekan OPTIMIZE PROMPT kami akan membantu membuat prompt anda menjadi detail dan optimal. Jika anda mengupload foto referensi, tuliskan juga di prompt misal: 'buat setiap foto sedang menggunakan pakaian seperti referensi, atau menggunakan produk, atau berfoto di latar referensi ini' dan klik optimize prompt. Jika foto referensi anda adalah foto ai, dan anda ingin meniru atau mengikut hasil seperti foto referensi, buat kalimat di prompt, 'buat setiap orang yang foto hasilnya persis seperti foto di referensi ini' dan klik tombol optimize. Tombol optimize membantu memaximal atau optimalkan prompt anda yang senderhana menjadi lebih detail dan bagus.",
@@ -95,12 +95,12 @@ export const getTourSteps = (lang: 'en' | 'id'): Record<string, Step[]> => {
       { target: '.tour-available-credits', content: l.dashboard_overview.availableCredits, placement: 'bottom' },
     ],
     create_event: [
-      { target: '.tour-create-event-btn', content: l.create_event.createEvent, placement: 'bottom', skipBeacon: true, overlayClickAction: false, buttons: ['back', 'primary', 'skip'] },
-      { target: '.tour-create-event-modal', content: l.create_event.createEventModal, placement: 'top', skipBeacon: true, overlayClickAction: false, buttons: ['back', 'primary', 'skip'] },
-      { target: '.tour-event-card', content: l.create_event.eventCard, placement: 'top', skipBeacon: true, overlayClickAction: false, buttons: ['back', 'primary', 'skip'] },
+      { target: '.tour-create-event-btn', content: l.create_event.createEvent, placement: 'bottom', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-create-event-modal', content: l.create_event.createEventModal, placement: 'top', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-event-card', content: l.create_event.eventCard, placement: 'top', skipBeacon: true, overlayClickAction: false },
     ],
     app: [
-      { target: '.tour-app-page', content: l.app.launch, placement: 'center', skipBeacon: true, overlayClickAction: false, buttons: ['back', 'primary', 'skip'] },
+      { target: '.tour-app-page', content: l.app.launch, placement: 'center', skipBeacon: true, overlayClickAction: false },
     ],
     settings: [
       { target: '.tour-global-identity', content: l.settings.globalIdentity, placement: 'top' },
@@ -111,18 +111,17 @@ export const getTourSteps = (lang: 'en' | 'id'): Record<string, Step[]> => {
       { target: '.tour-camera-config', content: l.settings.cameraConfig, placement: 'top' },
       { target: '.tour-output-config', content: l.settings.outputConfig, placement: 'top' },
       { target: '.tour-output-monitor', content: l.settings.outputMonitor, placement: 'top' },
-      { target: '.tour-save-settings', content: l.settings.saveSettings, placement: 'top', skipBeacon: true, overlayClickAction: false, buttons: ['back', 'primary', 'skip'] },
-      { target: '.tour-concept-tab', content: l.settings.conceptTab, placement: 'bottom', skipBeacon: true, overlayClickAction: false, buttons: ['back', 'primary', 'skip'] },
+      { target: '.tour-save-settings', content: l.settings.saveSettings, placement: 'top', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-concept-tab', content: l.settings.conceptTab, placement: 'bottom', skipBeacon: true, overlayClickAction: false },
     ],
     concept: [
-      { target: '.tour-use-template', content: l.concept.useTemplate, placement: 'top', skipBeacon: true, overlayClickAction: false, buttons: ['back', 'primary', 'skip'] },
-      { target: '.tour-load-template', content: l.concept.loadTemplate, placement: 'top', skipBeacon: true, overlayClickAction: false, buttons: ['back', 'primary', 'skip'] },
-      { target: '.tour-create-own', content: l.concept.createOwn, placement: 'top', skipBeacon: true, overlayClickAction: false, buttons: ['back', 'primary', 'skip'] },
-      { target: '.tour-thumbnail', content: l.concept.thumbnail, placement: 'top' },
-      { target: '.tour-reference', content: l.concept.reference, placement: 'top' },
-      { target: '.tour-prompt', content: l.concept.prompt, placement: 'top' },
-      { target: '.tour-save-concept', content: l.concept.saveConcept, placement: 'top', skipBeacon: true, overlayClickAction: false, buttons: ['back', 'primary', 'skip'] },
-      { target: '.tour-back-btn', content: l.concept.back, placement: 'bottom', skipBeacon: true, overlayClickAction: false, buttons: ['back', 'primary', 'skip'] },
+      { target: '.tour-use-template', content: l.concept.useTemplate, placement: 'top', skipBeacon: true, overlayClickAction: false, buttons: [], blockTargetInteraction: false },
+      { target: '.tour-load-template', content: l.concept.loadTemplate, placement: 'top', skipBeacon: true, overlayClickAction: false, buttons: [], blockTargetInteraction: false },
+      { target: '.tour-create-own', content: l.concept.createOwn, placement: 'top', skipBeacon: true, overlayClickAction: false, buttons: [], blockTargetInteraction: false },
+      { target: '.tour-thumbnail', content: l.concept.thumbnail, placement: 'right', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-reference', content: l.concept.reference, placement: 'right', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-optimize-prompt', content: l.concept.prompt, placement: 'top', skipBeacon: true, overlayClickAction: false, blockTargetInteraction: false },
+      { target: '.tour-save-concept', content: l.concept.saveConcept, placement: 'top', skipBeacon: true, overlayClickAction: false, blockTargetInteraction: false },
     ],
     finish: [
       { target: 'body', content: l.finish.message, placement: 'center' }

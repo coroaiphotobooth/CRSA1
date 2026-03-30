@@ -10,7 +10,7 @@ interface ThemesPageProps {
 
 const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack }) => {
   return (
-    <div className="w-full min-h-screen flex flex-col items-center p-6 md:p-10 bg-transparent overflow-y-auto font-sans">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 md:p-10 bg-transparent font-sans">
       
       {/* HEADER SECTION - Fixed at Top */}
       <div className="flex justify-between items-center w-full mb-4 max-w-6xl shrink-0 z-20">

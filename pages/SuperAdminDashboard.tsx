@@ -11,7 +11,7 @@ export default function SuperAdminDashboard() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [templateConcepts, setTemplateConcepts] = useState<TemplateConcept[]>([]);
-  const [globalSettings, setGlobalSettings] = useState({ default_free_credits: 10, system_status: 'active', template_event_id: '' });
+  const [globalSettings, setGlobalSettings] = useState({ default_free_credits: 100, system_status: 'active', template_event_id: '' });
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -529,7 +529,7 @@ export default function SuperAdminDashboard() {
 
         {showCreateTemplateModal && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#1a1a1a] rounded-2xl border border-white/10 w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="bg-[#1a1a1a]/80 backdrop-blur-md rounded-2xl border border-white/10 w-full max-w-md overflow-hidden shadow-2xl">
               <div className="p-6 border-b border-white/10 flex justify-between items-center">
                 <h2 className="text-xl font-bold">Create Template Event</h2>
                 <button 
@@ -1080,8 +1080,8 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
       {/* Template Concept Modal */}
       {showConceptModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <div className="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#111] z-10">
+          <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#111]/80 backdrop-blur-md z-10">
               <h2 className="text-xl font-bold">{editingConcept ? 'Edit Template Concept' : 'Add Template Concept'}</h2>
               <button onClick={() => setShowConceptModal(false)} className="text-gray-400 hover:text-white">✕</button>
             </div>

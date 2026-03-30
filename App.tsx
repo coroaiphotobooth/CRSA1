@@ -434,7 +434,7 @@ const PhotoboothFlow: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full min-h-screen bg-[#050505] flex flex-col items-center justify-start overflow-y-auto overflow-x-hidden font-sans">
+    <div className="relative w-full min-h-screen bg-[#050505] flex flex-col items-center justify-start font-sans">
       
       {/* --- GLOBAL BACKGROUND VIDEO --- */}
       {settings.backgroundVideoUrl && settings.backgroundVideoUrl.trim() !== '' && (
