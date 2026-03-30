@@ -898,6 +898,36 @@ export default function VendorDashboard() {
                   </div>
                 </div>
               )}
+
+              {/* Final Tutorial Hint */}
+              <AnimatePresence>
+                {showFinalTutorialHint && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute right-0 top-full mt-4 bg-[#111]/90 backdrop-blur-xl border border-[#bc13fe]/50 p-4 rounded-xl w-64 shadow-2xl shadow-[#bc13fe]/20 z-50"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-white font-bold text-sm">
+                        {language === 'id' ? 'Butuh Bantuan?' : 'Need Help?'}
+                      </h3>
+                      <button 
+                        onClick={() => setShowFinalTutorialHint(false)}
+                        className="text-gray-400 hover:text-white transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-gray-300 text-xs">
+                      {language === 'id' 
+                        ? 'Jika anda membutuhkan tutorial membuat konsep atau cara settings app bisa klik disini' 
+                        : 'If you need a tutorial on creating concepts or app settings, you can click here.'}
+                    </p>
+                    <div className="absolute -top-2 right-6 w-4 h-4 bg-[#111]/90 border-t border-l border-[#bc13fe]/50 transform rotate-45"></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             {isSuperAdmin && !impersonatedVendorId && (
               <button
@@ -1440,41 +1470,6 @@ export default function VendorDashboard() {
         )}
       </AnimatePresence>
 
-      {/* Final Tutorial Hint */}
-      <AnimatePresence>
-        {showFinalTutorialHint && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            style={{
-              position: 'fixed',
-              top: tutorialBtnRef.current ? tutorialBtnRef.current.getBoundingClientRect().bottom + 10 : 80,
-              right: tutorialBtnRef.current ? window.innerWidth - tutorialBtnRef.current.getBoundingClientRect().right : 20,
-              zIndex: 100
-            }}
-            className="bg-[#111]/90 backdrop-blur-xl border border-[#bc13fe]/50 p-4 rounded-xl w-64 shadow-2xl shadow-[#bc13fe]/20"
-          >
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="text-white font-bold text-sm">
-                {language === 'id' ? 'Butuh Bantuan?' : 'Need Help?'}
-              </h3>
-              <button 
-                onClick={() => setShowFinalTutorialHint(false)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-gray-300 text-xs">
-              {language === 'id' 
-                ? 'Jika anda membutuhkan tutorial membuat konsep atau cara settings app bisa klik disini' 
-                : 'If you need a tutorial on creating concepts or app settings, you can click here.'}
-            </p>
-            <div className="absolute -top-2 right-6 w-4 h-4 bg-[#111]/90 border-t border-l border-[#bc13fe]/50 transform rotate-45"></div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
