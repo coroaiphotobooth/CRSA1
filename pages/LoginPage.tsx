@@ -88,13 +88,13 @@ export default function LoginPage() {
               company_name: companyName,
               country: country,
               phone: phone,
-              credits: 10
+              credits: 5
             }
           }
         });
         if (error) throw error;
         if (data.user) {
-          await showDialog('alert', 'Success', "Registration successful! Please sign in.");
+          await showDialog('alert', 'Success', "Registration successful!\nPlease check your email for confirmation and please login.");
           setIsSignUp(false);
         }
       } else {
