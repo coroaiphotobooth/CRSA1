@@ -167,9 +167,13 @@ const PhotoboothFlow: React.FC = () => {
             
           if (error) throw error;
           if (eventData) {
+            const loadedSettings = eventData.settings || {};
+            if (loadedSettings.videoPrompt === 'Cinematic slow motion, subtle movement, 4k high quality, looping background') {
+              loadedSettings.videoPrompt = 'Animate the image with very subtle and natural motion. Keep the subject stable and realistic. Add minimal camera movement and gentle breathing or blinking. Avoid any distortion, fast motion, or unrealistic effects. Preserve the original look and details.';
+            }
             setSettings(prev => ({ 
               ...prev, 
-              ...(eventData.settings || {}), 
+              ...loadedSettings, 
               eventName: eventData.name,
               eventDescription: eventData.description,
               activeEventId: eventData.id,
