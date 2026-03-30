@@ -48,8 +48,10 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
       if (merged.folderId === undefined) merged.folderId = '';
       if (merged.originalFolderId === undefined) merged.originalFolderId = '';
       if (merged.spreadsheetId === undefined) merged.spreadsheetId = '';
-      if (merged.videoPrompt === undefined || merged.videoPrompt === 'Cinematic slow motion, subtle movement, 4k high quality, looping background') {
-        merged.videoPrompt = 'Animate the image with very subtle and natural motion. Keep the subject stable and realistic. Add minimal camera movement and gentle breathing or blinking. Avoid any distortion, fast motion, or unrealistic effects. Preserve the original look and details.';
+      if (merged.videoPrompt === undefined || 
+          merged.videoPrompt === 'Cinematic slow motion, subtle movement, 4k high quality, looping background' ||
+          merged.videoPrompt === 'Animate the image with very subtle and natural motion. Keep the subject stable and realistic. Add minimal camera movement and gentle breathing or blinking. Avoid any distortion, fast motion, or unrealistic effects. Preserve the original look and details.') {
+        merged.videoPrompt = 'Apply slow camera movement (push-in, push-out, pan, or parallax depth effect). Add subtle natural motion to the subject such as blinking, breathing, and micro expressions. Keep the face sharp, realistic, and undistorted.';
       }
       if (merged.boothMode === undefined) merged.boothMode = 'video';
       if (!merged.monitorImageSize) merged.monitorImageSize = 'medium';

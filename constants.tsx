@@ -16,7 +16,7 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   overlayImage: null,
   backgroundImage: null,
   backgroundVideoUrl: null, // New Default for Video Loop
-  videoPrompt: 'Animate the image with very subtle and natural motion. Keep the subject stable and realistic. Add minimal camera movement and gentle breathing or blinking. Avoid any distortion, fast motion, or unrealistic effects. Preserve the original look and details.',
+  videoPrompt: 'Apply slow camera movement (push-in, push-out, pan, or parallax depth effect). Add subtle natural motion to the subject such as blinking, breathing, and micro expressions. Keep the face sharp, realistic, and undistorted.',
   enableVideoGeneration: true, // Deprecated but kept for type safety
   videoResolution: '480p', // Default 480p
   videoModel: 'seedance-1-0-pro-fast-251015', // Default Model

@@ -28,7 +28,7 @@ function doGet(e) {
         backgroundImage: SCRIPT_PROP.getProperty('BACKGROUND_IMAGE') || null,
         backgroundVideoUrl: SCRIPT_PROP.getProperty('BACKGROUND_VIDEO') || null,
         backgroundAudio: SCRIPT_PROP.getProperty('BACKGROUND_AUDIO') || null,
-        videoPrompt: SCRIPT_PROP.getProperty('VIDEO_PROMPT') || 'Animate the image with very subtle and natural motion. Keep the subject stable and realistic. Add minimal camera movement and gentle breathing or blinking. Avoid any distortion, fast motion, or unrealistic effects. Preserve the original look and details.',
+        videoPrompt: SCRIPT_PROP.getProperty('VIDEO_PROMPT') || 'Apply slow camera movement (push-in, push-out, pan, or parallax depth effect). Add subtle natural motion to the subject such as blinking, breathing, and micro expressions. Keep the face sharp, realistic, and undistorted.',
         boothMode: SCRIPT_PROP.getProperty('BOOTH_MODE') || 'video',
         videoResolution: SCRIPT_PROP.getProperty('VIDEO_RESOLUTION') || '480p', 
         videoModel: SCRIPT_PROP.getProperty('VIDEO_MODEL') || 'seedance-1-0-pro-fast-251015', 
