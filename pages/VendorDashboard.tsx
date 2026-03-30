@@ -39,7 +39,7 @@ export default function VendorDashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const impersonatedVendorId = searchParams.get('vendorId');
-  const { startTour, isActive, tourType, stepIndex } = useTourState();
+  const { startTour, isActive, tourType, stepIndex, status } = useTourState();
   const prevTourTypeRef = useRef<string | null>(null);
   const prevIsActive = useRef(isActive);
 
@@ -52,14 +52,14 @@ export default function VendorDashboard() {
   }, [isActive, showCreateModal, newEventName]);
 
   useEffect(() => {
-    if (!isActive && prevTourTypeRef.current === 'dashboard_overview') {
+    if (!isActive && prevTourTypeRef.current === 'dashboard_overview' && status === 'finished') {
       setShowCreateEventTourPrompt(true);
     }
-    if (!isActive && prevTourTypeRef.current === 'create_event') {
+    if (!isActive && prevTourTypeRef.current === 'create_event' && status === 'finished') {
       setShowNextTutorialPrompt(true);
     }
     prevTourTypeRef.current = tourType;
-  }, [isActive, tourType]);
+  }, [isActive, tourType, status]);
 
   useEffect(() => {
     if (isActive && tourType === 'create_event') {
@@ -257,11 +257,11 @@ export default function VendorDashboard() {
         }
 
         if (currentVendor) {
-          const localSeenOnboarding = localStorage.getItem('has_seen_onboarding') === 'true';
-          const localSeenTourPrompt = localStorage.getItem('has_seen_tour_prompt') === 'true';
+          const localSeenOnboarding = sessionStorage.getItem(`has_seen_onboarding_${user.id}`) === 'true';
+          const localSeenTourPrompt = sessionStorage.getItem(`has_seen_tour_prompt_${user.id}`) === 'true';
           
-          const needsOnboarding = !user.user_metadata?.has_seen_onboarding && !localSeenOnboarding;
-          const needsTourPrompt = !user.user_metadata?.has_seen_tour_prompt && !localSeenTourPrompt && !isActive;
+          const needsOnboarding = !localSeenOnboarding;
+          const needsTourPrompt = !localSeenTourPrompt && !isActive;
 
           if (needsOnboarding) {
             setShowOnboarding(true);
@@ -283,20 +283,23 @@ export default function VendorDashboard() {
 
   const handleLogout = async () => {
     setTourState({ isActive: false, tourType: null, stepIndex: 0 });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      sessionStorage.removeItem(`has_seen_onboarding_${user.id}`);
+      sessionStorage.removeItem(`has_seen_tour_prompt_${user.id}`);
+    }
     await supabase.auth.signOut();
     navigate('/login');
   };
 
   const handleCloseTourPrompt = async (start: boolean) => {
     setShowTourPrompt(false);
-    localStorage.setItem('has_seen_tour_prompt', 'true');
-    try {
-      await supabase.auth.updateUser({
-        data: { has_seen_tour_prompt: true }
-      });
-    } catch (err) {
-      console.error("Failed to save tour prompt status:", err);
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      sessionStorage.setItem(`has_seen_tour_prompt_${user.id}`, 'true');
     }
+
     if (start) {
       startTour('dashboard_overview');
     } else {
@@ -782,21 +785,15 @@ export default function VendorDashboard() {
           onComplete={async (lang) => {
             setLanguage(lang);
             localStorage.setItem('vendor_language', lang);
-            localStorage.setItem('has_seen_onboarding', 'true');
+            
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              sessionStorage.setItem(`has_seen_onboarding_${user.id}`, 'true');
+            }
+            
             setShowOnboarding(false);
             if (!isActive) {
               setShowTourPrompt(true);
-            }
-            
-            try {
-              const { error } = await supabase.auth.updateUser({
-                data: { has_seen_onboarding: true }
-              });
-              if (error) {
-                console.error("Failed to save onboarding status:", error);
-              }
-            } catch (err) {
-              console.error("Failed to save onboarding status:", err);
             }
           }} 
         />
@@ -1260,14 +1257,14 @@ export default function VendorDashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
           >
             <motion.div 
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="bg-[#111]/40 backdrop-blur-xl border border-white/10 p-8 rounded-2xl w-full max-w-md text-center shadow-2xl shadow-[#bc13fe]/20"
+              className="bg-[#111]/20 backdrop-blur-xl border border-white/10 p-8 rounded-2xl w-full max-w-md text-center shadow-2xl shadow-[#bc13fe]/20"
             >
               <h2 className="text-2xl font-bold mb-4 text-white">
                 {language === 'id' ? 'Mulai Tour & Tutorial?' : 'Start Tour & Tutorial?'}
@@ -1302,14 +1299,14 @@ export default function VendorDashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
           >
             <motion.div 
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-8 rounded-2xl w-full max-w-md text-center shadow-2xl shadow-[#bc13fe]/20"
+              className="bg-[#111]/20 backdrop-blur-xl border border-white/10 p-8 rounded-2xl w-full max-w-md text-center shadow-2xl shadow-[#bc13fe]/20"
             >
               <h2 className="text-2xl font-bold mb-4 text-white">
                 {language === 'id' ? 'Lanjut ke Tutorial Membuat Event?' : 'Continue to Create Event Tutorial?'}
@@ -1350,14 +1347,14 @@ export default function VendorDashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
           >
             <motion.div 
               initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-8 rounded-2xl w-full max-w-md text-center shadow-2xl shadow-[#bc13fe]/20"
+              className="bg-[#111]/20 backdrop-blur-xl border border-white/10 p-8 rounded-2xl w-full max-w-md text-center shadow-2xl shadow-[#bc13fe]/20"
             >
               <h2 className="text-2xl font-bold mb-4 text-white">
                 {language === 'id' ? 'Lanjut Tutorial Berikutnya?' : 'Continue to Next Tutorial?'}

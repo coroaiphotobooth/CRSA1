@@ -110,9 +110,10 @@ export const TourProvider: React.FC = () => {
   const handleJoyrideCallback = (data: EventData) => {
     const { status, type, index, action } = data;
     
-    if ([STATUS.FINISHED, STATUS.SKIPPED, 'error', 'paused'].includes(status as any) || type === 'error:target_not_found') {
+    if ([STATUS.FINISHED, STATUS.SKIPPED, 'error', 'paused'].includes(status as any) || type === 'error:target_not_found' || action === 'close') {
       setRun(false);
-      setTourState({ isActive: false, tourType: null, stepIndex: 0 });
+      const finalStatus = (status === STATUS.FINISHED) ? 'finished' : 'skipped';
+      setTourState({ isActive: false, tourType: null, stepIndex: 0, status: finalStatus });
     } else if (type === 'step:after') {
       // Update step index globally
       if (action === 'next') {
@@ -144,6 +145,7 @@ export const TourProvider: React.FC = () => {
         overlayClickAction: false,
         scrollOffset: 100,
         closeButtonAction: 'skip',
+        skipBeacon: true,
       }}
       styles={{
         buttonClose: {

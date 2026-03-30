@@ -6,6 +6,7 @@ export interface TourState {
   isActive: boolean;
   tourType: TourType;
   stepIndex: number;
+  status?: 'running' | 'finished' | 'skipped' | null;
 }
 
 const TOUR_STATE_KEY = 'coroai_tour_state';
@@ -19,7 +20,7 @@ export const getTourState = (): TourState => {
   } catch (e) {
     console.error('Failed to parse tour state', e);
   }
-  return { isActive: false, tourType: null, stepIndex: 0 };
+  return { isActive: false, tourType: null, stepIndex: 0, status: null };
 };
 
 export const setTourState = (state: Partial<TourState>) => {
@@ -44,8 +45,8 @@ export const useTourState = () => {
 
   return {
     ...state,
-    startTour: (type: TourType) => setTourState({ isActive: true, tourType: type, stepIndex: 0 }),
-    stopTour: () => setTourState({ isActive: false, tourType: null, stepIndex: 0 }),
+    startTour: (type: TourType) => setTourState({ isActive: true, tourType: type, stepIndex: 0, status: 'running' }),
+    stopTour: () => setTourState({ isActive: false, tourType: null, stepIndex: 0, status: 'skipped' }),
     setStep: (index: number) => setTourState({ stepIndex: index }),
     nextStep: () => setTourState({ stepIndex: state.stepIndex + 1 }),
   };
