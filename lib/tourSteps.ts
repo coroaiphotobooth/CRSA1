@@ -90,9 +90,9 @@ export const getTourSteps = (lang: 'en' | 'id'): Record<string, Step[]> => {
 
   return {
     dashboard_overview: [
-      { target: '.tour-total-events', content: l.dashboard_overview.totalEvent, placement: 'bottom' },
-      { target: '.tour-current-plan', content: l.dashboard_overview.currentPlan, placement: 'bottom' },
-      { target: '.tour-available-credits', content: l.dashboard_overview.availableCredits, placement: 'bottom' },
+      { target: '.tour-total-events', content: l.dashboard_overview.totalEvent, placement: 'bottom', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-current-plan', content: l.dashboard_overview.currentPlan, placement: 'bottom', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-available-credits', content: l.dashboard_overview.availableCredits, placement: 'bottom', skipBeacon: true, overlayClickAction: false },
     ],
     create_event: [
       { target: '.tour-create-event-btn', content: l.create_event.createEvent, placement: 'bottom', skipBeacon: true, overlayClickAction: false },
@@ -103,14 +103,14 @@ export const getTourSteps = (lang: 'en' | 'id'): Record<string, Step[]> => {
       { target: '.tour-app-page', content: l.app.launch, placement: 'center', skipBeacon: true, overlayClickAction: false },
     ],
     settings: [
-      { target: '.tour-global-identity', content: l.settings.globalIdentity, placement: 'top' },
-      { target: '.tour-overlay', content: l.settings.overlay, placement: 'top' },
-      { target: '.tour-ai-model', content: l.settings.aiModel, placement: 'top' },
-      { target: '.tour-background', content: l.settings.background, placement: 'top' },
-      { target: '.tour-video-settings', content: l.settings.videoSettings, placement: 'top' },
-      { target: '.tour-camera-config', content: l.settings.cameraConfig, placement: 'top' },
-      { target: '.tour-output-config', content: l.settings.outputConfig, placement: 'top' },
-      { target: '.tour-output-monitor', content: l.settings.outputMonitor, placement: 'top' },
+      { target: '.tour-global-identity', content: l.settings.globalIdentity, placement: 'top', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-overlay', content: l.settings.overlay, placement: 'top', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-ai-model', content: l.settings.aiModel, placement: 'top', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-background', content: l.settings.background, placement: 'top', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-video-settings', content: l.settings.videoSettings, placement: 'top', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-camera-config', content: l.settings.cameraConfig, placement: 'top', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-output-config', content: l.settings.outputConfig, placement: 'top', skipBeacon: true, overlayClickAction: false },
+      { target: '.tour-output-monitor', content: l.settings.outputMonitor, placement: 'top', skipBeacon: true, overlayClickAction: false },
       { target: '.tour-save-settings', content: l.settings.saveSettings, placement: 'top', skipBeacon: true, overlayClickAction: false },
       { target: '.tour-concept-tab', content: l.settings.conceptTab, placement: 'bottom', skipBeacon: true, overlayClickAction: false },
     ],

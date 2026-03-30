@@ -30,7 +30,10 @@ export default function VendorDashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showTourPrompt, setShowTourPrompt] = useState(false);
   const [showCreateEventTourPrompt, setShowCreateEventTourPrompt] = useState(false);
+  const [showNextTutorialPrompt, setShowNextTutorialPrompt] = useState(false);
+  const [showFinalTutorialHint, setShowFinalTutorialHint] = useState(false);
   const [showTutorialMenu, setShowTutorialMenu] = useState(false);
+  const tutorialBtnRef = useRef<HTMLButtonElement>(null);
   const [language, setLanguage] = useState<'en' | 'id'>('en');
   const { showDialog } = useDialog();
   const navigate = useNavigate();
@@ -51,6 +54,9 @@ export default function VendorDashboard() {
   useEffect(() => {
     if (!isActive && prevTourTypeRef.current === 'dashboard_overview') {
       setShowCreateEventTourPrompt(true);
+    }
+    if (!isActive && prevTourTypeRef.current === 'create_event') {
+      setShowNextTutorialPrompt(true);
     }
     prevTourTypeRef.current = tourType;
   }, [isActive, tourType]);
@@ -293,6 +299,8 @@ export default function VendorDashboard() {
     }
     if (start) {
       startTour('dashboard_overview');
+    } else {
+      setShowFinalTutorialHint(true);
     }
   };
 
@@ -815,8 +823,12 @@ export default function VendorDashboard() {
           <div className="flex items-center gap-4">
             <div className="relative">
               <button
-                onClick={() => setShowTutorialMenu(!showTutorialMenu)}
-                className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-full font-bold transition-all text-sm border border-blue-500/30"
+                ref={tutorialBtnRef}
+                onClick={() => {
+                  setShowTutorialMenu(!showTutorialMenu);
+                  setShowFinalTutorialHint(false);
+                }}
+                className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded-full font-bold transition-all text-sm border border-blue-500/30 tour-tutorial-btn"
               >
                 {language === 'id' ? 'Tutorial' : 'Tutorial'}
               </button>
@@ -1255,7 +1267,7 @@ export default function VendorDashboard() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 10 }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-8 rounded-2xl w-full max-w-md text-center shadow-2xl shadow-[#bc13fe]/20"
+              className="bg-[#111]/40 backdrop-blur-xl border border-white/10 p-8 rounded-2xl w-full max-w-md text-center shadow-2xl shadow-[#bc13fe]/20"
             >
               <h2 className="text-2xl font-bold mb-4 text-white">
                 {language === 'id' ? 'Mulai Tour & Tutorial?' : 'Start Tour & Tutorial?'}
@@ -1309,7 +1321,10 @@ export default function VendorDashboard() {
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <button
-                  onClick={() => setShowCreateEventTourPrompt(false)}
+                  onClick={() => {
+                    setShowCreateEventTourPrompt(false);
+                    setShowFinalTutorialHint(true);
+                  }}
                   className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest text-white"
                 >
                   {language === 'id' ? 'Tidak' : 'No'}
@@ -1325,6 +1340,109 @@ export default function VendorDashboard() {
                 </button>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {/* Next Tutorial Prompt Modal */}
+      <AnimatePresence>
+        {showNextTutorialPrompt && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-8 rounded-2xl w-full max-w-md text-center shadow-2xl shadow-[#bc13fe]/20"
+            >
+              <h2 className="text-2xl font-bold mb-4 text-white">
+                {language === 'id' ? 'Lanjut Tutorial Berikutnya?' : 'Continue to Next Tutorial?'}
+              </h2>
+              <p className="text-gray-400 mb-8 text-sm">
+                {language === 'id' 
+                  ? 'Pilih tutorial yang ingin Anda ikuti selanjutnya atau batalkan.' 
+                  : 'Choose the tutorial you want to follow next or cancel.'}
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => {
+                    setShowNextTutorialPrompt(false);
+                    if (events.length > 0) {
+                      navigate(`/admin/${events[0].id}?tab=settings`);
+                      setTimeout(() => startTour('settings'), 500);
+                    } else {
+                      startTour('create_event');
+                    }
+                  }}
+                  className="px-6 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 text-blue-400 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
+                >
+                  {language === 'id' ? 'Tutorial Settings App' : 'Settings App Tutorial'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowNextTutorialPrompt(false);
+                    if (events.length > 0) {
+                      navigate(`/admin/${events[0].id}?tab=concept`);
+                      setTimeout(() => startTour('concept'), 500);
+                    } else {
+                      startTour('create_event');
+                    }
+                  }}
+                  className="px-6 py-3 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/30 border border-[#bc13fe]/30 text-[#bc13fe] rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
+                >
+                  {language === 'id' ? 'Tutorial Create Concept' : 'Create Concept Tutorial'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowNextTutorialPrompt(false);
+                    setShowFinalTutorialHint(true);
+                  }}
+                  className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest text-white mt-2"
+                >
+                  {language === 'id' ? 'Cancel' : 'Cancel'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Final Tutorial Hint */}
+      <AnimatePresence>
+        {showFinalTutorialHint && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            style={{
+              position: 'fixed',
+              top: tutorialBtnRef.current ? tutorialBtnRef.current.getBoundingClientRect().bottom + 10 : 80,
+              right: tutorialBtnRef.current ? window.innerWidth - tutorialBtnRef.current.getBoundingClientRect().right : 20,
+              zIndex: 100
+            }}
+            className="bg-[#111]/90 backdrop-blur-xl border border-[#bc13fe]/50 p-4 rounded-xl w-64 shadow-2xl shadow-[#bc13fe]/20"
+          >
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="text-white font-bold text-sm">
+                {language === 'id' ? 'Butuh Bantuan?' : 'Need Help?'}
+              </h3>
+              <button 
+                onClick={() => setShowFinalTutorialHint(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-gray-300 text-xs">
+              {language === 'id' 
+                ? 'Jika anda membutuhkan tutorial membuat konsep atau cara settings app bisa klik disini' 
+                : 'If you need a tutorial on creating concepts or app settings, you can click here.'}
+            </p>
+            <div className="absolute -top-2 right-6 w-4 h-4 bg-[#111]/90 border-t border-l border-[#bc13fe]/50 transform rotate-45"></div>
           </motion.div>
         )}
       </AnimatePresence>
