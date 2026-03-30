@@ -1009,7 +1009,9 @@ export default function VendorDashboard() {
           </div>
           <div className="glass-card p-6 rounded-2xl border border-white/10 tour-current-plan">
             <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.currentPlan}</h3>
-            <p className="text-4xl font-bold capitalize text-[#bc13fe]">{vendor?.plan}</p>
+            <p className="text-4xl font-bold capitalize text-[#bc13fe]">
+              {vendor?.plan === 'pay_as_you_go' ? 'PAY AS YOU GO' : vendor?.plan === 'rent' ? 'RENT' : vendor?.plan}
+            </p>
           </div>
           <div className="glass-card p-6 rounded-2xl border border-white/10 bg-gradient-to-br from-[#bc13fe]/10 to-transparent flex flex-col tour-available-credits">
             <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.availableCredits}</h3>

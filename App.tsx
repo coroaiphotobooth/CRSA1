@@ -48,6 +48,7 @@ const PhotoboothFlow: React.FC = () => {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [settings, setSettings] = useState<PhotoboothSettings>(DEFAULT_SETTINGS);
   const [concepts, setConcepts] = useState<Concept[]>(DEFAULT_CONCEPTS);
+  const [eventLoadStatus, setEventLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const autoResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Regeneration Quality State
@@ -195,6 +196,9 @@ const PhotoboothFlow: React.FC = () => {
                   console.error("Failed to cache concepts to DB", err)
               );
             }
+            setEventLoadStatus('success');
+          } else {
+            setEventLoadStatus('error');
           }
         } else {
           // Legacy GAS Sync
@@ -222,9 +226,11 @@ const PhotoboothFlow: React.FC = () => {
               storage_folder: active.storage_folder
             }));
           }
+          setEventLoadStatus('success');
         }
       } catch (e) {
         console.warn("Cloud sync error:", e);
+        setEventLoadStatus('error');
       }
     };
     syncCloud();
@@ -471,8 +477,26 @@ const PhotoboothFlow: React.FC = () => {
         </div>
       )}
 
-      <div className="relative z-10 w-full flex flex-col items-center">
-        {renderPage()}
+      <div className="relative z-10 w-full flex flex-col items-center flex-grow justify-center">
+        {eventLoadStatus === 'loading' ? (
+          <div className="flex flex-col items-center justify-center text-white h-full min-h-[50vh]">
+            <div className="w-12 h-12 border-4 border-white/20 border-t-[#bc13fe] rounded-full animate-spin mb-4"></div>
+            <p className="text-sm uppercase tracking-widest text-white/60">Loading Event...</p>
+          </div>
+        ) : eventLoadStatus === 'error' ? (
+          <div className="flex flex-col items-center justify-center text-white bg-black/60 p-10 rounded-2xl backdrop-blur-md border border-white/10 max-w-md text-center mt-20">
+            <h2 className="text-2xl font-bold mb-4 text-red-400">Access Denied</h2>
+            <p className="text-white/70 mb-8">Event not found or you don't have permission to access it. Please log in as the event owner.</p>
+            <button 
+              onClick={() => window.location.href = '/login'}
+              className="px-8 py-3 bg-[#bc13fe] text-white rounded-full font-bold uppercase tracking-widest hover:bg-[#bc13fe]/80 transition-colors"
+            >
+              Go to Login
+            </button>
+          </div>
+        ) : (
+          renderPage()
+        )}
       </div>
     </div>
   );

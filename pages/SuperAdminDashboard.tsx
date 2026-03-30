@@ -273,7 +273,7 @@ export default function SuperAdminDashboard() {
           name: 'Super Admin',
           company_name: 'Coro AI',
           email: user.email,
-          plan: 'pro',
+          plan: 'pay_as_you_go',
           credits: 999999
         }]).select().single();
         
@@ -648,6 +648,10 @@ CREATE POLICY "Super admin can do everything on template concepts" ON template_c
 -- If your global_settings table uses an integer ID, run this instead: UPDATE global_settings SET default_free_credits = 5 WHERE id = 1;
 UPDATE global_settings SET default_free_credits = 5;
 
+-- Update plan check constraint
+ALTER TABLE vendors DROP CONSTRAINT IF EXISTS vendors_plan_check;
+ALTER TABLE vendors ADD CONSTRAINT vendors_plan_check CHECK (plan IN ('free', 'pay_as_you_go', 'rent', 'pro', 'enterprise'));
+
 -- 3. Grant Super Admin access
 DROP POLICY IF EXISTS "Super admin can do everything on vendors" ON vendors;
 CREATE POLICY "Super admin can do everything on vendors" ON vendors FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
@@ -659,6 +663,24 @@ DROP POLICY IF EXISTS "Super admin can do everything on global_settings" ON glob
 CREATE POLICY "Super admin can do everything on global_settings" ON global_settings FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
 DROP POLICY IF EXISTS "Anyone can read global_settings" ON global_settings;
 CREATE POLICY "Anyone can read global_settings" ON global_settings FOR SELECT USING (true);
+
+-- 3.1. Restrict public access to events and concepts
+CREATE OR REPLACE FUNCTION is_superadmin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN (auth.jwt() ->> 'email') = 'coroaiphotobooth@gmail.com';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP POLICY IF EXISTS "Anyone can view events" ON events;
+DROP POLICY IF EXISTS "Vendors can view their own events" ON events;
+CREATE POLICY "Vendors can view their own events" ON events FOR SELECT USING (auth.uid() = vendor_id OR is_superadmin());
+
+DROP POLICY IF EXISTS "Anyone can view concepts" ON concepts;
+DROP POLICY IF EXISTS "Vendors can view concepts for their events" ON concepts;
+CREATE POLICY "Vendors can view concepts for their events" ON concepts FOR SELECT USING (
+  EXISTS (SELECT 1 FROM events WHERE events.id = concepts.event_id AND (events.vendor_id = auth.uid() OR is_superadmin()))
+);
 
 -- 3.5. Allow deleting sessions (photos) from the gallery
 DROP POLICY IF EXISTS "Anyone can delete sessions" ON sessions;
@@ -1014,20 +1036,20 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                           {editingVendor?.id === v.id ? (
                             <select 
                               value={editForm.plan} 
-                              onChange={e => setEditForm({...editForm, plan: e.target.value})}
+                              onChange={e => setEditForm({...editForm, plan: e.target.value as any})}
                               className="bg-black/50 border border-white/20 rounded px-2 py-1"
                             >
-                              <option value="free">Free</option>
-                              <option value="pro">Pro</option>
-                              <option value="enterprise">Enterprise</option>
+                              <option value="free">FREE</option>
+                              <option value="pay_as_you_go">PAY AS YOU GO</option>
+                              <option value="rent">RENT</option>
                             </select>
                           ) : (
                             <span className={`px-2 py-1 rounded-full text-xs ${
-                              v.plan === 'pro' ? 'bg-[#bc13fe]/20 text-[#bc13fe]' : 
-                              v.plan === 'enterprise' ? 'bg-blue-500/20 text-blue-400' : 
+                              v.plan === 'pay_as_you_go' ? 'bg-[#bc13fe]/20 text-[#bc13fe]' : 
+                              v.plan === 'rent' ? 'bg-blue-500/20 text-blue-400' : 
                               'bg-gray-500/20 text-gray-400'
                             }`}>
-                              {v.plan?.toUpperCase() || 'FREE'}
+                              {v.plan === 'pay_as_you_go' ? 'PAY AS YOU GO' : v.plan?.toUpperCase() || 'FREE'}
                             </span>
                           )}
                         </td>

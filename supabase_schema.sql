@@ -8,7 +8,7 @@ CREATE TABLE vendors (
   company_name TEXT,
   country TEXT,
   phone TEXT,
-  plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'pro', 'enterprise')),
+  plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'pay_as_you_go', 'rent')),
   credits INTEGER DEFAULT 10,
   is_blocked BOOLEAN DEFAULT false,
   admin_message TEXT,
@@ -44,6 +44,14 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
 
+-- Create a secure function to check if a user is superadmin
+CREATE OR REPLACE FUNCTION is_superadmin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN (auth.jwt() ->> 'email') = 'coroaiphotobooth@gmail.com';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 2. Events Table
 CREATE TABLE events (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -61,8 +69,9 @@ CREATE TABLE events (
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Vendors can manage their own events" ON events FOR ALL USING (auth.uid() = vendor_id);
 CREATE POLICY "Vendors can insert their own events" ON events FOR INSERT WITH CHECK (auth.uid() = vendor_id);
--- Allow public read access to events (so the photobooth app can load settings without auth)
-CREATE POLICY "Anyone can view events" ON events FOR SELECT USING (true);
+-- Restrict read access to events (only owner or superadmin)
+DROP POLICY IF EXISTS "Anyone can view events" ON events;
+CREATE POLICY "Vendors can view their own events" ON events FOR SELECT USING (auth.uid() = vendor_id OR is_superadmin());
 
 
 -- 3. Concepts Table
@@ -82,8 +91,11 @@ ALTER TABLE concepts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Vendors can manage concepts for their events" ON concepts FOR ALL USING (
   EXISTS (SELECT 1 FROM events WHERE events.id = concepts.event_id AND events.vendor_id = auth.uid())
 );
--- Allow public read access to concepts
-CREATE POLICY "Anyone can view concepts" ON concepts FOR SELECT USING (true);
+-- Restrict read access to concepts (only owner or superadmin)
+DROP POLICY IF EXISTS "Anyone can view concepts" ON concepts;
+CREATE POLICY "Vendors can view concepts for their events" ON concepts FOR SELECT USING (
+  EXISTS (SELECT 1 FROM events WHERE events.id = concepts.event_id AND (events.vendor_id = auth.uid() OR is_superadmin()))
+);
 
 
 -- 4. Sessions Table (For Guest Results)

@@ -114,7 +114,7 @@ export interface Vendor {
   company_name?: string;
   country?: string;
   phone?: string;
-  plan: 'free' | 'pro' | 'enterprise';
+  plan: 'free' | 'pay_as_you_go' | 'rent';
   credits: number;
   created_at: string;
   is_blocked?: boolean;
