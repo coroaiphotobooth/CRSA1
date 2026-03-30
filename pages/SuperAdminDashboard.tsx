@@ -62,7 +62,7 @@ export default function SuperAdminDashboard() {
       
       if (vendorsData && vendorsData.length <= 1) {
           setShowSqlModal(true);
-      } else if (vendorsData && vendorsData.length > 0 && !('company_name' in vendorsData[0])) {
+      } else if (vendorsData && vendorsData.length > 0 && (!('company_name' in vendorsData[0]) || !('email_confirmed' in vendorsData[0]))) {
           setShowSqlModal(true);
       }
       
@@ -587,6 +587,7 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS country TEXT;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT false;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS admin_message TEXT;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS email_confirmed BOOLEAN DEFAULT false;
 
 -- Add storage_folder to events table
 ALTER TABLE events ADD COLUMN IF NOT EXISTS storage_folder TEXT;
@@ -638,7 +639,9 @@ CREATE TABLE IF NOT EXISTS template_concepts (
 
 -- RLS for template_concepts
 ALTER TABLE template_concepts ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can read template concepts" ON template_concepts;
 CREATE POLICY "Anyone can read template concepts" ON template_concepts FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Super admin can do everything on template concepts" ON template_concepts;
 CREATE POLICY "Super admin can do everything on template concepts" ON template_concepts FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
 
 -- 2. Update default free credits to 5
@@ -646,13 +649,19 @@ CREATE POLICY "Super admin can do everything on template concepts" ON template_c
 UPDATE global_settings SET default_free_credits = 5;
 
 -- 3. Grant Super Admin access
+DROP POLICY IF EXISTS "Super admin can do everything on vendors" ON vendors;
 CREATE POLICY "Super admin can do everything on vendors" ON vendors FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+DROP POLICY IF EXISTS "Super admin can do everything on events" ON events;
 CREATE POLICY "Super admin can do everything on events" ON events FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+DROP POLICY IF EXISTS "Super admin can do everything on concepts" ON concepts;
 CREATE POLICY "Super admin can do everything on concepts" ON concepts FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+DROP POLICY IF EXISTS "Super admin can do everything on global_settings" ON global_settings;
 CREATE POLICY "Super admin can do everything on global_settings" ON global_settings FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+DROP POLICY IF EXISTS "Anyone can read global_settings" ON global_settings;
 CREATE POLICY "Anyone can read global_settings" ON global_settings FOR SELECT USING (true);
 
 -- 3.5. Allow deleting sessions (photos) from the gallery
+DROP POLICY IF EXISTS "Anyone can delete sessions" ON sessions;
 CREATE POLICY "Anyone can delete sessions" ON sessions FOR DELETE USING (true);
 
 -- 4. Create a secure function to delete users (requires super admin privileges)
@@ -936,6 +945,7 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                   <thead>
                     <tr className="border-b border-white/10 text-gray-400 text-sm">
                       <th className="pb-4 font-medium">Email</th>
+                      <th className="pb-4 font-medium">Confirmed</th>
                       <th className="pb-4 font-medium">Name</th>
                       <th className="pb-4 font-medium">Company</th>
                       <th className="pb-4 font-medium">Country</th>
@@ -949,6 +959,17 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                     {filteredVendors.map(v => (
                       <tr key={v.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                         <td className="py-4">{v.email || 'N/A'}</td>
+                        <td className="py-4">
+                          {v.email_confirmed ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                              Yes
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                              No
+                            </span>
+                          )}
+                        </td>
                         <td className="py-4">
                           {editingVendor?.id === v.id ? (
                             <input 
@@ -1066,7 +1087,7 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                     ))}
                     {filteredVendors.length === 0 && (
                       <tr>
-                        <td colSpan={8} className="py-8 text-center text-gray-500">No vendors found</td>
+                        <td colSpan={9} className="py-8 text-center text-gray-500">No vendors found</td>
                       </tr>
                     )}
                   </tbody>

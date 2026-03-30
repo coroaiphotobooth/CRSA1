@@ -113,7 +113,8 @@ export default function VendorDashboard() {
               country: user.user_metadata?.country || null,
               phone: user.user_metadata?.phone || null,
               credits: user.user_metadata?.credits || 5,
-              is_blocked: false
+              is_blocked: false,
+              email_confirmed: !!user.email_confirmed_at
             };
             const { data: createdVendor, error: createError } = await supabase
               .from('vendors')
@@ -221,12 +222,15 @@ export default function VendorDashboard() {
         // Check if we need to update existing vendor with metadata (only if not impersonating)
         if (targetUserId === user.id) {
           const metadataName = user.user_metadata?.full_name || user.user_metadata?.name;
-          if (currentVendor && (currentVendor.name === 'Vendor' || !currentVendor.company_name || currentVendor.credits === 0 || currentVendor.credits === 100)) {
+          const isEmailConfirmed = !!user.email_confirmed_at;
+          
+          if (currentVendor && (currentVendor.name === 'Vendor' || !currentVendor.company_name || currentVendor.credits === 0 || currentVendor.credits === 100 || currentVendor.email_confirmed !== isEmailConfirmed)) {
               const updateData: any = {};
               if (currentVendor.name === 'Vendor' && metadataName) updateData.name = metadataName;
               if (!currentVendor.company_name && user.user_metadata?.company_name) updateData.company_name = user.user_metadata.company_name;
               if (!currentVendor.country && user.user_metadata?.country) updateData.country = user.user_metadata.country;
               if (!currentVendor.phone && user.user_metadata?.phone) updateData.phone = user.user_metadata.phone;
+              if (currentVendor.email_confirmed !== isEmailConfirmed) updateData.email_confirmed = isEmailConfirmed;
               
               let grantingCredits = false;
               if ((currentVendor.credits === 0 || currentVendor.credits === 100) && (!eventsData || eventsData.length === 0)) {
@@ -257,16 +261,21 @@ export default function VendorDashboard() {
         }
 
         if (currentVendor) {
-          const localSeenOnboarding = sessionStorage.getItem(`has_seen_onboarding_${user.id}`) === 'true';
-          const localSeenTourPrompt = sessionStorage.getItem(`has_seen_tour_prompt_${user.id}`) === 'true';
+          const localSeenOnboarding = localStorage.getItem(`has_seen_onboarding_${user.id}`) === 'true';
+          const localSeenTourPrompt = localStorage.getItem(`has_seen_tour_prompt_${user.id}`) === 'true';
           
-          const needsOnboarding = !localSeenOnboarding;
-          const needsTourPrompt = !localSeenTourPrompt && !isActive;
+          const needsOnboarding = !user.user_metadata?.has_seen_onboarding && !localSeenOnboarding;
+          const needsTourPrompt = !user.user_metadata?.has_seen_tour_prompt && !localSeenTourPrompt && !isActive;
 
           if (needsOnboarding) {
             setShowOnboarding(true);
           } else if (needsTourPrompt) {
             setShowTourPrompt(true);
+          } else if (!isActive) {
+            setShowFinalTutorialHint(true);
+            setTimeout(() => {
+              setShowFinalTutorialHint(false);
+            }, 5000);
           }
         }
 
@@ -283,11 +292,6 @@ export default function VendorDashboard() {
 
   const handleLogout = async () => {
     setTourState({ isActive: false, tourType: null, stepIndex: 0 });
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      sessionStorage.removeItem(`has_seen_onboarding_${user.id}`);
-      sessionStorage.removeItem(`has_seen_tour_prompt_${user.id}`);
-    }
     await supabase.auth.signOut();
     navigate('/login');
   };
@@ -297,13 +301,24 @@ export default function VendorDashboard() {
     
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      sessionStorage.setItem(`has_seen_tour_prompt_${user.id}`, 'true');
+      localStorage.setItem(`has_seen_tour_prompt_${user.id}`, 'true');
+    }
+
+    try {
+      await supabase.auth.updateUser({
+        data: { has_seen_tour_prompt: true }
+      });
+    } catch (err) {
+      console.error("Failed to save tour prompt status:", err);
     }
 
     if (start) {
       startTour('dashboard_overview');
     } else {
       setShowFinalTutorialHint(true);
+      setTimeout(() => {
+        setShowFinalTutorialHint(false);
+      }, 5000);
     }
   };
 
@@ -788,12 +803,23 @@ export default function VendorDashboard() {
             
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-              sessionStorage.setItem(`has_seen_onboarding_${user.id}`, 'true');
+              localStorage.setItem(`has_seen_onboarding_${user.id}`, 'true');
             }
             
             setShowOnboarding(false);
             if (!isActive) {
               setShowTourPrompt(true);
+            }
+            
+            try {
+              const { error } = await supabase.auth.updateUser({
+                data: { has_seen_onboarding: true }
+              });
+              if (error) {
+                console.error("Failed to save onboarding status:", error);
+              }
+            } catch (err) {
+              console.error("Failed to save onboarding status:", err);
             }
           }} 
         />
@@ -1321,6 +1347,9 @@ export default function VendorDashboard() {
                   onClick={() => {
                     setShowCreateEventTourPrompt(false);
                     setShowFinalTutorialHint(true);
+                    setTimeout(() => {
+                      setShowFinalTutorialHint(false);
+                    }, 5000);
                   }}
                   className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest text-white"
                 >
@@ -1397,6 +1426,9 @@ export default function VendorDashboard() {
                   onClick={() => {
                     setShowNextTutorialPrompt(false);
                     setShowFinalTutorialHint(true);
+                    setTimeout(() => {
+                      setShowFinalTutorialHint(false);
+                    }, 5000);
                   }}
                   className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest text-white mt-2"
                 >

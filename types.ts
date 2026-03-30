@@ -119,6 +119,7 @@ export interface Vendor {
   created_at: string;
   is_blocked?: boolean;
   admin_message?: string;
+  email_confirmed?: boolean;
 }
 
 export interface Event {
