@@ -329,6 +329,9 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
   };
 
   const getShareUrl = (item: GalleryItem) => {
+    if (item.id && item.id.length > 20) {
+        return `${window.location.origin}/result/${item.id}?n=${encodeURIComponent(eventName || '')}`;
+    }
     if (item.downloadUrl && item.downloadUrl.includes('drive.google.com')) return item.downloadUrl;
     return `https://drive.google.com/file/d/${item.id}/view`;
   };

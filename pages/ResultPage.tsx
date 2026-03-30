@@ -417,7 +417,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
                   <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-purple-500" />
                   <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-purple-500" />
                   <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-purple-500" />
-                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`${window.location.origin}/result/${sessionFolder.id}`)}`} className="w-32 h-32 object-contain mix-blend-multiply" />
+                  <img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`${window.location.origin}/result/${sessionFolder.id}?n=${encodeURIComponent(settings.eventName || '')}&d=${encodeURIComponent(settings.eventDescription || '')}`)}`} className="w-32 h-32 object-contain mix-blend-multiply" />
                 </div>
                 <div className="text-center z-10 mt-1">
                   <p className="text-purple-300 text-[9px] font-mono tracking-widest uppercase mb-1">SCAN_TO_DOWNLOAD</p>

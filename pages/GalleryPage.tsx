@@ -319,7 +319,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
   const getQRLink = (item: GalleryItem) => {
      // If it has a valid UUID format (Supabase session), point to the result page
      if (item.id && item.id.length > 20) {
-         return `${window.location.origin}/result/${item.id}`;
+         return `${window.location.origin}/result/${item.id}?n=${encodeURIComponent(settings?.eventName || '')}&d=${encodeURIComponent(settings?.eventDescription || '')}`;
      }
      return item.sessionFolderUrl || item.downloadUrl;
   };

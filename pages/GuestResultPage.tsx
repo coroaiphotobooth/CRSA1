@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { fetchSessionFromCloud } from '../lib/appsScript';
 import { Download, Image as ImageIcon, Video, Loader2 } from 'lucide-react';
 
 export default function GuestResultPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
+  const [searchParams] = useSearchParams();
+  const eventNameFromUrl = searchParams.get('n');
+  const eventDescFromUrl = searchParams.get('d');
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sessionData, setSessionData] = useState<{
@@ -130,10 +134,10 @@ export default function GuestResultPage() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-5xl font-heading font-bold neon-text mb-2">
-            {sessionData.eventName || 'YOUR DIGITAL ART'}
+            {eventNameFromUrl || sessionData.eventName || 'YOUR DIGITAL ART'}
           </h1>
           <p className="text-gray-400 tracking-widest text-sm md:text-base">
-            {sessionData.eventDescription || 'COROAI PHOTOBOOTH'}
+            {eventDescFromUrl || sessionData.eventDescription || 'COROAI PHOTOBOOTH'}
           </p>
         </div>
 
