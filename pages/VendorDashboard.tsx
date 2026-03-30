@@ -231,9 +231,16 @@ export default function VendorDashboard() {
         }
 
         if (currentVendor) {
-          const localSeen = localStorage.getItem('has_seen_onboarding') === 'true';
-          if (!user.user_metadata?.has_seen_onboarding && !localSeen) {
+          const localSeenOnboarding = localStorage.getItem('has_seen_onboarding') === 'true';
+          const localSeenTourPrompt = localStorage.getItem('has_seen_tour_prompt') === 'true';
+          
+          const needsOnboarding = !user.user_metadata?.has_seen_onboarding && !localSeenOnboarding;
+          const needsTourPrompt = !user.user_metadata?.has_seen_tour_prompt && !localSeenTourPrompt;
+
+          if (needsOnboarding) {
             setShowOnboarding(true);
+          } else if (needsTourPrompt) {
+            setShowTourPrompt(true);
           }
         }
 
@@ -251,6 +258,21 @@ export default function VendorDashboard() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/login');
+  };
+
+  const handleCloseTourPrompt = async (start: boolean) => {
+    setShowTourPrompt(false);
+    localStorage.setItem('has_seen_tour_prompt', 'true');
+    try {
+      await supabase.auth.updateUser({
+        data: { has_seen_tour_prompt: true }
+      });
+    } catch (err) {
+      console.error("Failed to save tour prompt status:", err);
+    }
+    if (start) {
+      startTour('dashboard_overview');
+    }
   };
 
   const [isCreating, setIsCreating] = useState(false);
@@ -1182,19 +1204,16 @@ export default function VendorDashboard() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button
-                onClick={() => setShowTourPrompt(false)}
+                onClick={() => handleCloseTourPrompt(false)}
                 className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
               >
-                {language === 'id' ? 'Tidak, Terima Kasih' : 'No, Thanks'}
+                {language === 'id' ? 'Tidak' : 'No'}
               </button>
               <button
-                onClick={() => {
-                  setShowTourPrompt(false);
-                  startTour('dashboard_overview');
-                }}
+                onClick={() => handleCloseTourPrompt(true)}
                 className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold transition-colors uppercase tracking-widest"
               >
-                {language === 'id' ? 'Ya, Mulai Tour' : 'Yes, Start Tour'}
+                {language === 'id' ? 'Ya' : 'Yes'}
               </button>
             </div>
           </div>
