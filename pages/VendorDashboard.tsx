@@ -166,7 +166,7 @@ export default function VendorDashboard() {
         const { data: globalSettings, error: globalSettingsError } = await supabase
           .from('global_settings')
           .select('template_event_id')
-          .eq('id', 'default')
+          .eq('id', 1)
           .maybeSingle();
           
         if (globalSettingsError) {
@@ -350,7 +350,7 @@ export default function VendorDashboard() {
         const { data: globalSettings } = await supabase
           .from('global_settings')
           .select('template_event_id')
-          .eq('id', 'default')
+          .eq('id', 1)
           .single();
         targetTemplateId = globalSettings?.template_event_id || null;
       } else if (selectedTemplateId !== 'empty') {
