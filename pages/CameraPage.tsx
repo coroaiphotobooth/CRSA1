@@ -63,15 +63,18 @@ const CameraPage: React.FC<CameraPageProps> = ({
 
     try {
       console.log("Starting Camera...");
-      // Relaxed constraints for better compatibility and to prevent native sensor cropping
+      
+      const isPortrait = targetRatioValue < 1;
+      const isSideways = cameraRotation === 90 || cameraRotation === 270;
+      const requestPortrait = isPortrait !== isSideways;
+
       const constraints: MediaStreamConstraints = { 
         audio: false,
         video: { 
           facingMode: 'user',
-          // Request high resolution without forcing a specific aspect ratio
-          // This prevents the browser from cropping portrait cameras to landscape
-          width: { ideal: 2160 },
-          height: { ideal: 2160 }
+          // Request resolution that matches the physical orientation to prevent native sensor cropping
+          width: { ideal: requestPortrait ? 1080 : 1920 },
+          height: { ideal: requestPortrait ? 1920 : 1080 }
         } 
       };
 
@@ -414,8 +417,8 @@ const CameraPage: React.FC<CameraPageProps> = ({
                   <div 
                     className="absolute flex items-center justify-center"
                     style={{
-                       width: isSideways ? '100vh' : '100%',
-                       height: isSideways ? '100vw' : '100%',
+                       width: isSideways ? `${100 / targetRatioValue}%` : '100%',
+                       height: isSideways ? `${100 * targetRatioValue}%` : '100%',
                        transform: `rotate(${cameraRotation}deg)`,
                     }}
                   >
