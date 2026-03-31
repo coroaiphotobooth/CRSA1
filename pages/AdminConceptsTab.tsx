@@ -297,6 +297,17 @@ Output ONLY the enhanced prompt text, nothing else.`;
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("Not authenticated");
 
+        // Fetch the event's vendor_id to ensure concepts are saved under the correct vendor
+        // even if a super admin is the one editing them.
+        const { data: eventData, error: eventError } = await supabase
+          .from('events')
+          .select('vendor_id')
+          .eq('id', eventId)
+          .single();
+          
+        if (eventError) throw eventError;
+        const vendorId = eventData?.vendor_id || user.id;
+
         const conceptsToSave = fixedLocalConcepts.map(c => {
           const payload: any = {
             id: c.id,
