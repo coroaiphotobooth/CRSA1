@@ -63,12 +63,13 @@ const CameraPage: React.FC<CameraPageProps> = ({
 
     try {
       console.log("Starting Camera...");
-      
+      // Relaxed constraints for better compatibility and to prevent native sensor cropping
       const constraints: MediaStreamConstraints = { 
         audio: false,
         video: { 
           facingMode: 'user',
-          // Request high resolution, let the device provide its native orientation
+          // Request high resolution without forcing a specific aspect ratio
+          // This prevents the browser from cropping portrait cameras to landscape
           width: { ideal: 2160 },
           height: { ideal: 2160 }
         } 
@@ -155,39 +156,47 @@ const CameraPage: React.FC<CameraPageProps> = ({
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
 
-      // 1. Get RAW Video Source Dimensions
+      // 1. Get RAW Video Source Dimensions (Usually Landscape 1920x1080)
       const rawW = video.videoWidth;
       const rawH = video.videoHeight;
       
       // Safety check if video hasn't loaded yet
       if (rawW === 0 || rawH === 0) return;
 
+      // 2. Calculate "Effective" Dimensions based on Physical Camera Rotation
       const isSideways = cameraRotation === 90 || cameraRotation === 270;
+      
+      const effectiveInputW = isSideways ? rawH : rawW;
+      const effectiveInputH = isSideways ? rawW : rawH;
+      const effectiveInputRatio = effectiveInputW / effectiveInputH;
 
-      // 2. Determine Final Output Size (Max 1024px for optimal quality/speed balance)
+      // 3. Use Full RAW Stream (No Cropping)
+      let srcX = 0;
+      let srcY = 0;
+      let srcW = rawW;
+      let srcH = rawH;
+
+      // 4. Determine Final Output Size (Max 1024px for optimal quality/speed balance)
+      // We resize the FULL sensor image to max 1024px
       const MAX_DIMENSION = 1024;
       let destW, destH;
 
-      if (targetRatioValue < 1) { // Portrait Target
-          destW = Math.round(MAX_DIMENSION * targetRatioValue);
+      if (effectiveInputRatio < 1) { // Portrait Source
+          destW = Math.round(MAX_DIMENSION * effectiveInputRatio);
           destH = MAX_DIMENSION;
-      } else { // Landscape Target
+      } else { // Landscape Source
           destW = MAX_DIMENSION;
-          destH = Math.round(MAX_DIMENSION / targetRatioValue);
+          destH = Math.round(MAX_DIMENSION / effectiveInputRatio);
       }
 
-      // 3. Set Canvas Size
+      // 6. Set Canvas Size
       canvas.width = destW;
       canvas.height = destH;
 
       if (ctx) {
-         // Fill background with black for letterboxing
-         ctx.fillStyle = '#000000';
-         ctx.fillRect(0, 0, destW, destH);
-
          ctx.save();
          // Translate to center
-         ctx.translate(destW / 2, destH / 2);
+         ctx.translate(canvas.width / 2, canvas.height / 2);
          // Rotate based on settings
          ctx.rotate((cameraRotation * Math.PI) / 180);
          // Mirror (Standard Webcam behavior)
@@ -195,17 +204,13 @@ const CameraPage: React.FC<CameraPageProps> = ({
            ctx.scale(-1, 1); 
          }
 
-         // Calculate object-contain dimensions
-         const boundW = isSideways ? destH : destW;
-         const boundH = isSideways ? destW : destH;
-         
-         const scale = Math.min(boundW / rawW, boundH / rawH);
-         const drawW = rawW * scale;
-         const drawH = rawH * scale;
+         // Draw Video to Canvas
+         const drawW = isSideways ? destH : destW;
+         const drawH = isSideways ? destW : destH;
          
          ctx.drawImage(
             video, 
-            0, 0, rawW, rawH, 
+            srcX, srcY, srcW, srcH, 
             -drawW / 2, -drawH / 2, drawW, drawH
          );
 
@@ -372,22 +377,13 @@ const CameraPage: React.FC<CameraPageProps> = ({
            <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden p-4 md:p-8">
               
               {/* FRAME WITH VIDEO INSIDE */}
-              <div 
-                 className="relative z-20 border-2 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.3)] rounded-2xl overflow-hidden flex items-center justify-center bg-zinc-900"
-                 style={{ 
-                    aspectRatio: cssAspectRatio,
-                    maxHeight: '100%',
-                    maxWidth: '100%',
-                    height: targetRatioValue < 1 ? '100%' : 'auto',
-                    width: targetRatioValue >= 1 ? '100%' : 'auto'
-                 }}
-              >
+              <div className="relative z-20 border-2 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.3)] rounded-2xl overflow-hidden flex items-center justify-center bg-zinc-900 w-full h-full">
                   
                   <div 
                     className="absolute flex items-center justify-center"
                     style={{
-                       width: isSideways ? `${100 / targetRatioValue}%` : '100%',
-                       height: isSideways ? `${100 * targetRatioValue}%` : '100%',
+                       width: isSideways ? '100vh' : '100%',
+                       height: isSideways ? '100vw' : '100%',
                        transform: `rotate(${cameraRotation}deg)`,
                     }}
                   >
@@ -418,16 +414,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
         ) : (
            // Result Preview (Same 100% sizing for consistency)
            <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden p-4 md:p-8">
-               <div 
-                 className="relative overflow-hidden border-2 border-white/20 rounded-xl flex items-center justify-center bg-zinc-900"
-                 style={{ 
-                    aspectRatio: cssAspectRatio,
-                    maxHeight: '100%',
-                    maxWidth: '100%',
-                    height: targetRatioValue < 1 ? '100%' : 'auto',
-                    width: targetRatioValue >= 1 ? '100%' : 'auto'
-                 }}
-               >
+               <div className="relative overflow-hidden border-2 border-white/20 rounded-xl flex items-center justify-center bg-zinc-900 w-full h-full">
                   
                   <img src={capturedImage} alt="Capture" className="absolute inset-0 w-full h-full object-contain" />
                </div>
