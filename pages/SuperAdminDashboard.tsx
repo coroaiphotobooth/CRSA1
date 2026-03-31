@@ -72,7 +72,7 @@ export default function SuperAdminDashboard() {
       const { data: settingsData, error: settingsError } = await supabase
         .from('global_settings')
         .select('*')
-        .eq('id', 1)
+        .eq('id', 'default')
         .single();
       
       if (!settingsError && settingsData) {
@@ -129,7 +129,7 @@ export default function SuperAdminDashboard() {
       const { error } = await supabase
         .from('global_settings')
         .upsert({
-          id: 1,
+          id: 'default',
           default_free_credits: globalSettings.default_free_credits,
           system_status: globalSettings.system_status,
           template_event_id: globalSettings.template_event_id || null,
@@ -236,7 +236,7 @@ export default function SuperAdminDashboard() {
       const { error } = await supabase
         .from('global_settings')
         .upsert({
-          id: 1,
+          id: 'default',
           default_free_credits: globalSettings.default_free_credits,
           system_status: globalSettings.system_status,
           template_event_id: eventId,
@@ -326,7 +326,7 @@ export default function SuperAdminDashboard() {
         await supabase
           .from('global_settings')
           .upsert({
-            id: 1,
+            id: 'default',
             default_free_credits: globalSettings.default_free_credits,
             system_status: globalSettings.system_status,
             template_event_id: null,
