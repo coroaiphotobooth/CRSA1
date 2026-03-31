@@ -170,23 +170,46 @@ const CameraPage: React.FC<CameraPageProps> = ({
       const effectiveInputH = isSideways ? rawW : rawH;
       const effectiveInputRatio = effectiveInputW / effectiveInputH;
 
-      // 3. Use Full RAW Stream (No Cropping)
+      // 3. Crop RAW Stream to Target Aspect Ratio
       let srcX = 0;
       let srcY = 0;
       let srcW = rawW;
       let srcH = rawH;
 
+      let cropEffectiveW = effectiveInputW;
+      let cropEffectiveH = effectiveInputH;
+
+      if (effectiveInputRatio > targetRatioValue) {
+         // Effective input is wider than target. Crop width.
+         cropEffectiveW = effectiveInputH * targetRatioValue;
+      } else {
+         // Effective input is taller than target. Crop height.
+         cropEffectiveH = effectiveInputW / targetRatioValue;
+      }
+
+      // Map cropped effective dimensions back to RAW dimensions
+      if (isSideways) {
+         srcH = cropEffectiveW;
+         srcW = cropEffectiveH;
+         srcY = (rawH - srcH) / 2;
+         srcX = (rawW - srcW) / 2;
+      } else {
+         srcW = cropEffectiveW;
+         srcH = cropEffectiveH;
+         srcX = (rawW - srcW) / 2;
+         srcY = (rawH - srcH) / 2;
+      }
+
       // 4. Determine Final Output Size (Max 1024px for optimal quality/speed balance)
-      // We resize the FULL sensor image to max 1024px
       const MAX_DIMENSION = 1024;
       let destW, destH;
 
-      if (effectiveInputRatio < 1) { // Portrait Source
-          destW = Math.round(MAX_DIMENSION * effectiveInputRatio);
+      if (targetRatioValue < 1) { // Portrait Target
+          destW = Math.round(MAX_DIMENSION * targetRatioValue);
           destH = MAX_DIMENSION;
-      } else { // Landscape Source
+      } else { // Landscape Target
           destW = MAX_DIMENSION;
-          destH = Math.round(MAX_DIMENSION / effectiveInputRatio);
+          destH = Math.round(MAX_DIMENSION / targetRatioValue);
       }
 
       // 6. Set Canvas Size
@@ -377,7 +400,16 @@ const CameraPage: React.FC<CameraPageProps> = ({
            <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden p-4 md:p-8">
               
               {/* FRAME WITH VIDEO INSIDE */}
-              <div className="relative z-20 border-2 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.3)] rounded-2xl overflow-hidden flex items-center justify-center bg-zinc-900 w-full h-full">
+              <div 
+                 className="relative z-20 border-2 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.3)] rounded-2xl overflow-hidden flex items-center justify-center bg-zinc-900"
+                 style={{ 
+                    aspectRatio: cssAspectRatio,
+                    maxHeight: '100%',
+                    maxWidth: '100%',
+                    height: targetRatioValue < 1 ? '100%' : 'auto',
+                    width: targetRatioValue >= 1 ? '100%' : 'auto'
+                 }}
+              >
                   
                   <div 
                     className="absolute flex items-center justify-center"
@@ -392,7 +424,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
                       autoPlay 
                       playsInline 
                       muted
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-cover"
                       style={{ transform: settings?.mirrorCamera !== false ? 'scaleX(-1)' : 'none' }}
                     />
                   </div>
@@ -414,9 +446,18 @@ const CameraPage: React.FC<CameraPageProps> = ({
         ) : (
            // Result Preview (Same 100% sizing for consistency)
            <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden p-4 md:p-8">
-               <div className="relative overflow-hidden border-2 border-white/20 rounded-xl flex items-center justify-center bg-zinc-900 w-full h-full">
+               <div 
+                 className="relative overflow-hidden border-2 border-white/20 rounded-xl flex items-center justify-center bg-zinc-900"
+                 style={{ 
+                    aspectRatio: cssAspectRatio,
+                    maxHeight: '100%',
+                    maxWidth: '100%',
+                    height: targetRatioValue < 1 ? '100%' : 'auto',
+                    width: targetRatioValue >= 1 ? '100%' : 'auto'
+                 }}
+               >
                   
-                  <img src={capturedImage} alt="Capture" className="absolute inset-0 w-full h-full object-contain" />
+                  <img src={capturedImage} alt="Capture" className="absolute inset-0 w-full h-full object-cover" />
                </div>
            </div>
         )}
