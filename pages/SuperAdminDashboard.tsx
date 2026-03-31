@@ -682,6 +682,12 @@ CREATE POLICY "Vendors can view concepts for their events" ON concepts FOR SELEC
   EXISTS (SELECT 1 FROM events WHERE events.id = concepts.event_id AND (events.vendor_id = auth.uid() OR is_superadmin()))
 );
 
+-- Anyone (including vendors) can see ALL concepts created by the Super Admin (these act as templates)
+DROP POLICY IF EXISTS "Anyone can view superadmin concepts" ON concepts;
+CREATE POLICY "Anyone can view superadmin concepts" ON concepts FOR SELECT USING (
+  EXISTS (SELECT 1 FROM events WHERE events.id = concepts.event_id AND events.vendor_id = get_superadmin_id())
+);
+
 -- 3.5. Allow deleting sessions (photos) from the gallery
 DROP POLICY IF EXISTS "Anyone can delete sessions" ON sessions;
 CREATE POLICY "Anyone can delete sessions" ON sessions FOR DELETE USING (true);

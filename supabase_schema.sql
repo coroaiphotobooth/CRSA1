@@ -73,6 +73,16 @@ CREATE POLICY "Vendors can insert their own events" ON events FOR INSERT WITH CH
 DROP POLICY IF EXISTS "Anyone can view events" ON events;
 CREATE POLICY "Vendors can view their own events" ON events FOR SELECT USING (auth.uid() = vendor_id OR is_superadmin());
 
+-- Create a secure function to get the superadmin ID
+CREATE OR REPLACE FUNCTION get_superadmin_id()
+RETURNS UUID AS $$
+  SELECT id FROM vendors WHERE email = 'coroaiphotobooth@gmail.com' LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Anyone (including vendors) can see ALL events created by the Super Admin (these act as templates)
+DROP POLICY IF EXISTS "Anyone can view superadmin events" ON events;
+CREATE POLICY "Anyone can view superadmin events" ON events FOR SELECT USING (vendor_id = get_superadmin_id());
+
 
 -- 3. Concepts Table
 CREATE TABLE concepts (
@@ -95,6 +105,12 @@ CREATE POLICY "Vendors can manage concepts for their events" ON concepts FOR ALL
 DROP POLICY IF EXISTS "Anyone can view concepts" ON concepts;
 CREATE POLICY "Vendors can view concepts for their events" ON concepts FOR SELECT USING (
   EXISTS (SELECT 1 FROM events WHERE events.id = concepts.event_id AND (events.vendor_id = auth.uid() OR is_superadmin()))
+);
+
+-- Anyone (including vendors) can see ALL concepts created by the Super Admin (these act as templates)
+DROP POLICY IF EXISTS "Anyone can view superadmin concepts" ON concepts;
+CREATE POLICY "Anyone can view superadmin concepts" ON concepts FOR SELECT USING (
+  EXISTS (SELECT 1 FROM events WHERE events.id = concepts.event_id AND events.vendor_id = get_superadmin_id())
 );
 
 
