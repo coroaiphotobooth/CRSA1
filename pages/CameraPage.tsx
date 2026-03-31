@@ -64,18 +64,16 @@ const CameraPage: React.FC<CameraPageProps> = ({
     try {
       console.log("Starting Camera...");
       // Relaxed constraints for better compatibility and to prevent native sensor cropping
-      // Determine if the device is currently in portrait orientation
+      // Request high resolution matching the device's longest dimension.
+      // By not specifying the shorter dimension, we prevent iOS Safari from 
+      // forcing a landscape or square crop on a portrait device.
       const isPortrait = window.innerHeight > window.innerWidth;
       
       const constraints: MediaStreamConstraints = { 
         audio: false,
         video: { 
           facingMode: 'user',
-          // Request high resolution matching the device's orientation.
-          // This prevents iOS Safari from cropping the sensor to a 1:1 square
-          // or forcing landscape on a portrait device.
-          width: { ideal: isPortrait ? 1080 : 1920 },
-          height: { ideal: isPortrait ? 1920 : 1080 }
+          ...(isPortrait ? { height: { ideal: 1920 } } : { width: { ideal: 1920 } })
         } 
       };
 
@@ -396,7 +394,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
                       autoPlay 
                       playsInline 
                       muted
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-cover"
                       style={{ transform: settings?.mirrorCamera !== false ? 'scaleX(-1)' : 'none' }}
                     />
                   </div>
