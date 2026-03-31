@@ -312,6 +312,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
           const payload: any = {
             id: c.id,
             concept_id: c.concept_id || null,
+            vendor_id: vendorId,
             event_id: eventId,
             name: c.name,
             prompt: c.prompt,
