@@ -64,14 +64,18 @@ const CameraPage: React.FC<CameraPageProps> = ({
     try {
       console.log("Starting Camera...");
       // Relaxed constraints for better compatibility and to prevent native sensor cropping
+      // Determine if the device is currently in portrait orientation
+      const isPortrait = window.innerHeight > window.innerWidth;
+      
       const constraints: MediaStreamConstraints = { 
         audio: false,
         video: { 
           facingMode: 'user',
-          // Request high resolution without forcing a specific aspect ratio
-          // This prevents the browser from cropping portrait cameras to landscape
-          width: { ideal: 2160 },
-          height: { ideal: 2160 }
+          // Request high resolution matching the device's orientation.
+          // This prevents iOS Safari from cropping the sensor to a 1:1 square
+          // or forcing landscape on a portrait device.
+          width: { ideal: isPortrait ? 1080 : 1920 },
+          height: { ideal: isPortrait ? 1920 : 1080 }
         } 
       };
 
