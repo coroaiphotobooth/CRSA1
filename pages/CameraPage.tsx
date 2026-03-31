@@ -64,17 +64,13 @@ const CameraPage: React.FC<CameraPageProps> = ({
     try {
       console.log("Starting Camera...");
       
-      const isPortrait = targetRatioValue < 1;
-      const isSideways = cameraRotation === 90 || cameraRotation === 270;
-      const requestPortrait = isPortrait !== isSideways;
-
       const constraints: MediaStreamConstraints = { 
         audio: false,
         video: { 
           facingMode: 'user',
-          // Request resolution that matches the physical orientation to prevent native sensor cropping
-          width: { ideal: requestPortrait ? 1080 : 1920 },
-          height: { ideal: requestPortrait ? 1920 : 1080 }
+          // Request high resolution, let the device provide its native orientation
+          width: { ideal: 2160 },
+          height: { ideal: 2160 }
         } 
       };
 
@@ -159,51 +155,16 @@ const CameraPage: React.FC<CameraPageProps> = ({
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
 
-      // 1. Get RAW Video Source Dimensions (Usually Landscape 1920x1080)
+      // 1. Get RAW Video Source Dimensions
       const rawW = video.videoWidth;
       const rawH = video.videoHeight;
       
       // Safety check if video hasn't loaded yet
       if (rawW === 0 || rawH === 0) return;
 
-      // 2. Calculate "Effective" Dimensions based on Physical Camera Rotation
       const isSideways = cameraRotation === 90 || cameraRotation === 270;
-      
-      const effectiveInputW = isSideways ? rawH : rawW;
-      const effectiveInputH = isSideways ? rawW : rawH;
-      const effectiveInputRatio = effectiveInputW / effectiveInputH;
 
-      // 3. Crop RAW Stream to Target Aspect Ratio
-      let srcX = 0;
-      let srcY = 0;
-      let srcW = rawW;
-      let srcH = rawH;
-
-      let cropEffectiveW = effectiveInputW;
-      let cropEffectiveH = effectiveInputH;
-
-      if (effectiveInputRatio > targetRatioValue) {
-         // Effective input is wider than target. Crop width.
-         cropEffectiveW = effectiveInputH * targetRatioValue;
-      } else {
-         // Effective input is taller than target. Crop height.
-         cropEffectiveH = effectiveInputW / targetRatioValue;
-      }
-
-      // Map cropped effective dimensions back to RAW dimensions
-      if (isSideways) {
-         srcH = cropEffectiveW;
-         srcW = cropEffectiveH;
-         srcY = (rawH - srcH) / 2;
-         srcX = (rawW - srcW) / 2;
-      } else {
-         srcW = cropEffectiveW;
-         srcH = cropEffectiveH;
-         srcX = (rawW - srcW) / 2;
-         srcY = (rawH - srcH) / 2;
-      }
-
-      // 4. Determine Final Output Size (Max 1024px for optimal quality/speed balance)
+      // 2. Determine Final Output Size (Max 1024px for optimal quality/speed balance)
       const MAX_DIMENSION = 1024;
       let destW, destH;
 
@@ -215,14 +176,18 @@ const CameraPage: React.FC<CameraPageProps> = ({
           destH = Math.round(MAX_DIMENSION / targetRatioValue);
       }
 
-      // 6. Set Canvas Size
+      // 3. Set Canvas Size
       canvas.width = destW;
       canvas.height = destH;
 
       if (ctx) {
+         // Fill background with black for letterboxing
+         ctx.fillStyle = '#000000';
+         ctx.fillRect(0, 0, destW, destH);
+
          ctx.save();
          // Translate to center
-         ctx.translate(canvas.width / 2, canvas.height / 2);
+         ctx.translate(destW / 2, destH / 2);
          // Rotate based on settings
          ctx.rotate((cameraRotation * Math.PI) / 180);
          // Mirror (Standard Webcam behavior)
@@ -230,13 +195,17 @@ const CameraPage: React.FC<CameraPageProps> = ({
            ctx.scale(-1, 1); 
          }
 
-         // Draw Video to Canvas
-         const drawW = isSideways ? destH : destW;
-         const drawH = isSideways ? destW : destH;
+         // Calculate object-contain dimensions
+         const boundW = isSideways ? destH : destW;
+         const boundH = isSideways ? destW : destH;
+         
+         const scale = Math.min(boundW / rawW, boundH / rawH);
+         const drawW = rawW * scale;
+         const drawH = rawH * scale;
          
          ctx.drawImage(
             video, 
-            srcX, srcY, srcW, srcH, 
+            0, 0, rawW, rawH, 
             -drawW / 2, -drawH / 2, drawW, drawH
          );
 
@@ -427,7 +396,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
                       autoPlay 
                       playsInline 
                       muted
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                       style={{ transform: settings?.mirrorCamera !== false ? 'scaleX(-1)' : 'none' }}
                     />
                   </div>
@@ -460,7 +429,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
                  }}
                >
                   
-                  <img src={capturedImage} alt="Capture" className="absolute inset-0 w-full h-full object-cover" />
+                  <img src={capturedImage} alt="Capture" className="absolute inset-0 w-full h-full object-contain" />
                </div>
            </div>
         )}
