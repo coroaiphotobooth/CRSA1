@@ -972,6 +972,7 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-white/10 text-gray-400 text-sm">
+                      <th className="pb-4 font-medium">No.</th>
                       <th className="pb-4 font-medium">Email</th>
                       <th className="pb-4 font-medium">Confirmed</th>
                       <th className="pb-4 font-medium">Name</th>
@@ -984,8 +985,9 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {filteredVendors.map(v => (
+                    {filteredVendors.map((v, index) => (
                       <tr key={v.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <td className="py-4 text-gray-400">{index + 1}</td>
                         <td className="py-4">{v.email || 'N/A'}</td>
                         <td className="py-4">
                           {v.email_confirmed ? (
