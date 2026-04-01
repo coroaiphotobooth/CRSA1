@@ -94,7 +94,7 @@ export default function VendorDashboard() {
           return;
         }
 
-        const isSuper = user.email === 'coroaiphotobooth@gmail.com';
+        const isSuper = user.email === 'admin@coroai.app';
         setIsSuperAdmin(isSuper);
 
         const targetUserId = (isSuper && impersonatedVendorId) ? impersonatedVendorId : user.id;
@@ -349,7 +349,7 @@ export default function VendorDashboard() {
     if (isCreating) return;
 
     if (vendor.is_blocked) {
-      await showDialog('alert', 'Account Blocked', 'Your account has been temporarily blocked by coro.ai. Please contact the admin at coroaiphotobooth@gmail.com or send a message on WhatsApp at +6282381230888');
+      await showDialog('alert', 'Account Blocked', 'Your account has been temporarily blocked by coro.ai. Please contact the admin at admin@coroai.app or send a message on WhatsApp at +6282381230888');
       return;
     }
 
@@ -1069,7 +1069,7 @@ export default function VendorDashboard() {
             <div>
               <h3 className="text-lg font-bold mb-2">Account Blocked</h3>
               <p className="text-sm opacity-90">
-                Your account has been temporarily blocked by coro.ai. Please contact the admin at <a href="mailto:coroaiphotobooth@gmail.com" className="underline">coroaiphotobooth@gmail.com</a> or send a message on WhatsApp at <a href="https://wa.me/6282381230888" className="underline">+6282381230888</a>
+                Your account has been temporarily blocked by coro.ai. Please contact the admin at <a href="mailto:admin@coroai.app" className="underline">admin@coroai.app</a> or send a message on WhatsApp at <a href="https://wa.me/6282381230888" className="underline">+6282381230888</a>
               </p>
             </div>
           </div>

@@ -36,7 +36,7 @@ export default function SuperAdminDashboard() {
   const navigate = useNavigate();
   const { showDialog } = useDialog();
 
-  const SUPER_ADMIN_EMAIL = 'coroaiphotobooth@gmail.com';
+  const SUPER_ADMIN_EMAIL = 'admin@coroai.app';
 
   useEffect(() => {
     fetchData();
@@ -90,7 +90,7 @@ export default function SuperAdminDashboard() {
         .order('created_at', { ascending: false });
       
       if (eventsData) {
-        const superAdminVendor = vendorsData?.find(v => v.email === 'coroaiphotobooth@gmail.com');
+        const superAdminVendor = vendorsData?.find(v => v.email === 'admin@coroai.app');
         if (superAdminVendor) {
           setEvents(eventsData.filter(e => e.vendor_id === superAdminVendor.id));
         } else {
@@ -604,14 +604,14 @@ DROP POLICY IF EXISTS "Guests can view events" ON events;
 -- Create a secure function to get the superadmin ID
 CREATE OR REPLACE FUNCTION get_superadmin_id()
 RETURNS UUID AS $$
-  SELECT id FROM vendors WHERE email = 'coroaiphotobooth@gmail.com' LIMIT 1;
+  SELECT id FROM vendors WHERE email = 'admin@coroai.app' LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER;
 
 -- Vendor only sees their own events
 CREATE POLICY "Vendors can view own events" ON events FOR SELECT USING (vendor_id = auth.uid());
 
 -- Superadmin sees all events
-CREATE POLICY "Superadmin can view all events" ON events FOR SELECT USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+CREATE POLICY "Superadmin can view all events" ON events FOR SELECT USING (auth.jwt() ->> 'email' = 'admin@coroai.app');
 
 -- Anyone (including vendors) can see ALL events created by the Super Admin (these act as templates)
 CREATE POLICY "Anyone can view superadmin events" ON events FOR SELECT USING (vendor_id = get_superadmin_id());
@@ -642,7 +642,7 @@ ALTER TABLE template_concepts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Anyone can read template concepts" ON template_concepts;
 CREATE POLICY "Anyone can read template concepts" ON template_concepts FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Super admin can do everything on template concepts" ON template_concepts;
-CREATE POLICY "Super admin can do everything on template concepts" ON template_concepts FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+CREATE POLICY "Super admin can do everything on template concepts" ON template_concepts FOR ALL USING (auth.jwt() ->> 'email' = 'admin@coroai.app');
 
 -- 2. Update default free credits to 50
 -- If your global_settings table uses a text ID, run this instead: UPDATE global_settings SET default_free_credits = 50 WHERE id = '1';
@@ -654,13 +654,13 @@ ALTER TABLE vendors ADD CONSTRAINT vendors_plan_check CHECK (plan IN ('free', 'p
 
 -- 3. Grant Super Admin access
 DROP POLICY IF EXISTS "Super admin can do everything on vendors" ON vendors;
-CREATE POLICY "Super admin can do everything on vendors" ON vendors FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+CREATE POLICY "Super admin can do everything on vendors" ON vendors FOR ALL USING (auth.jwt() ->> 'email' = 'admin@coroai.app');
 DROP POLICY IF EXISTS "Super admin can do everything on events" ON events;
-CREATE POLICY "Super admin can do everything on events" ON events FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+CREATE POLICY "Super admin can do everything on events" ON events FOR ALL USING (auth.jwt() ->> 'email' = 'admin@coroai.app');
 DROP POLICY IF EXISTS "Super admin can do everything on concepts" ON concepts;
-CREATE POLICY "Super admin can do everything on concepts" ON concepts FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+CREATE POLICY "Super admin can do everything on concepts" ON concepts FOR ALL USING (auth.jwt() ->> 'email' = 'admin@coroai.app');
 DROP POLICY IF EXISTS "Super admin can do everything on global_settings" ON global_settings;
-CREATE POLICY "Super admin can do everything on global_settings" ON global_settings FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+CREATE POLICY "Super admin can do everything on global_settings" ON global_settings FOR ALL USING (auth.jwt() ->> 'email' = 'admin@coroai.app');
 DROP POLICY IF EXISTS "Anyone can read global_settings" ON global_settings;
 CREATE POLICY "Anyone can read global_settings" ON global_settings FOR SELECT USING (true);
 
@@ -668,7 +668,7 @@ CREATE POLICY "Anyone can read global_settings" ON global_settings FOR SELECT US
 CREATE OR REPLACE FUNCTION is_superadmin()
 RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN (auth.jwt() ->> 'email') = 'coroaiphotobooth@gmail.com';
+  RETURN (auth.jwt() ->> 'email') = 'admin@coroai.app';
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -700,7 +700,7 @@ SECURITY DEFINER -- Runs with the privileges of the creator (postgres role)
 AS $$
 BEGIN
   -- Check if the calling user is the super admin
-  IF auth.jwt() ->> 'email' != 'coroaiphotobooth@gmail.com' THEN
+  IF auth.jwt() ->> 'email' != 'admin@coroai.app' THEN
     RAISE EXCEPTION 'Unauthorized: Only super admin can delete users';
   END IF;
 

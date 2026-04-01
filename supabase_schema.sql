@@ -48,7 +48,7 @@ CREATE TRIGGER on_auth_user_created
 CREATE OR REPLACE FUNCTION is_superadmin()
 RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN (auth.jwt() ->> 'email') = 'coroaiphotobooth@gmail.com';
+  RETURN (auth.jwt() ->> 'email') = 'admin@coroai.app';
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -76,7 +76,7 @@ CREATE POLICY "Vendors can view their own events" ON events FOR SELECT USING (au
 -- Create a secure function to get the superadmin ID
 CREATE OR REPLACE FUNCTION get_superadmin_id()
 RETURNS UUID AS $$
-  SELECT id FROM vendors WHERE email = 'coroaiphotobooth@gmail.com' LIMIT 1;
+  SELECT id FROM vendors WHERE email = 'admin@coroai.app' LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER;
 
 -- Anyone (including vendors) can see ALL events created by the Super Admin (these act as templates)
@@ -156,7 +156,7 @@ INSERT INTO global_settings (id, default_free_credits, system_status) VALUES ('d
 -- Enable RLS for global_settings
 ALTER TABLE global_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can read global settings" ON global_settings FOR SELECT USING (true);
-CREATE POLICY "Super admin can update global settings" ON global_settings FOR UPDATE USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+CREATE POLICY "Super admin can update global settings" ON global_settings FOR UPDATE USING (auth.jwt() ->> 'email' = 'admin@coroai.app');
 CREATE OR REPLACE FUNCTION decrement_credits(p_event_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
@@ -237,7 +237,7 @@ ALTER TABLE template_concepts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Anyone can view template concepts" ON template_concepts FOR SELECT USING (true);
 
 -- Allow super admin to manage template concepts
-CREATE POLICY "Super admin can manage template concepts" ON template_concepts FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
+CREATE POLICY "Super admin can manage template concepts" ON template_concepts FOR ALL USING (auth.jwt() ->> 'email' = 'admin@coroai.app');
 
 -- Enable Realtime for sessions table
 -- Note: Supabase creates the 'supabase_realtime' publication by default.

@@ -107,7 +107,7 @@ export default function LoginPage() {
           throw error;
         }
         if (data.user) {
-          if (data.user.email === 'coroaiphotobooth@gmail.com') {
+          if (data.user.email === 'admin@coroai.app') {
             navigate('/superadmin');
           } else {
             navigate('/dashboard');
