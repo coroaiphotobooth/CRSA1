@@ -215,6 +215,7 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
     if (outputRatio === '9:16') apiAspectRatio = '9:16';
     if (outputRatio === '3:2') apiAspectRatio = '4:3';
     if (outputRatio === '2:3') apiAspectRatio = '3:4';
+    if (outputRatio === '1:1') apiAspectRatio = '1:1';
 
     const executeGenAI = async (model: string, useProConfig: boolean) => {
       // A. imageConfig optimization: No imageSize for Ultra unless explicitly requested (not in UI)

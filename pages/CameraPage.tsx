@@ -246,33 +246,24 @@ const CameraPage: React.FC<CameraPageProps> = ({
           const canvas = canvasRef.current;
           const ctx = canvas.getContext('2d');
           
-          // Simple center crop for uploaded images
+          // No cropping, just resize to optimal size (max 1024px)
           const imgRatio = img.width / img.height;
-          let sX = 0, sY = 0, sW = img.width, sH = img.height;
-          
-          if (imgRatio > targetRatioValue) {
-             sW = img.height * targetRatioValue;
-             sX = (img.width - sW) / 2;
-          } else {
-             sH = img.width / targetRatioValue;
-             sY = (img.height - sH) / 2;
-          }
-
           const MAX_DIMENSION = 1024;
           let dW, dH;
-          if (targetRatioValue < 1) {
-              dW = Math.round(MAX_DIMENSION * targetRatioValue);
+          
+          if (imgRatio < 1) {
+              dW = Math.round(MAX_DIMENSION * imgRatio);
               dH = MAX_DIMENSION;
           } else {
               dW = MAX_DIMENSION;
-              dH = Math.round(MAX_DIMENSION / targetRatioValue);
+              dH = Math.round(MAX_DIMENSION / imgRatio);
           }
 
           canvas.width = dW;
           canvas.height = dH;
 
           if (ctx) {
-            ctx.drawImage(img, sX, sY, sW, sH, 0, 0, dW, dH);
+            ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, dW, dH);
             const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
             onCapture(dataUrl);
             onGenerate();
