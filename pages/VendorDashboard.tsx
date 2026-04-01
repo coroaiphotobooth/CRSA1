@@ -21,6 +21,11 @@ export default function VendorDashboard() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
+  const [buyModalTab, setBuyModalTab] = useState<'credit' | 'event' | 'rent'>('credit');
+  const [buyCurrency, setBuyCurrency] = useState<'IDR' | 'USD'>('IDR');
+  const [creditAmount, setCreditAmount] = useState<number>(10);
+  const [eventDuration, setEventDuration] = useState<number>(2);
+  const [rentDuration, setRentDuration] = useState<'minggu' | 'bulan'>('minggu');
   const [newEventName, setNewEventName] = useState('');
   const [newEventDescription, setNewEventDescription] = useState('AI PHOTOBOOTH EXPERIENCE');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -794,6 +799,62 @@ export default function VendorDashboard() {
     }
   };
 
+  const getCreditPriceIDR = (amount: number) => {
+    if (amount < 10) return 100000;
+    if (amount <= 1000) {
+      return 100000 + Math.round(((amount - 10) * 6900000) / 990);
+    }
+    return amount * 7000;
+  };
+
+  const eventPrices: Record<number, number> = {
+    2: 1500000,
+    3: 1950000,
+    4: 2400000,
+    5: 2850000,
+    6: 3300000,
+    7: 3750000,
+    8: 4200000,
+    9: 4650000,
+    10: 5100000,
+    11: 5550000,
+    12: 6000000,
+  };
+
+  const EXCHANGE_RATE = 15000;
+
+  const formatPrice = (priceIDR: number) => {
+    if (buyCurrency === 'IDR') {
+      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(priceIDR);
+    } else {
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(priceIDR / EXCHANGE_RATE);
+    }
+  };
+
+  const handleBuyWhatsApp = () => {
+    let packageName = '';
+    let packageDetail = '';
+    let totalPriceStr = '';
+
+    if (buyModalTab === 'credit') {
+      packageName = 'Buy Credit';
+      packageDetail = `${creditAmount} credit`;
+      totalPriceStr = formatPrice(getCreditPriceIDR(creditAmount));
+    } else if (buyModalTab === 'event') {
+      packageName = 'Buy per Event - Unlimited Generate photo & video';
+      packageDetail = `${eventDuration} jam`;
+      totalPriceStr = formatPrice(eventPrices[eventDuration]);
+    } else {
+      packageName = 'Rent Duration';
+      packageDetail = `per ${rentDuration}`;
+      totalPriceStr = 'Call for price';
+    }
+
+    const text = `Hi i want buy ${packageName}\n${vendor?.email || 'Vendor Email'}\npaket yang di ambil ${packageDetail}\ntotal harga ${totalPriceStr}`;
+    const encodedText = encodeURIComponent(text);
+    window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
+  };
+
   const t = translations[language];
 
   if (loading) {
@@ -1177,35 +1238,158 @@ export default function VendorDashboard() {
       {/* Buy Credits Modal */}
       {showBuyCreditsModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
-          <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-md relative">
+          <div className="bg-[#111]/90 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-lg relative shadow-2xl">
             <button 
               onClick={() => setShowBuyCreditsModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-xl font-bold mb-4 text-white">BUY CREDIT</h2>
-            <p className="text-gray-300 mb-2 text-sm">Auto Payment gateway integration coming soon!</p>
-            <p className="text-gray-300 mb-6 text-sm">Please make a manual purchase via WhatsApp message</p>
             
-            <div className="flex justify-end gap-3">
+            <div className="flex items-center justify-between mb-6 pr-8">
+              <h2 className="text-xl font-bold text-white">Buy Package</h2>
+              
+              {/* Currency Toggle */}
+              <div className="flex items-center bg-black/50 rounded-lg p-1 border border-white/10">
+                <button
+                  onClick={() => setBuyCurrency('IDR')}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${buyCurrency === 'IDR' ? 'bg-[#bc13fe] text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                  IDR
+                </button>
+                <button
+                  onClick={() => setBuyCurrency('USD')}
+                  className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${buyCurrency === 'USD' ? 'bg-[#bc13fe] text-white' : 'text-gray-400 hover:text-white'}`}
+                >
+                  USD
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 mb-6 border-b border-white/10 pb-2 overflow-x-auto hide-scrollbar">
+              <button
+                onClick={() => setBuyModalTab('credit')}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'credit' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+              >
+                Buy Credit
+              </button>
+              <button
+                onClick={() => setBuyModalTab('event')}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'event' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+              >
+                Unlimited Event
+              </button>
+              <button
+                onClick={() => setBuyModalTab('rent')}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'rent' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+              >
+                Rent Duration
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="min-h-[150px] mb-8">
+              {buyModalTab === 'credit' && (
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-sm text-gray-300 font-medium">Amount of Credits</label>
+                      <input 
+                        type="number" 
+                        min="10" 
+                        value={creditAmount || ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                          if (!isNaN(val)) setCreditAmount(val);
+                        }}
+                        onBlur={() => {
+                          if (creditAmount < 10) setCreditAmount(10);
+                        }}
+                        className="w-24 bg-black/50 border border-white/10 rounded-lg px-2 py-1 text-white text-right focus:outline-none focus:border-[#bc13fe]"
+                      />
+                    </div>
+                    <input 
+                      type="range" 
+                      min="10" 
+                      max="1000" 
+                      value={creditAmount}
+                      onChange={(e) => setCreditAmount(parseInt(e.target.value))}
+                      className="w-full accent-[#bc13fe]"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>10</span>
+                      <span>1000</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
+                    <span className="text-gray-400 text-sm">Total Price</span>
+                    <span className="text-2xl font-bold text-[#bc13fe]">{formatPrice(getCreditPriceIDR(creditAmount))}</span>
+                  </div>
+                </div>
+              )}
+
+              {buyModalTab === 'event' && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm text-gray-300 font-medium mb-2">Event Duration</label>
+                    <select 
+                      value={eventDuration}
+                      onChange={(e) => setEventDuration(parseInt(e.target.value))}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
+                    >
+                      {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(hours => (
+                        <option key={hours} value={hours}>{hours} Jam</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
+                    <span className="text-gray-400 text-sm">Total Price</span>
+                    <span className="text-2xl font-bold text-[#bc13fe]">{formatPrice(eventPrices[eventDuration])}</span>
+                  </div>
+                </div>
+              )}
+
+              {buyModalTab === 'rent' && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm text-gray-300 font-medium mb-2">Rent Duration</label>
+                    <select 
+                      value={rentDuration}
+                      onChange={(e) => setRentDuration(e.target.value as 'minggu' | 'bulan')}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
+                    >
+                      <option value="minggu">Per Minggu</option>
+                      <option value="bulan">Per Bulan</option>
+                    </select>
+                  </div>
+                  
+                  <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
+                    <span className="text-gray-400 text-sm">Total Price</span>
+                    <span className="text-2xl font-bold text-white">Call for price</span>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
               <button
                 onClick={() => setShowBuyCreditsModal(false)}
                 className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-bold transition-colors"
               >
                 CANCEL
               </button>
-              <a
-                href="https://wa.me/6282381230888?text=Hi%20I%20want%20to%20buy%20credit"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
+              <button
+                onClick={handleBuyWhatsApp}
+                className="px-6 py-2 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
                 </svg>
-                WHATSAPP
-              </a>
+                BUY VIA WHATSAPP
+              </button>
             </div>
           </div>
         </div>
