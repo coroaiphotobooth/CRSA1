@@ -21,7 +21,8 @@ export default function VendorDashboard() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false);
-  const [buyModalTab, setBuyModalTab] = useState<'credit' | 'event' | 'rent'>('credit');
+  const [buyModalTab, setBuyModalTab] = useState<'credit' | 'event' | 'rent' | 'free'>('credit');
+  const [instagramUsername, setInstagramUsername] = useState('');
   const [buyCurrency, setBuyCurrency] = useState<'IDR' | 'USD'>('IDR');
   const [creditAmount, setCreditAmount] = useState<number>(10);
   const [eventDuration, setEventDuration] = useState<number>(2);
@@ -832,25 +833,37 @@ export default function VendorDashboard() {
   };
 
   const handleBuyWhatsApp = () => {
-    let packageName = '';
-    let packageDetail = '';
-    let totalPriceStr = '';
+    let text = '';
+    const isUSD = buyCurrency === 'USD';
 
-    if (buyModalTab === 'credit') {
-      packageName = 'Buy Credit';
-      packageDetail = `${creditAmount} credit`;
-      totalPriceStr = formatPrice(getCreditPriceIDR(creditAmount));
-    } else if (buyModalTab === 'event') {
-      packageName = 'Buy per Event - Unlimited Generate photo & video';
-      packageDetail = `${eventDuration} jam`;
-      totalPriceStr = formatPrice(eventPrices[eventDuration]);
+    if (buyModalTab === 'free') {
+      text = isUSD 
+        ? `I want Free Credit\nInstagram username : ${instagramUsername}\nEmail : ${vendor?.email || ''}`
+        : `Saya ingin Free Credit\nNama instagram : ${instagramUsername}\nEmail : ${vendor?.email || ''}`;
     } else {
-      packageName = 'Rent Duration';
-      packageDetail = `per ${rentDuration}`;
-      totalPriceStr = 'Call for price';
+      let packageName = '';
+      let packageDetail = '';
+      let totalPriceStr = '';
+
+      if (buyModalTab === 'credit') {
+        packageName = isUSD ? 'Buy Credit' : 'Beli Kredit';
+        packageDetail = `${creditAmount} credit`;
+        totalPriceStr = formatPrice(getCreditPriceIDR(creditAmount));
+      } else if (buyModalTab === 'event') {
+        packageName = isUSD ? 'Buy per Event - Unlimited Generate photo & video' : 'Beli per Event - Unlimited Generate photo & video';
+        packageDetail = `${eventDuration} ${isUSD ? 'hours' : 'jam'}`;
+        totalPriceStr = formatPrice(eventPrices[eventDuration]);
+      } else {
+        packageName = isUSD ? 'Rent Duration' : 'Durasi Sewa';
+        packageDetail = isUSD ? `per ${rentDuration === 'minggu' ? 'week' : 'month'}` : `per ${rentDuration}`;
+        totalPriceStr = isUSD ? 'Call for price' : 'Hubungi untuk harga';
+      }
+
+      text = isUSD 
+        ? `Hi I want to buy ${packageName}\n${vendor?.email || 'Vendor Email'}\nSelected package: ${packageDetail}\nTotal price: ${totalPriceStr}`
+        : `Hi saya ingin membeli ${packageName}\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${packageDetail}\nTotal harga: ${totalPriceStr}`;
     }
 
-    const text = `Hi i want buy ${packageName}\n${vendor?.email || 'Vendor Email'}\npaket yang di ambil ${packageDetail}\ntotal harga ${totalPriceStr}`;
     const encodedText = encodeURIComponent(text);
     window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
   };
@@ -1247,7 +1260,7 @@ export default function VendorDashboard() {
             </button>
             
             <div className="flex items-center justify-between mb-6 pr-8">
-              <h2 className="text-xl font-bold text-white">Buy Package</h2>
+              <h2 className="text-xl font-bold text-white">{buyCurrency === 'USD' ? 'Buy Package' : 'Beli Paket'}</h2>
               
               {/* Currency Toggle */}
               <div className="flex items-center bg-black/50 rounded-lg p-1 border border-white/10">
@@ -1272,19 +1285,25 @@ export default function VendorDashboard() {
                 onClick={() => setBuyModalTab('credit')}
                 className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'credit' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
               >
-                Buy Credit
+                {buyCurrency === 'USD' ? 'Buy Credit' : 'Beli Kredit'}
               </button>
               <button
                 onClick={() => setBuyModalTab('event')}
                 className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'event' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
               >
-                Unlimited Event
+                {buyCurrency === 'USD' ? 'Unlimited Event' : 'Event Tanpa Batas'}
               </button>
               <button
                 onClick={() => setBuyModalTab('rent')}
                 className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'rent' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
               >
-                Rent Duration
+                {buyCurrency === 'USD' ? 'Rent Duration' : 'Durasi Sewa'}
+              </button>
+              <button
+                onClick={() => setBuyModalTab('free')}
+                className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'free' ? 'bg-[#bc13fe] text-white' : 'text-[#bc13fe] hover:text-white hover:bg-white/5'}`}
+              >
+                {buyCurrency === 'USD' ? 'Free Credit' : 'Kredit Gratis'}
               </button>
             </div>
 
@@ -1294,7 +1313,7 @@ export default function VendorDashboard() {
                 <div className="space-y-6">
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-sm text-gray-300 font-medium">Amount of Credits</label>
+                      <label className="text-sm text-gray-300 font-medium">{buyCurrency === 'USD' ? 'Amount of Credits' : 'Jumlah Kredit'}</label>
                       <input 
                         type="number" 
                         min="10" 
@@ -1324,7 +1343,7 @@ export default function VendorDashboard() {
                   </div>
                   
                   <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
-                    <span className="text-gray-400 text-sm">Total Price</span>
+                    <span className="text-gray-400 text-sm">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
                     <span className="text-2xl font-bold text-[#bc13fe]">{formatPrice(getCreditPriceIDR(creditAmount))}</span>
                   </div>
                 </div>
@@ -1333,20 +1352,20 @@ export default function VendorDashboard() {
               {buyModalTab === 'event' && (
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm text-gray-300 font-medium mb-2">Event Duration</label>
+                    <label className="block text-sm text-gray-300 font-medium mb-2">{buyCurrency === 'USD' ? 'Event Duration' : 'Durasi Event'}</label>
                     <select 
                       value={eventDuration}
                       onChange={(e) => setEventDuration(parseInt(e.target.value))}
                       className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
                     >
                       {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(hours => (
-                        <option key={hours} value={hours}>{hours} Jam</option>
+                        <option key={hours} value={hours}>{hours} {buyCurrency === 'USD' ? 'Hours' : 'Jam'}</option>
                       ))}
                     </select>
                   </div>
                   
                   <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
-                    <span className="text-gray-400 text-sm">Total Price</span>
+                    <span className="text-gray-400 text-sm">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
                     <span className="text-2xl font-bold text-[#bc13fe]">{formatPrice(eventPrices[eventDuration])}</span>
                   </div>
                 </div>
@@ -1355,20 +1374,49 @@ export default function VendorDashboard() {
               {buyModalTab === 'rent' && (
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-sm text-gray-300 font-medium mb-2">Rent Duration</label>
+                    <label className="block text-sm text-gray-300 font-medium mb-2">{buyCurrency === 'USD' ? 'Rent Duration' : 'Durasi Sewa'}</label>
                     <select 
                       value={rentDuration}
                       onChange={(e) => setRentDuration(e.target.value as 'minggu' | 'bulan')}
                       className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
                     >
-                      <option value="minggu">Per Minggu</option>
-                      <option value="bulan">Per Bulan</option>
+                      <option value="minggu">{buyCurrency === 'USD' ? 'Per Week' : 'Per Minggu'}</option>
+                      <option value="bulan">{buyCurrency === 'USD' ? 'Per Month' : 'Per Bulan'}</option>
                     </select>
                   </div>
                   
                   <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
-                    <span className="text-gray-400 text-sm">Total Price</span>
-                    <span className="text-2xl font-bold text-white">Call for price</span>
+                    <span className="text-gray-400 text-sm">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
+                    <span className="text-2xl font-bold text-white">{buyCurrency === 'USD' ? 'Call for price' : 'Hubungi untuk harga'}</span>
+                  </div>
+                </div>
+              )}
+
+              {buyModalTab === 'free' && (
+                <div className="space-y-4">
+                  <div className="bg-[#bc13fe]/10 border border-[#bc13fe]/30 p-4 rounded-xl">
+                    <h3 className="text-[#bc13fe] font-bold mb-2">
+                      {buyCurrency === 'USD' 
+                        ? 'Get 30 to 50 free credits with the following conditions:' 
+                        : 'Dapatkan gratis 30 hingga 50 credit dengan ketentuan :'}
+                    </h3>
+                    <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
+                      <li>{buyCurrency === 'USD' ? "Share one of coro.ai's Instagram posts on your feed or story" : 'share salah satu postingan instagram coro.ai di feed atau story kamu'}</li>
+                      <li>{buyCurrency === 'USD' ? 'Tag 10 of your friends and @coro.ai' : 'dan Tag 10 temanmu dan @coro.ai'}</li>
+                      <li>{buyCurrency === 'USD' ? 'Then click buy via whatsapp' : 'lalu klik buy via whatsapp'}</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 font-medium mb-2">
+                      {buyCurrency === 'USD' ? 'Enter your Instagram username:' : 'Masukan username instagram :'}
+                    </label>
+                    <input 
+                      type="text" 
+                      value={instagramUsername}
+                      onChange={(e) => setInstagramUsername(e.target.value)}
+                      placeholder="@username"
+                      className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe]"
+                    />
                   </div>
                 </div>
               )}
@@ -1379,7 +1427,7 @@ export default function VendorDashboard() {
                 onClick={() => setShowBuyCreditsModal(false)}
                 className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-bold transition-colors"
               >
-                CANCEL
+                {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
               </button>
               <button
                 onClick={handleBuyWhatsApp}
@@ -1388,7 +1436,7 @@ export default function VendorDashboard() {
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
                 </svg>
-                BUY VIA WHATSAPP
+                {buyCurrency === 'USD' ? 'BUY VIA WHATSAPP' : 'BELI VIA WHATSAPP'}
               </button>
             </div>
           </div>
