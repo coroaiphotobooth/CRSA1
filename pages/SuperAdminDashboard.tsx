@@ -644,9 +644,9 @@ CREATE POLICY "Anyone can read template concepts" ON template_concepts FOR SELEC
 DROP POLICY IF EXISTS "Super admin can do everything on template concepts" ON template_concepts;
 CREATE POLICY "Super admin can do everything on template concepts" ON template_concepts FOR ALL USING (auth.jwt() ->> 'email' = 'coroaiphotobooth@gmail.com');
 
--- 2. Update default free credits to 5
--- If your global_settings table uses an integer ID, run this instead: UPDATE global_settings SET default_free_credits = 5 WHERE id = 1;
-UPDATE global_settings SET default_free_credits = 5;
+-- 2. Update default free credits to 50
+-- If your global_settings table uses a text ID, run this instead: UPDATE global_settings SET default_free_credits = 50 WHERE id = '1';
+UPDATE global_settings SET default_free_credits = 50;
 
 -- Update plan check constraint
 ALTER TABLE vendors DROP CONSTRAINT IF EXISTS vendors_plan_check;

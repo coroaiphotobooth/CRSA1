@@ -28,7 +28,7 @@ DECLARE
   v_default_credits INTEGER;
 BEGIN
   -- Get default credits from global_settings, fallback to 10
-  SELECT default_free_credits INTO v_default_credits FROM public.global_settings LIMIT 1;
+  SELECT default_free_credits INTO v_default_credits FROM public.global_settings WHERE id = '1' LIMIT 1;
   IF v_default_credits IS NULL THEN
     v_default_credits := 10;
   END IF;

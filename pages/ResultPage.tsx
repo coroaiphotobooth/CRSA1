@@ -330,7 +330,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
       <div className="relative z-10 w-full h-full flex flex-col items-center p-4 md:p-6 gap-6">
          <div className="flex-1 w-full min-h-0 flex items-center justify-center">
             <div className="relative border-4 border-white/5 shadow-2xl bg-black/50 backdrop-blur-sm rounded-xl overflow-hidden" style={{ aspectRatio: displayAspectRatio, maxHeight: '100%', maxWidth: '100%' }}>
-                <img src={viewMode === 'result' ? resultImage! : capturedImage} className="w-full h-full object-cover" />
+                <img src={viewMode === 'result' ? resultImage! : capturedImage} className="w-full h-full object-contain" />
                 <div className="absolute top-4 right-4 z-40">
                     <button onClick={() => setViewMode(prev => prev === 'result' ? 'original' : 'result')} className={`backdrop-blur border px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all ${viewMode === 'result' ? 'bg-purple-900/50 border-purple-500 text-purple-200' : 'bg-green-900/50 border-green-500 text-green-200'}`}>
                       {viewMode === 'result' ? '👁 VIEW ORIGINAL' : '✨ VIEW RESULT'}

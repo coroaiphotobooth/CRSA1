@@ -104,6 +104,15 @@ export default function VendorDashboard() {
 
         if (vendorError) {
           if (vendorError.code === 'PGRST116' && targetUserId === user.id) {
+            // Fetch global settings to get default credits
+            const { data: gsData } = await supabase
+              .from('global_settings')
+              .select('default_free_credits')
+              .eq('id', 1)
+              .single();
+            
+            const defaultCredits = gsData?.default_free_credits ?? 10;
+
             // Vendor doesn't exist, create it (only if not impersonating)
             const newVendor = {
               id: user.id,
@@ -112,7 +121,7 @@ export default function VendorDashboard() {
               company_name: user.user_metadata?.company_name || null,
               country: user.user_metadata?.country || null,
               phone: user.user_metadata?.phone || null,
-              credits: user.user_metadata?.credits || 5,
+              credits: defaultCredits,
               is_blocked: false,
               email_confirmed: !!user.email_confirmed_at
             };
@@ -132,12 +141,20 @@ export default function VendorDashboard() {
           } else {
             console.error("Error fetching vendor:", vendorError);
             if (targetUserId === user.id) {
+              // Fetch global settings to get default credits
+              const { data: gsData } = await supabase
+                .from('global_settings')
+                .select('default_free_credits')
+                .eq('id', 1)
+                .single();
+              const defaultCredits = gsData?.default_free_credits ?? 10;
+
               currentVendor = {
                 id: user.id,
                 email: user.email || '',
                 name: user.user_metadata?.full_name || 'Vendor',
                 plan: 'free',
-                credits: 5,
+                credits: defaultCredits,
                 created_at: new Date().toISOString(),
                 is_blocked: false
               } as any;
@@ -233,12 +250,7 @@ export default function VendorDashboard() {
               if (currentVendor.email_confirmed !== isEmailConfirmed) updateData.email_confirmed = isEmailConfirmed;
               
               let grantingCredits = false;
-              if ((currentVendor.credits === 0 || currentVendor.credits === 100) && (!eventsData || eventsData.length === 0)) {
-                  if (!user.user_metadata?.credits_granted) {
-                      updateData.credits = 5;
-                      grantingCredits = true;
-                  }
-              }
+              // Removed legacy credits granting logic that forced credits to 5
 
               if (Object.keys(updateData).length > 0) {
                   const { data: updatedVendor, error: updateError } = await supabase

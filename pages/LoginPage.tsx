@@ -87,8 +87,7 @@ export default function LoginPage() {
               full_name: name || 'Vendor',
               company_name: companyName,
               country: country,
-              phone: phone,
-              credits: 5
+              phone: phone
             }
           }
         });
