@@ -24,6 +24,13 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
   const { isActive, tourType, stepIndex } = useTourState();
   const prevIsActive = useRef(isActive);
 
+  // Create from Image State
+  const [showCreateFromImageModal, setShowCreateFromImageModal] = useState(false);
+  const [createFromImageName, setCreateFromImageName] = useState('');
+  const [createFromImageFile, setCreateFromImageFile] = useState<File | null>(null);
+  const [createFromImagePreview, setCreateFromImagePreview] = useState<string | null>(null);
+  const [isCreatingFromImage, setIsCreatingFromImage] = useState(false);
+
   // Template Concept State
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateConcepts, setTemplateConcepts] = useState<TemplateConcept[]>([]);
@@ -87,6 +94,102 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
     setShowTemplateModal(false);
     if (isActive && tourType === 'concept' && stepIndex === 1) {
       setTourState({ stepIndex: 2 });
+    }
+  };
+
+  const handleCreateFromImage = async () => {
+    if (!createFromImageName.trim()) {
+      await showDialog('alert', 'Error', 'Please enter a concept name.');
+      return;
+    }
+    if (!createFromImageFile) {
+      await showDialog('alert', 'Error', 'Please upload an image.');
+      return;
+    }
+
+    try {
+      setIsCreatingFromImage(true);
+      
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          const base64Data = result.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(createFromImageFile);
+      const base64Data = await base64Promise;
+
+      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("API Key not configured");
+      }
+      const ai = new GoogleGenAI({ apiKey });
+      
+      const systemInstruction = `AUTO-DETECT SUBJECT (MANDATORY)
+Detect all human subjects automatically (single person, friends, family, or group).
+Apply the transformation evenly.
+
+Ensure:
+All faces are visible
+try to make the image of the face exactly like the original
+keep it if someone is wearing glasses, hijab, or head accessories
+
+Selanjutkan,
+Lihat keseluruhan gambar, style konsepnya
+
+detailkan atau deskripsikan wadrobe atau outfit dari gambar input
+jika di input foto wanita saja buatkan wardrobe serupa
+jika di input foto hanya pria saja buatkan juga wadrobe untuk pria
+
+detailkan atau deskripsikan ENVIRONMENT & BACKGROUND
+detailkan atau deskripsikan LIGHTING & COLOR
+detailkan atau deskripsikan STYLE IMAGE
+Detailkan atau deskripsikan CAMERA & COMPOSITION`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.1-pro-preview",
+        contents: [
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: createFromImageFile.type,
+            }
+          },
+          "Generate a detailed prompt based on this image following the system instructions."
+        ],
+        config: {
+          systemInstruction: systemInstruction,
+        }
+      });
+
+      const generatedPrompt = response.text || '';
+
+      const newId = crypto.randomUUID();
+      const newConcept: Concept = {
+        id: newId,
+        concept_id: newId,
+        name: createFromImageName,
+        prompt: generatedPrompt,
+        thumbnail: 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500',
+        refImage: undefined
+      };
+      
+      setLocalConcepts(prev => [...prev, newConcept]);
+      setShowCreateFromImageModal(false);
+      setCreateFromImageName('');
+      setCreateFromImageFile(null);
+      setCreateFromImagePreview(null);
+
+      await showDialog('alert', 'Success', 'Please Save and try this concept. If it is OK, do not forget to upload the image preview thumbnail for the guest to see on the concept page.\n\nSilakan Save dan coba konsep ini, jika sudah ok jangan lupa untuk upload image preview thumbnail nya untuk preview ketika tamu memilih di halaman konsep.');
+
+    } catch (error) {
+      console.error("Error creating from image:", error);
+      await showDialog('alert', 'Error', 'Failed to generate prompt from image. Please try again.');
+    } finally {
+      setIsCreatingFromImage(false);
     }
   };
 
@@ -550,6 +653,14 @@ Output ONLY the enhanced prompt text, nothing else.`;
             <Plus className="w-4 h-4" />
             CREATE YOUR OWN CONCEPT
           </button>
+
+          <button 
+            onClick={() => setShowCreateFromImageModal(true)}
+            className="w-full py-4 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 rounded-lg text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 border border-blue-500/20"
+          >
+            <Sparkles className="w-4 h-4" />
+            CREATE FROM AI IMAGE
+          </button>
           
           <div className="w-full flex items-center justify-center gap-4">
             <div className="h-px bg-white/10 flex-1"></div>
@@ -571,6 +682,85 @@ Output ONLY the enhanced prompt text, nothing else.`;
           {isSavingConcepts ? 'SAVING...' : 'SAVE CONCEPT'}
         </button>
       </div>
+
+      {/* Create From Image Modal */}
+      {showCreateFromImageModal && (
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowCreateFromImageModal(false)}></div>
+          <div className="relative bg-[#111]/80 backdrop-blur-md border border-white/10 rounded-2xl w-full max-w-md flex flex-col overflow-hidden">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#111]/80 backdrop-blur-md z-10">
+              <h2 className="text-xl font-bold">Create from AI Image</h2>
+              <button onClick={() => setShowCreateFromImageModal(false)} className="text-gray-400 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto custom-scrollbar flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Concept Name</label>
+                <input 
+                  type="text" 
+                  value={createFromImageName}
+                  onChange={(e) => setCreateFromImageName(e.target.value)}
+                  placeholder="E.g. Cyberpunk Neon"
+                  className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white outline-none focus:border-[#bc13fe]/50 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Upload AI Image</label>
+                <div className="w-full aspect-video bg-black/50 border-2 border-dashed border-white/10 rounded-lg flex flex-col items-center justify-center relative overflow-hidden group">
+                  {createFromImagePreview ? (
+                    <>
+                      <img src={createFromImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-sm font-bold">Change Image</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center text-gray-400">
+                      <Plus className="w-8 h-8 mb-2" />
+                      <span className="text-sm">Click to upload</span>
+                    </div>
+                  )}
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setCreateFromImageFile(file);
+                        const reader = new FileReader();
+                        reader.onload = (e) => setCreateFromImagePreview(e.target?.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <button 
+                onClick={handleCreateFromImage}
+                disabled={isCreatingFromImage || !createFromImageName.trim() || !createFromImageFile}
+                className="w-full py-4 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+              >
+                {isCreatingFromImage ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    GENERATING PROMPT...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5" />
+                    CREATE FROM AI IMAGE
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Template Concept Modal */}
       {showTemplateModal && (
