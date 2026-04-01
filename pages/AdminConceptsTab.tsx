@@ -128,26 +128,39 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
       }
       const ai = new GoogleGenAI({ apiKey });
       
-      const systemInstruction = `AUTO-DETECT SUBJECT (MANDATORY)
+      const systemInstruction = `You are an expert AI image prompt engineer. Your task is to analyze the provided image and generate a highly detailed image generation prompt in ENGLISH.
+DO NOT include any conversational filler, greetings, or explanations. Output ONLY the requested sections.
+
+Analyze the image and provide the following sections exactly as formatted below:
+
+WARDROBE / OUTFIT MALE:
+[Describe the male outfit based on the image. If the image only contains a female, invent a matching male outfit in the exact same style/theme. Do not explain your reasoning, just describe the outfit.]
+
+WARDROBE / OUTFIT FEMALE:
+[Describe the female outfit based on the image. If the image only contains a male, invent a matching female outfit in the exact same style/theme. Do not explain your reasoning, just describe the outfit.]
+
+ENVIRONMENT & BACKGROUND:
+[Describe the setting, background elements, and atmosphere]
+
+LIGHTING & COLOR:
+[Describe the lighting setup, color palette, and mood]
+
+STYLE IMAGE:
+[Describe the artistic style, e.g., photorealistic, cinematic, 35mm photography, etc.]
+
+CAMERA & COMPOSITION:
+[Describe the camera angle, shot type, lens, and composition]`;
+
+      const mandatoryPrefix = `AUTO-DETECT SUBJECT (MANDATORY)
 Detect all human subjects automatically (single person, friends, family, or group).
 Apply the transformation evenly.
 
 Ensure:
 All faces are visible
 try to make the image of the face exactly like the original
-keep it if someone is wearing glasses, hijab, or head accessories
+keep it if someone is wearing glasses, hijab, or head accessories,s
 
-Selanjutkan,
-Lihat keseluruhan gambar, style konsepnya
-
-detailkan atau deskripsikan wadrobe atau outfit dari gambar input
-jika di input foto wanita saja buatkan wardrobe serupa
-jika di input foto hanya pria saja buatkan juga wadrobe untuk pria
-
-detailkan atau deskripsikan ENVIRONMENT & BACKGROUND
-detailkan atau deskripsikan LIGHTING & COLOR
-detailkan atau deskripsikan STYLE IMAGE
-Detailkan atau deskripsikan CAMERA & COMPOSITION`;
+`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3.1-pro-preview",
@@ -158,14 +171,14 @@ Detailkan atau deskripsikan CAMERA & COMPOSITION`;
               mimeType: createFromImageFile.type,
             }
           },
-          "Generate a detailed prompt based on this image following the system instructions."
+          "Generate a detailed prompt based on this image following the system instructions. Output ONLY the requested sections in English."
         ],
         config: {
           systemInstruction: systemInstruction,
         }
       });
 
-      const generatedPrompt = response.text || '';
+      const generatedPrompt = mandatoryPrefix + (response.text || '').trim();
 
       const newId = crypto.randomUUID();
       const newConcept: Concept = {
