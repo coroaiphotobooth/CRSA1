@@ -183,7 +183,7 @@ keep it if someone is wearing glasses, hijab, or head accessories,s
       const newId = crypto.randomUUID();
       const newConcept: Concept = {
         id: newId,
-        concept_id: newId,
+        concept_id: 'smart_' + newId,
         name: createFromImageName,
         prompt: generatedPrompt,
         thumbnail: 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500',
@@ -618,9 +618,9 @@ Output ONLY the enhanced prompt text, nothing else.`;
                        title="Edit concept name"
                     />
                   </div>
-                  {(concept.concept_id?.startsWith('template_') || concept.id.startsWith('template_')) ? (
+                  {(concept.concept_id?.startsWith('template_') || concept.id.startsWith('template_') || concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_')) ? (
                     <div className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-500 w-full rounded-lg flex items-center justify-center italic">
-                      COROAI CONCEPT TEMPLATE
+                      {(concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_')) ? 'COROAI SMART CONCEPT' : 'COROAI CONCEPT TEMPLATE'}
                     </div>
                   ) : (
                     <div className={`w-full flex flex-col gap-2 ${index === localConcepts.length - 1 ? 'tour-prompt' : ''}`}>
