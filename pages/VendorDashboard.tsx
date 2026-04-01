@@ -1259,7 +1259,7 @@ export default function VendorDashboard() {
               <X className="w-5 h-5" />
             </button>
             
-            <div className="flex items-center justify-between mb-6 pr-8">
+            <div className="flex items-center justify-between mb-4 pr-8">
               <h2 className="text-xl font-bold text-white">{buyCurrency === 'USD' ? 'Buy Package' : 'Beli Paket'}</h2>
               
               {/* Currency Toggle */}
@@ -1277,6 +1277,15 @@ export default function VendorDashboard() {
                   USD
                 </button>
               </div>
+            </div>
+
+            {/* Info Message */}
+            <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl mb-6">
+              <p className="text-blue-200 text-xs leading-relaxed">
+                {buyCurrency === 'USD' 
+                  ? 'We apologize, currently purchases are made via WhatsApp. We are working on automatic payments, Qris, Visa, Mastercard, bank transfers, virtual accounts, and other payment methods.' 
+                  : 'Mohon maaf saat ini pembelian dilakukan melalui whatsapp. Kami sedang memproses pembelian secara otomatis, Qris, Visa, Mastercard, transfer bank, virtual account, dan metode pembayaran lainya.'}
+              </p>
             </div>
 
             {/* Tabs */}
