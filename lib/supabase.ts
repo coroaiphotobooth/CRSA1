@@ -49,7 +49,7 @@ export const decrementCredits = async (eventId: string, amount: number = 1): Pro
     // Manual fallback (subject to race conditions, but works if RPC is missing)
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select('vendor_id, vendors(credits)')
+      .select('vendor_id, vendors(credits, credits_used)')
       .eq('id', eventId)
       .single();
       
@@ -61,6 +61,7 @@ export const decrementCredits = async (eventId: string, amount: number = 1): Pro
     const vendorId = eventData.vendor_id;
     // Handle array or object return from join
     const currentCredits = Array.isArray(eventData.vendors) ? eventData.vendors[0]?.credits : (eventData.vendors as any)?.credits;
+    const currentCreditsUsed = Array.isArray(eventData.vendors) ? eventData.vendors[0]?.credits_used : (eventData.vendors as any)?.credits_used;
     
     console.log(`[decrementCredits] Manual check. vendorId: ${vendorId}, currentCredits: ${currentCredits}, amount: ${amount}`);
 
@@ -76,7 +77,10 @@ export const decrementCredits = async (eventId: string, amount: number = 1): Pro
     
     const { error: updateError } = await supabase
       .from('vendors')
-      .update({ credits: currentCredits - amount })
+      .update({ 
+        credits: currentCredits - amount,
+        credits_used: (currentCreditsUsed || 0) + amount
+      })
       .eq('id', vendorId);
       
     if (updateError) {
