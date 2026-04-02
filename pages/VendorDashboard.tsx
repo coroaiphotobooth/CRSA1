@@ -1261,22 +1261,6 @@ export default function VendorDashboard() {
             
             <div className="flex items-center justify-between mb-4 pr-8">
               <h2 className="text-xl font-bold text-white">{buyCurrency === 'USD' ? 'Buy Package' : 'Beli Paket'}</h2>
-              
-              {/* Currency Toggle */}
-              <div className="flex items-center bg-black/50 rounded-lg p-1 border border-white/10">
-                <button
-                  onClick={() => setBuyCurrency('IDR')}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${buyCurrency === 'IDR' ? 'bg-[#bc13fe] text-white' : 'text-gray-400 hover:text-white'}`}
-                >
-                  IDR
-                </button>
-                <button
-                  onClick={() => setBuyCurrency('USD')}
-                  className={`px-3 py-1 text-xs font-bold rounded-md transition-colors ${buyCurrency === 'USD' ? 'bg-[#bc13fe] text-white' : 'text-gray-400 hover:text-white'}`}
-                >
-                  USD
-                </button>
-              </div>
             </div>
 
             {/* Info Message */}
@@ -1286,6 +1270,24 @@ export default function VendorDashboard() {
                   ? 'We apologize, currently purchases are made via WhatsApp. We are working on automatic payments, Qris, Visa, Mastercard, bank transfers, virtual accounts, and other payment methods.' 
                   : 'Mohon maaf saat ini pembelian dilakukan melalui whatsapp. Kami sedang memproses pembelian secara otomatis, Qris, Visa, Mastercard, transfer bank, virtual account, dan metode pembayaran lainya.'}
               </p>
+            </div>
+
+            {/* Currency Toggle */}
+            <div className="flex justify-center mb-6">
+              <div className="flex items-center bg-black/50 rounded-xl p-1.5 border border-white/10 w-full max-w-sm">
+                <button
+                  onClick={() => setBuyCurrency('USD')}
+                  className={`flex-1 px-6 py-3 text-sm font-bold rounded-lg transition-colors ${buyCurrency === 'USD' ? 'bg-[#bc13fe] text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                >
+                  USD
+                </button>
+                <button
+                  onClick={() => setBuyCurrency('IDR')}
+                  className={`flex-1 px-6 py-3 text-sm font-bold rounded-lg transition-colors ${buyCurrency === 'IDR' ? 'bg-[#bc13fe] text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                >
+                  IDR
+                </button>
+              </div>
             </div>
 
             {/* Tabs */}
@@ -1300,7 +1302,7 @@ export default function VendorDashboard() {
                 onClick={() => setBuyModalTab('event')}
                 className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'event' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
               >
-                {buyCurrency === 'USD' ? 'Unlimited Event' : 'Event Tanpa Batas'}
+                {buyCurrency === 'USD' ? 'Unlimited / Event' : 'Unlimited / Event'}
               </button>
               <button
                 onClick={() => setBuyModalTab('rent')}
