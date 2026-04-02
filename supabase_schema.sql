@@ -10,6 +10,7 @@ CREATE TABLE vendors (
   phone TEXT,
   plan TEXT DEFAULT 'free' CHECK (plan IN ('free', 'pay_as_you_go', 'rent')),
   credits INTEGER DEFAULT 10,
+  credits_used INTEGER DEFAULT 0,
   is_blocked BOOLEAN DEFAULT false,
   admin_message TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
@@ -181,7 +182,8 @@ BEGIN
 
   -- Deduct credit
   UPDATE vendors
-  SET credits = credits - 1
+  SET credits = credits - 1,
+      credits_used = COALESCE(credits_used, 0) + 1
   WHERE id = v_vendor_id;
 
   RETURN TRUE;
@@ -213,7 +215,8 @@ BEGIN
 
   -- Deduct credit
   UPDATE vendors
-  SET credits = credits - p_amount
+  SET credits = credits - p_amount,
+      credits_used = COALESCE(credits_used, 0) + p_amount
   WHERE id = v_vendor_id;
 
   RETURN TRUE;

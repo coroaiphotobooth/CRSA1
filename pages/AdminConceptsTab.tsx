@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { Concept, PhotoboothSettings, TemplateConcept } from '../types';
 import { saveConceptsToGas } from '../lib/appsScript';
@@ -9,6 +9,10 @@ import { GoogleGenAI } from "@google/genai";
 
 import { useTourState, setTourState } from '../lib/tourState';
 
+export interface AdminConceptsTabRef {
+  saveConcepts: () => Promise<void>;
+}
+
 interface AdminConceptsTabProps {
   concepts: Concept[];
   onSaveConcepts: (concepts: Concept[]) => void;
@@ -16,7 +20,7 @@ interface AdminConceptsTabProps {
   settings: PhotoboothSettings;
 }
 
-const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveConcepts, adminPin, settings }) => {
+const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(({ concepts, onSaveConcepts, adminPin, settings }, ref) => {
   const [localConcepts, setLocalConcepts] = useState(concepts);
   const { eventId } = useParams<{ eventId: string }>();
   const [isSavingConcepts, setIsSavingConcepts] = useState(false);
@@ -30,6 +34,12 @@ const AdminConceptsTab: React.FC<AdminConceptsTabProps> = ({ concepts, onSaveCon
   const [createFromImageFile, setCreateFromImageFile] = useState<File | null>(null);
   const [createFromImagePreview, setCreateFromImagePreview] = useState<string | null>(null);
   const [isCreatingFromImage, setIsCreatingFromImage] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    saveConcepts: async () => {
+      await handleSyncConcepts();
+    }
+  }));
 
   // Template Concept State
   const [showTemplateModal, setShowTemplateModal] = useState(false);
@@ -690,11 +700,6 @@ Output ONLY the enhanced prompt text, nothing else.`;
           </button>
         </div>
       </div>
-      <div className="flex justify-center mt-10">
-        <button onClick={handleSyncConcepts} disabled={isSavingConcepts} className="px-20 py-6 bg-[#bc13fe] font-heading tracking-widest uppercase italic shadow-2xl hover:bg-[#a010d8] transition-all disabled:opacity-50 rounded-lg tour-save-concept">
-          {isSavingConcepts ? 'SAVING...' : 'SAVE CONCEPT'}
-        </button>
-      </div>
 
       {/* Create From Image Modal */}
       {showCreateFromImageModal && (
@@ -848,6 +853,6 @@ Output ONLY the enhanced prompt text, nothing else.`;
       )}
     </div>
   );
-};
+});
 
 export default AdminConceptsTab;

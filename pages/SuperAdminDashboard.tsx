@@ -62,7 +62,7 @@ export default function SuperAdminDashboard() {
       
       if (vendorsData && vendorsData.length <= 1) {
           setShowSqlModal(true);
-      } else if (vendorsData && vendorsData.length > 0 && (!('company_name' in vendorsData[0]) || !('email_confirmed' in vendorsData[0]))) {
+      } else if (vendorsData && vendorsData.length > 0 && (!('company_name' in vendorsData[0]) || !('email_confirmed' in vendorsData[0]) || !('credits_used' in vendorsData[0]))) {
           setShowSqlModal(true);
       }
       
@@ -588,6 +588,7 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT false;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS admin_message TEXT;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS email_confirmed BOOLEAN DEFAULT false;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS credits_used INTEGER DEFAULT 0;
 
 -- Add storage_folder to events table
 ALTER TABLE events ADD COLUMN IF NOT EXISTS storage_folder TEXT;
@@ -712,7 +713,38 @@ END;
 $$;
 
 -- 5. Grant execute permission to authenticated users (the function itself checks the email)
-GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
+GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;
+
+-- 6. Update decrement_credits functions to track usage
+CREATE OR REPLACE FUNCTION decrement_credits(p_event_id UUID)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_vendor_id UUID;
+  v_credits INTEGER;
+BEGIN
+  SELECT v.id, v.credits INTO v_vendor_id, v_credits
+  FROM events e JOIN vendors v ON e.vendor_id = v.id
+  WHERE e.id = p_event_id AND e.is_active = true;
+  IF v_vendor_id IS NULL OR v_credits <= 0 THEN RETURN FALSE; END IF;
+  UPDATE vendors SET credits = credits - 1, credits_used = COALESCE(credits_used, 0) + 1 WHERE id = v_vendor_id;
+  RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_credits_by_amount(p_event_id UUID, p_amount INTEGER)
+RETURNS BOOLEAN AS $$
+DECLARE
+  v_vendor_id UUID;
+  v_credits INTEGER;
+BEGIN
+  SELECT v.id, v.credits INTO v_vendor_id, v_credits
+  FROM events e JOIN vendors v ON e.vendor_id = v.id
+  WHERE e.id = p_event_id AND e.is_active = true;
+  IF v_vendor_id IS NULL OR v_credits < p_amount THEN RETURN FALSE; END IF;
+  UPDATE vendors SET credits = credits - p_amount, credits_used = COALESCE(credits_used, 0) + p_amount WHERE id = v_vendor_id;
+  RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;`}
               </pre>
               <button 
                 onClick={() => setShowSqlModal(false)}
@@ -981,6 +1013,7 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                       <th className="pb-4 font-medium">Phone</th>
                       <th className="pb-4 font-medium">Plan</th>
                       <th className="pb-4 font-medium">Credits</th>
+                      <th className="pb-4 font-medium">Used</th>
                       <th className="pb-4 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
@@ -1070,6 +1103,9 @@ GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;`}
                               className="bg-black/50 border border-white/20 rounded px-2 py-1 w-20"
                             />
                           ) : (v.credits || 0)}
+                        </td>
+                        <td className="py-4 text-gray-400">
+                          {v.credits_used || 0}
                         </td>
                         <td className="py-4 text-right">
                           {editingVendor?.id === v.id ? (

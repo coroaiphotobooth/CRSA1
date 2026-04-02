@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { PhotoboothSettings, AspectRatio, MonitorTheme } from '../types';
 import { 
@@ -10,13 +10,17 @@ import { getGoogleDriveDirectLink } from '../lib/imageUtils';
 import { supabase } from '../lib/supabase';
 import { useDialog } from '../components/DialogProvider';
 
+export interface AdminSettingsTabRef {
+  saveSettings: () => Promise<void>;
+}
+
 interface AdminSettingsTabProps {
   settings: PhotoboothSettings;
   onSaveSettings: (settings: PhotoboothSettings) => void;
   gasUrl: string;
 }
 
-const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSettings, gasUrl }) => {
+const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(({ settings, onSaveSettings, gasUrl }, ref) => {
   const [localSettings, setLocalSettings] = useState(settings);
   const { eventId } = useParams<{ eventId: string }>();
   const [isUploadingOverlay, setIsUploadingOverlay] = useState(false);
@@ -27,6 +31,12 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
   const overlayInputRef = useRef<HTMLInputElement>(null);
   const backgroundInputRef = useRef<HTMLInputElement>(null);
   const backgroundVideoInputRef = useRef<HTMLInputElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    saveSettings: async () => {
+      await handleSaveSettings();
+    }
+  }));
 
   const PREDEFINED_VIDEOS = [
     "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO%20BACKGROUND/VIDEO%201.mp4",
@@ -601,12 +611,8 @@ const AdminSettingsTab: React.FC<AdminSettingsTabProps> = ({ settings, onSaveSet
 
         </div>
       </div>
-
-      <div className="flex justify-center mt-8">
-        <button onClick={handleSaveSettings} className="px-20 py-6 bg-green-800 hover:bg-green-700 text-white font-heading tracking-widest uppercase italic transition-all rounded-lg shadow-xl tour-save-settings">SAVE SETTINGS</button>
-      </div>
     </div>
   );
-};
+});
 
 export default AdminSettingsTab;

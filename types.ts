@@ -116,6 +116,7 @@ export interface Vendor {
   phone?: string;
   plan: 'free' | 'pay_as_you_go' | 'rent';
   credits: number;
+  credits_used?: number;
   created_at: string;
   is_blocked?: boolean;
   admin_message?: string;

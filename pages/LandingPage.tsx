@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PhotoboothSettings, ProcessNotification } from '../types';
 
 interface LandingPageProps {
@@ -11,6 +12,7 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, settings, notifications = [] }) => {
+  const navigate = useNavigate();
   
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
@@ -29,6 +31,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       
       {/* Top Right Controls Group */}
       <div className="absolute top-6 right-6 z-50 flex items-center gap-6">
+        <button 
+          onClick={() => navigate('/dashboard')} 
+          className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
+        >
+          DASHBOARD
+        </button>
         <button 
           onClick={toggleFullScreen} 
           className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
