@@ -44,6 +44,7 @@ const PhotoboothFlow: React.FC = () => {
     : location.pathname.startsWith('/admin') ? AppState.ADMIN : AppState.LANDING;
 
   const [currentPage, setCurrentPage] = useState<AppState>(initialPage);
+  const [adminTab, setAdminTab] = useState<'settings' | 'concepts'>('settings');
   const [selectedConcept, setSelectedConcept] = useState<Concept | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [settings, setSettings] = useState<PhotoboothSettings>(DEFAULT_SETTINGS);
@@ -394,7 +395,7 @@ const PhotoboothFlow: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case AppState.LANDING:
-        return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={() => setCurrentPage(AppState.ADMIN)} settings={settings} notifications={notifications} />;
+        return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} />;
       case AppState.THEMES:
         return <ThemesPage concepts={concepts} onSelect={(c) => { setSelectedConcept(c); setCurrentPage(AppState.CAMERA); }} onBack={() => setCurrentPage(AppState.LANDING)} />;
       case AppState.CAMERA:
@@ -436,11 +437,11 @@ const PhotoboothFlow: React.FC = () => {
             />
         );
       case AppState.ADMIN:
-        return <AdminPage settings={settings} concepts={concepts} onSaveSettings={handleUpdateSettings} onSaveConcepts={handleUpdateConcepts} onBack={() => setCurrentPage(AppState.LANDING)} onLaunchMonitor={() => setCurrentPage(AppState.MONITOR)} />;
+        return <AdminPage settings={settings} concepts={concepts} onSaveSettings={handleUpdateSettings} onSaveConcepts={handleUpdateConcepts} onBack={() => setCurrentPage(AppState.LANDING)} onLaunchMonitor={() => setCurrentPage(AppState.MONITOR)} initialTab={adminTab} />;
       case AppState.MONITOR:
         return <MonitorPage onBack={() => setCurrentPage(AppState.ADMIN)} activeEventId={settings.activeEventId} eventName={settings.eventName} monitorSize={settings.monitorImageSize} theme={settings.monitorTheme} />;
       default:
-        return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={() => setCurrentPage(AppState.ADMIN)} settings={settings} notifications={notifications} />;
+        return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} />;
     }
   };
 

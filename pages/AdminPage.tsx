@@ -16,13 +16,15 @@ interface AdminPageProps {
   onSaveConcepts: (concepts: Concept[]) => void;
   onBack: () => void;
   onLaunchMonitor?: () => void;
+  initialTab?: 'settings' | 'concepts';
 }
 
-const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSettings, onSaveConcepts, onBack, onLaunchMonitor }) => {
+const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSettings, onSaveConcepts, onBack, onLaunchMonitor, initialTab: propInitialTab }) => {
   const [gasUrl, setGasUrl] = useState('');
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get('tab') === 'concept' ? 'concepts' : 'settings';
+  const urlTab = queryParams.get('tab') === 'concept' ? 'concepts' : 'settings';
+  const initialTab = propInitialTab || urlTab;
   const [activeTab, setActiveTab] = useState<'settings' | 'concepts'>(initialTab);
   const { showDialog } = useDialog();
   const adminSettingsRef = useRef<AdminSettingsTabRef>(null);

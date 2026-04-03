@@ -1,19 +1,32 @@
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PhotoboothSettings, ProcessNotification } from '../types';
+import { ChevronDown } from 'lucide-react';
 
 interface LandingPageProps {
   onStart: () => void;
   onGallery: () => void;
-  onAdmin: () => void;
+  onAdmin: (tab?: 'settings' | 'concepts') => void;
   settings: PhotoboothSettings;
   notifications?: ProcessNotification[]; // New Prop
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, settings, notifications = [] }) => {
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => {
@@ -32,23 +45,43 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       {/* Top Right Controls Group */}
       <div className="absolute top-6 right-6 z-50 flex items-center gap-6">
         <button 
-          onClick={() => navigate('/dashboard')} 
-          className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
-        >
-          DASHBOARD
-        </button>
-        <button 
           onClick={toggleFullScreen} 
           className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
         >
           FULL SCREEN
         </button>
-        <button 
-          onClick={onAdmin} 
-          className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
-        >
-          SETTINGS
-        </button>
+        
+        <div className="relative" ref={menuRef}>
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)} 
+            className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
+          >
+            MENU <ChevronDown className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {isMenuOpen && (
+            <div className="absolute right-0 mt-4 w-48 bg-black/90 border border-white/10 rounded-lg shadow-2xl overflow-hidden backdrop-blur-md flex flex-col">
+              <button 
+                onClick={() => { setIsMenuOpen(false); navigate('/dashboard'); }}
+                className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors border-b border-white/5"
+              >
+                Dashboard
+              </button>
+              <button 
+                onClick={() => { setIsMenuOpen(false); onAdmin('settings'); }}
+                className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors border-b border-white/5"
+              >
+                Settings Event
+              </button>
+              <button 
+                onClick={() => { setIsMenuOpen(false); onAdmin('concepts'); }}
+                className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors"
+              >
+                Settings Concept
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="relative z-10 mb-12 md:mb-16 animate-pulse px-4">
