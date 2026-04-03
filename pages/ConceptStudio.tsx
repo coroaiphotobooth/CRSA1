@@ -15,8 +15,8 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
   const [womanOutfit, setWomanOutfit] = useState<File | null>(null);
   const [background, setBackground] = useState<File | null>(null);
   const [dummyFace, setDummyFace] = useState<File | null>(null);
-  const [stylePreset, setStylePreset] = useState('Photorealistic');
-  const [composition, setComposition] = useState('Medium Shot');
+  const [stylePreset, setStylePreset] = useState('3D Render (recommended)');
+  const [composition, setComposition] = useState('Full Body');
   const [additionalPrompt, setAdditionalPrompt] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [isRendering, setIsRendering] = useState(false);
@@ -328,15 +328,15 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
     setRenderResult(null);
     setTemplateName('');
     setAdditionalPrompt('');
-    setComposition('Medium Shot');
-    setStylePreset('Photorealistic');
+    setComposition('Full Body');
+    setStylePreset('3D Render (recommended)');
     setEditingTemplate(null);
   };
 
   const handleEditTemplate = (template: ConceptTemplate) => {
     setEditingTemplate(template);
     setTemplateName(template.name);
-    setStylePreset(template.style_preset || 'Photorealistic');
+    setStylePreset(template.style_preset || '3D Render (recommended)');
     
     // Parse prompt
     let comp = 'Medium Shot';
@@ -494,8 +494,8 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
                   onChange={(e) => setStylePreset(e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#bc13fe]"
                 >
+                  <option value="3D Render (recommended)">3D Render (recommended)</option>
                   <option value="Photorealistic">Photorealistic</option>
-                  <option value="3D Render">3D Render</option>
                   <option value="Anime">Anime</option>
                   <option value="Oil Painting">Oil Painting</option>
                   <option value="Cyberpunk">Cyberpunk</option>
@@ -508,9 +508,9 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
                   onChange={(e) => setComposition(e.target.value)}
                   className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#bc13fe]"
                 >
+                  <option value="Full Body">Full Body</option>
                   <option value="Medium Shot">Medium Shot (Waist up)</option>
                   <option value="Close Up">Close Up (Face & Shoulders)</option>
-                  <option value="Full Body">Full Body</option>
                   <option value="Wide Angle">Wide Angle (Show environment)</option>
                 </select>
               </div>
