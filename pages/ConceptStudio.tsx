@@ -125,9 +125,48 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
     });
   };
 
+  const fetchImageAsBase64 = async (url: string): Promise<string> => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (err) {
+      console.error("Failed to fetch image URL:", err);
+      return url;
+    }
+  };
+
   const handleTestRender = async () => {
-    if (!manOutfit || !womanOutfit || !background || !dummyFace) {
-      await showDialog('alert', 'Missing Inputs', 'Please upload all 4 images (Man Outfit, Woman Outfit, Background, and Dummy Face) to test render.');
+    if (!dummyFace) {
+      await showDialog('alert', 'Missing Inputs', 'Please upload a Dummy Face to test render.');
+      return;
+    }
+
+    let stitchedBase64 = '';
+    if (manOutfit && womanOutfit) {
+      stitchedBase64 = await stitchImages(manOutfit, womanOutfit);
+    } else if ((manOutfit && !womanOutfit) || (!manOutfit && womanOutfit)) {
+      await showDialog('alert', 'Missing Inputs', 'Please upload both Man and Woman outfits to test the new clothing reference.');
+      return;
+    } else if (editingTemplate?.reference_image_split) {
+      stitchedBase64 = await fetchImageAsBase64(editingTemplate.reference_image_split);
+    } else {
+      await showDialog('alert', 'Missing Inputs', 'Please upload Man and Woman outfits.');
+      return;
+    }
+
+    let bgBase64 = '';
+    if (background) {
+      bgBase64 = await resizeAndCompressImage(background);
+    } else if (editingTemplate?.reference_image_bg) {
+      bgBase64 = await fetchImageAsBase64(editingTemplate.reference_image_bg);
+    } else {
+      await showDialog('alert', 'Missing Inputs', 'Please upload Background image.');
       return;
     }
 
@@ -136,11 +175,6 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
 
     setIsRendering(true);
     try {
-      // 1. Stitch man and woman outfits
-      const stitchedBase64 = await stitchImages(manOutfit, womanOutfit);
-      
-      // 2. Convert background and dummy face to base64 (resized)
-      const bgBase64 = await resizeAndCompressImage(background);
       const dummyFaceBase64 = await resizeAndCompressImage(dummyFace);
 
       // 3. Call Gemini API
@@ -161,8 +195,8 @@ Style: ${stylePreset}.
 Additional instructions: A ${composition} shot. ${additionalPrompt}`
             },
             { inlineData: { data: dummyFaceBase64.split(',')[1], mimeType: dummyFace.type || 'image/jpeg' } },
-            { inlineData: { data: stitchedBase64.split(',')[1], mimeType: 'image/jpeg' } },
-            { inlineData: { data: bgBase64.split(',')[1], mimeType: background.type || 'image/jpeg' } }
+            { inlineData: { data: stitchedBase64.split(',')[1] || stitchedBase64, mimeType: 'image/jpeg' } },
+            { inlineData: { data: bgBase64.split(',')[1] || bgBase64, mimeType: background?.type || 'image/jpeg' } }
           ]
         })
       });
@@ -206,52 +240,54 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
       let url2 = editingTemplate?.reference_image_bg || '';
       let thumbUrl = editingTemplate?.thumbnail || '';
 
-      // If new images are uploaded, process and upload them
-      if (manOutfit && womanOutfit && background) {
-        // 1. Stitch images
+      // If new man/woman outfits are uploaded, stitch and upload
+      if (manOutfit && womanOutfit) {
         const stitchedBase64 = await stitchImages(manOutfit, womanOutfit);
-        const bgBase64 = await resizeAndCompressImage(background);
-
-        // 2. Upload to Supabase Storage
         const stitchedFileName = `${vendorId}/${Date.now()}_split.jpg`;
-        const bgFileName = `${vendorId}/${Date.now()}_bg.jpg`;
-        const thumbFileName = `${vendorId}/${Date.now()}_thumb.jpg`;
-
-        // Convert base64 to blob for upload
         const stitchedBlob = await (await fetch(stitchedBase64)).blob();
-        const bgBlob = await (await fetch(bgBase64)).blob();
-
         const { error: uploadError1 } = await supabase.storage
           .from('concept_assets')
           .upload(stitchedFileName, stitchedBlob, { contentType: 'image/jpeg' });
         
         if (uploadError1) throw uploadError1;
+        const { data: url1Data } = supabase.storage.from('concept_assets').getPublicUrl(stitchedFileName);
+        url1 = url1Data.publicUrl;
+      } else if ((manOutfit && !womanOutfit) || (!manOutfit && womanOutfit)) {
+        await showDialog('alert', 'Missing Inputs', 'Please upload both Man and Woman outfits to update the clothing reference.');
+        setIsSaving(false);
+        return;
+      }
 
+      // If new background is uploaded, compress and upload
+      if (background) {
+        const bgBase64 = await resizeAndCompressImage(background);
+        const bgFileName = `${vendorId}/${Date.now()}_bg.jpg`;
+        const bgBlob = await (await fetch(bgBase64)).blob();
         const { error: uploadError2 } = await supabase.storage
           .from('concept_assets')
           .upload(bgFileName, bgBlob, { contentType: background.type || 'image/jpeg' });
 
         if (uploadError2) throw uploadError2;
-
-        if (renderResult) {
-          try {
-            const thumbBlob = await (await fetch(renderResult)).blob();
-            await supabase.storage
-              .from('concept_assets')
-              .upload(thumbFileName, thumbBlob, { contentType: 'image/jpeg' });
-            const { data } = supabase.storage.from('concept_assets').getPublicUrl(thumbFileName);
-            thumbUrl = data.publicUrl;
-          } catch (e) {
-            console.error("Failed to upload thumbnail", e);
-          }
-        }
-
-        const { data: url1Data } = supabase.storage.from('concept_assets').getPublicUrl(stitchedFileName);
         const { data: url2Data } = supabase.storage.from('concept_assets').getPublicUrl(bgFileName);
-        url1 = url1Data.publicUrl;
         url2 = url2Data.publicUrl;
-        if (!thumbUrl) thumbUrl = url1;
       }
+
+      // If there's a new render result, upload it as thumbnail
+      if (renderResult) {
+        try {
+          const thumbFileName = `${vendorId}/${Date.now()}_thumb.jpg`;
+          const thumbBlob = await (await fetch(renderResult)).blob();
+          await supabase.storage
+            .from('concept_assets')
+            .upload(thumbFileName, thumbBlob, { contentType: 'image/jpeg' });
+          const { data } = supabase.storage.from('concept_assets').getPublicUrl(thumbFileName);
+          thumbUrl = data.publicUrl;
+        } catch (e) {
+          console.error("Failed to upload thumbnail", e);
+        }
+      }
+
+      if (!thumbUrl) thumbUrl = url1;
 
       const templateData = {
         vendor_id: vendorId,
