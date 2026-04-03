@@ -71,12 +71,31 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
     });
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
+  const resizeAndCompressImage = (file: File, maxWidth = 1024): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
     });
   };
 
@@ -94,9 +113,9 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
       // 1. Stitch man and woman outfits
       const stitchedBase64 = await stitchImages(manOutfit, womanOutfit);
       
-      // 2. Convert background and dummy face to base64
-      const bgBase64 = await fileToBase64(background);
-      const dummyFaceBase64 = await fileToBase64(dummyFace);
+      // 2. Convert background and dummy face to base64 (resized)
+      const bgBase64 = await resizeAndCompressImage(background);
+      const dummyFaceBase64 = await resizeAndCompressImage(dummyFace);
 
       // 3. Call Gemini API
       const response = await fetch('/api/generate-image', {
@@ -159,7 +178,7 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
     try {
       // 1. Stitch images
       const stitchedBase64 = await stitchImages(manOutfit, womanOutfit);
-      const bgBase64 = await fileToBase64(background);
+      const bgBase64 = await resizeAndCompressImage(background);
 
       // 2. Upload to Supabase Storage
       const stitchedFileName = `${vendorId}/${Date.now()}_split.jpg`;
