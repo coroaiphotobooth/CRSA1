@@ -94,6 +94,9 @@ CREATE TABLE concepts (
   thumbnail TEXT,
   ref_image TEXT,
   concept_id TEXT,
+  reference_image_split TEXT,
+  reference_image_bg TEXT,
+  style_preset TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
@@ -285,6 +288,7 @@ CREATE TABLE concept_templates (
   vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE, -- NULL means Superadmin template
   name TEXT NOT NULL,
   prompt TEXT NOT NULL,
+  thumbnail TEXT,
   reference_image_split TEXT,
   reference_image_bg TEXT,
   style_preset TEXT,

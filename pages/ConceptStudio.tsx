@@ -16,6 +16,7 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
   const [dummyFace, setDummyFace] = useState<File | null>(null);
   const [stylePreset, setStylePreset] = useState('Photorealistic');
   const [composition, setComposition] = useState('Medium Shot');
+  const [additionalPrompt, setAdditionalPrompt] = useState('');
   const [templateName, setTemplateName] = useState('');
   const [isRendering, setIsRendering] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -112,7 +113,7 @@ Look at the provided reference images.
 - If a split reference image is provided (Reference Image 1), the man in the photo MUST wear the exact outfit shown on the LEFT side of Reference Image 1. The woman MUST wear the exact outfit shown on the RIGHT side of Reference Image 1. Retain the exact fabric, pattern, and design of the outfits.
 - Place them in the exact environment shown in the background reference image (Reference Image 2).
 Style: ${stylePreset}.
-Additional instructions: A ${composition} shot.`
+Additional instructions: A ${composition} shot. ${additionalPrompt}`
             },
             { inlineData: { data: dummyFaceBase64.split(',')[1], mimeType: dummyFace.type || 'image/jpeg' } },
             { inlineData: { data: stitchedBase64.split(',')[1], mimeType: 'image/jpeg' } },
@@ -163,6 +164,7 @@ Additional instructions: A ${composition} shot.`
       // 2. Upload to Supabase Storage
       const stitchedFileName = `${vendorId}/${Date.now()}_split.jpg`;
       const bgFileName = `${vendorId}/${Date.now()}_bg.jpg`;
+      const thumbFileName = `${vendorId}/${Date.now()}_thumb.jpg`;
 
       // Convert base64 to blob for upload
       const stitchedBlob = await (await fetch(stitchedBase64)).blob();
@@ -180,6 +182,20 @@ Additional instructions: A ${composition} shot.`
 
       if (uploadError2) throw uploadError2;
 
+      let thumbUrl = '';
+      if (renderResult) {
+        try {
+          const thumbBlob = await (await fetch(renderResult)).blob();
+          await supabase.storage
+            .from('concept_assets')
+            .upload(thumbFileName, thumbBlob, { contentType: 'image/jpeg' });
+          const { data } = supabase.storage.from('concept_assets').getPublicUrl(thumbFileName);
+          thumbUrl = data.publicUrl;
+        } catch (e) {
+          console.error("Failed to upload thumbnail", e);
+        }
+      }
+
       const { data: url1 } = supabase.storage.from('concept_assets').getPublicUrl(stitchedFileName);
       const { data: url2 } = supabase.storage.from('concept_assets').getPublicUrl(bgFileName);
 
@@ -188,7 +204,8 @@ Additional instructions: A ${composition} shot.`
         {
           vendor_id: vendorId,
           name: templateName,
-          prompt: `A ${composition} shot in ${stylePreset} style.`,
+          prompt: `A ${composition} shot. ${additionalPrompt}`,
+          thumbnail: thumbUrl || url1.publicUrl,
           reference_image_split: url1.publicUrl,
           reference_image_bg: url2.publicUrl,
           style_preset: stylePreset,
@@ -308,6 +325,15 @@ Additional instructions: A ${composition} shot.`
                   <option value="Wide Angle">Wide Angle (Show environment)</option>
                 </select>
               </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <label className="block text-sm font-medium text-gray-400">Additional Prompt (Optional)</label>
+              <textarea
+                value={additionalPrompt}
+                onChange={(e) => setAdditionalPrompt(e.target.value)}
+                placeholder="e.g. The man is wearing a hat, the woman is holding a flower bouquet..."
+                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#bc13fe] h-24 resize-none"
+              />
             </div>
           </div>
         </div>

@@ -475,7 +475,10 @@ Output ONLY the enhanced prompt text, nothing else.`;
             name: c.name,
             prompt: c.prompt,
             thumbnail: c.thumbnail,
-            ref_image: c.refImage || (c as any).ref_image || null
+            ref_image: c.refImage || (c as any).ref_image || null,
+            reference_image_split: c.reference_image_split || null,
+            reference_image_bg: c.reference_image_bg || null,
+            style_preset: c.style_preset || null
           };
           return payload;
         });
