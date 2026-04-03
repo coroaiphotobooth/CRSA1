@@ -215,7 +215,6 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
     if (outputRatio === '9:16') apiAspectRatio = '9:16';
     if (outputRatio === '3:2') apiAspectRatio = '4:3';
     if (outputRatio === '2:3') apiAspectRatio = '3:4';
-    if (outputRatio === '1:1') apiAspectRatio = '1:1';
 
     const executeGenAI = async (model: string, useProConfig: boolean) => {
       // A. imageConfig optimization: No imageSize for Ultra unless explicitly requested (not in UI)
@@ -258,35 +257,60 @@ Instruction: ${finalPrompt}`;
       // 3. Add Person Image (Image 1)
       parts.push({ inlineData: { data: cleanBase64, mimeType: mimeType } });
 
-      // 4. Add Reference Image (Image 2) - if exists
-      if (concept.refImage && concept.refImage.trim() !== '') {
-         let refClean = concept.refImage;
-         let refMimeType = 'image/jpeg';
-         
-         if (concept.refImage.startsWith('http')) {
-             try {
-                 const response = await fetch(concept.refImage);
-                 const blob = await response.blob();
-                 refMimeType = blob.type || 'image/jpeg';
-                 const base64data = await new Promise<string>((resolve) => {
-                     const reader = new FileReader();
-                     reader.onloadend = () => resolve(reader.result as string);
-                     reader.readAsDataURL(blob);
-                 });
-                 refClean = base64data.split(',')[1];
-             } catch (err) {
-                 console.error("Failed to fetch reference image URL:", err);
-                 // Fallback to original behavior if fetch fails
-                 refClean = concept.refImage.includes(',') ? concept.refImage.split(',')[1] : concept.refImage;
-             }
-         } else {
-             refClean = concept.refImage.includes(',') ? concept.refImage.split(',')[1] : concept.refImage;
-             if (concept.refImage.startsWith('data:')) {
-                 refMimeType = concept.refImage.split(';')[0].split(':')[1];
-             }
-         }
-         
-         parts.push({ inlineData: { data: refClean, mimeType: refMimeType } });
+      // Helper to fetch and convert image to base64
+      const fetchImageAsBase64 = async (urlOrBase64: string): Promise<{ data: string, mimeType: string }> => {
+        if (urlOrBase64.startsWith('http')) {
+          try {
+            const response = await fetch(urlOrBase64);
+            const blob = await response.blob();
+            const mimeType = blob.type || 'image/jpeg';
+            const base64data = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+            return { data: base64data.split(',')[1], mimeType };
+          } catch (err) {
+            console.error("Failed to fetch image URL:", err);
+            return { 
+              data: urlOrBase64.includes(',') ? urlOrBase64.split(',')[1] : urlOrBase64, 
+              mimeType: 'image/jpeg' 
+            };
+          }
+        } else {
+          const data = urlOrBase64.includes(',') ? urlOrBase64.split(',')[1] : urlOrBase64;
+          let mimeType = 'image/jpeg';
+          if (urlOrBase64.startsWith('data:')) {
+              mimeType = urlOrBase64.split(';')[0].split(':')[1];
+          }
+          return { data, mimeType };
+        }
+      };
+
+      // 4. Add Concept Studio References (Split & BG)
+      if (concept.reference_image_split || concept.reference_image_bg) {
+        if (concept.reference_image_split) {
+          const img = await fetchImageAsBase64(concept.reference_image_split);
+          parts.push({ inlineData: img });
+        }
+        if (concept.reference_image_bg) {
+          const img = await fetchImageAsBase64(concept.reference_image_bg);
+          parts.push({ inlineData: img });
+        }
+
+        // Update prompt to instruct Gemini on how to use these new references
+        parts[0].text = `Redraw the people in the main photo.
+CRITICAL INSTRUCTION:
+Look at the provided reference images.
+- If a split reference image is provided (Reference Image 1), the man in the photo MUST wear the exact outfit shown on the LEFT side of Reference Image 1. The woman MUST wear the exact outfit shown on the RIGHT side of Reference Image 1. Retain the exact fabric, pattern, and design of the outfits.
+- Place them in the exact environment shown in the background reference image (Reference Image 2).
+Style: ${concept.style_preset || 'Photorealistic'}.
+Additional instructions: ${finalPrompt}`;
+
+      } else if (concept.refImage && concept.refImage.trim() !== '') {
+         // Fallback to old refImage logic
+         const img = await fetchImageAsBase64(concept.refImage);
+         parts.push({ inlineData: img });
          
          if (promptMode === 'wrapped') {
              parts[0].text += `\n\n[IMPORTANT]: The SECOND image provided is a VISUAL REFERENCE for the style, background, or clothing. Combine the person from the FIRST image with the style/aesthetics of the SECOND image.`;

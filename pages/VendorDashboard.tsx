@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../lib/supabase';
-import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft, Palette } from 'lucide-react';
 import { Vendor, Event } from '../types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -11,8 +11,10 @@ import { useDialog } from '../components/DialogProvider';
 import { DEFAULT_SETTINGS, DEFAULT_CONCEPTS, DEFAULT_GAS_URL } from '../constants';
 import CinematicIntro from '../components/CinematicIntro';
 import { useTourState, setTourState } from '../lib/tourState';
+import ConceptStudio from './ConceptStudio';
 
 export default function VendorDashboard() {
+  const [activeTab, setActiveTab] = useState<'events' | 'concept_studio'>('events');
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [templateEvents, setTemplateEvents] = useState<Event[]>([]);
@@ -1088,7 +1090,9 @@ export default function VendorDashboard() {
         </div>
 
         {/* Stats / Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        {activeTab === 'events' ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <div className="glass-card p-6 rounded-2xl border border-white/10 tour-total-events">
             <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.totalEvents}</h3>
             <p className="text-4xl font-bold">{events.length}</p>
@@ -1117,13 +1121,22 @@ export default function VendorDashboard() {
         {/* Events List */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-heading font-bold">{t.myEvents}</h2>
-          <button 
-            onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2 tour-create-event-btn"
-          >
-            <Plus className="w-4 h-4" />
-            {t.createEvent}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setActiveTab('concept_studio')}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2"
+            >
+              <Palette className="w-4 h-4" />
+              <span className="hidden sm:inline">Concept Studio</span>
+            </button>
+            <button 
+              onClick={() => setShowCreateModal(true)}
+              className="px-4 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2 tour-create-event-btn"
+            >
+              <Plus className="w-4 h-4" />
+              {t.createEvent}
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1200,6 +1213,10 @@ export default function VendorDashboard() {
             ))
           )}
         </div>
+        </>
+        ) : (
+          <ConceptStudio vendorId={vendor?.id || ''} onClose={() => setActiveTab('events')} />
+        )}
 
       </div>
 

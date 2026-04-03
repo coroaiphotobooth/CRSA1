@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Concept, PhotoboothSettings, TemplateConcept } from '../types';
+import { Concept, PhotoboothSettings, TemplateConcept, ConceptTemplate } from '../types';
 import { saveConceptsToGas } from '../lib/appsScript';
 import { supabase } from '../lib/supabase';
 import { useDialog } from '../components/DialogProvider';
-import { Loader2, Sparkles, Plus, X } from 'lucide-react';
+import { Loader2, Sparkles, Plus, X, Palette } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
 import { useTourState, setTourState } from '../lib/tourState';
@@ -44,6 +44,8 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
   // Template Concept State
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateConcepts, setTemplateConcepts] = useState<TemplateConcept[]>([]);
+  const [conceptTemplates, setConceptTemplates] = useState<ConceptTemplate[]>([]);
+  const [templateTab, setTemplateTab] = useState<'superadmin' | 'mine'>('superadmin');
   const [loadingTemplates, setLoadingTemplates] = useState(false);
 
   // Close modal if tour is skipped
@@ -61,20 +63,32 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
   const fetchTemplateConcepts = async () => {
     try {
       setLoadingTemplates(true);
-      const { data, error } = await supabase
+      // Fetch old template concepts
+      const { data: oldData, error: oldError } = await supabase
         .from('template_concepts')
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) {
-        if (error.code !== '42P01' && error.code !== 'PGRST205') { // Ignore if table doesn't exist yet
-          console.error("Error fetching template concepts:", error);
-        }
-      } else if (data) {
-        setTemplateConcepts(data);
+      if (oldError && oldError.code !== '42P01' && oldError.code !== 'PGRST205') {
+        console.error("Error fetching template concepts:", oldError);
+      } else if (oldData) {
+        setTemplateConcepts(oldData);
       }
+
+      // Fetch new concept templates
+      const { data: newData, error: newError } = await supabase
+        .from('concept_templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (newError && newError.code !== '42P01' && newError.code !== 'PGRST205') {
+        console.error("Error fetching concept templates:", newError);
+      } else if (newData) {
+        setConceptTemplates(newData);
+      }
+
     } catch (err) {
-      console.error("Failed to fetch template concepts:", err);
+      console.error("Failed to fetch templates:", err);
     } finally {
       setLoadingTemplates(false);
     }
@@ -90,16 +104,34 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
     }
   };
 
-  const handleUseTemplate = (template: TemplateConcept) => {
+  const handleUseTemplate = (template: TemplateConcept | ConceptTemplate, type: 'old' | 'new') => {
     const newId = crypto.randomUUID();
-    const newConcept: Concept = {
-      id: newId,
-      concept_id: `template_${template.id}`,
-      name: template.name,
-      prompt: template.prompt,
-      thumbnail: template.thumbnail,
-      refImage: template.ref_image || undefined
-    };
+    let newConcept: Concept;
+
+    if (type === 'old') {
+      const t = template as TemplateConcept;
+      newConcept = {
+        id: newId,
+        concept_id: `template_${t.id}`,
+        name: t.name,
+        prompt: t.prompt,
+        thumbnail: t.thumbnail,
+        refImage: t.ref_image || undefined
+      };
+    } else {
+      const t = template as ConceptTemplate;
+      newConcept = {
+        id: newId,
+        concept_id: `concept_studio_${t.id}`,
+        name: t.name,
+        prompt: t.prompt,
+        thumbnail: t.reference_image_split || t.reference_image_bg || 'https://picsum.photos/seed/concept/300/500',
+        reference_image_split: t.reference_image_split,
+        reference_image_bg: t.reference_image_bg,
+        style_preset: t.style_preset
+      };
+    }
+
     setLocalConcepts(prev => [...prev, newConcept]);
     setShowTemplateModal(false);
     if (isActive && tourType === 'concept' && stepIndex === 1) {
@@ -801,51 +833,100 @@ Output ONLY the enhanced prompt text, nothing else.`;
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            <div className="flex border-b border-white/10">
+              <button
+                className={`flex-1 py-3 text-sm font-bold transition-colors ${templateTab === 'superadmin' ? 'text-[#bc13fe] border-b-2 border-[#bc13fe]' : 'text-gray-400 hover:text-white'}`}
+                onClick={() => setTemplateTab('superadmin')}
+              >
+                Superadmin Templates
+              </button>
+              <button
+                className={`flex-1 py-3 text-sm font-bold transition-colors ${templateTab === 'mine' ? 'text-[#bc13fe] border-b-2 border-[#bc13fe]' : 'text-gray-400 hover:text-white'}`}
+                onClick={() => setTemplateTab('mine')}
+              >
+                My Templates
+              </button>
+            </div>
             
             <div className="p-6 overflow-y-auto custom-scrollbar">
               {loadingTemplates ? (
                 <div className="flex justify-center items-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-[#bc13fe]" />
                 </div>
-              ) : templateConcepts.length === 0 ? (
-                <div 
-                  className="text-center py-12 text-gray-500 tour-load-template cursor-pointer"
-                  onClick={() => {
-                    setShowTemplateModal(false);
-                    if (isActive && tourType === 'concept' && stepIndex === 1) {
-                      setTourState({ stepIndex: 2 });
-                    }
-                  }}
-                >
-                  <p>No template concepts available.</p>
-                  <p className="text-sm mt-2">Super Admin can create templates in their dashboard.</p>
-                  <p className="text-xs mt-4 text-[#bc13fe]">Click here to close and continue tour</p>
-                </div>
+              ) : templateTab === 'superadmin' ? (
+                templateConcepts.length === 0 ? (
+                  <div 
+                    className="text-center py-12 text-gray-500 tour-load-template cursor-pointer"
+                    onClick={() => {
+                      setShowTemplateModal(false);
+                      if (isActive && tourType === 'concept' && stepIndex === 1) {
+                        setTourState({ stepIndex: 2 });
+                      }
+                    }}
+                  >
+                    <p>No superadmin templates available.</p>
+                    <p className="text-sm mt-2">Super Admin can create templates in their dashboard.</p>
+                    <p className="text-xs mt-4 text-[#bc13fe]">Click here to close and continue tour</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {templateConcepts.map(template => (
+                      <div key={template.id} className="bg-black/30 border border-white/5 rounded-xl overflow-hidden group hover:border-[#bc13fe]/50 transition-colors flex flex-col">
+                        <div className="aspect-square relative">
+                          <img src={template.thumbnail} alt={template.name} className="w-full h-full object-cover" />
+                          {template.ref_image && (
+                            <div className="absolute top-2 right-2 bg-black/80 text-[9px] px-1.5 py-0.5 rounded border border-white/10">
+                              + Ref
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3 flex flex-col flex-1">
+                          <h3 className="font-bold text-xs mb-1 truncate" title={template.name}>{template.name}</h3>
+                          <p className="text-[9px] text-gray-500 mb-3 flex-1 italic">TEMPLATE</p>
+                          <button
+                            onClick={() => handleUseTemplate(template, 'old')}
+                            className="w-full py-1.5 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-md text-[10px] font-bold transition-colors tour-load-template"
+                          >
+                            LOAD
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {templateConcepts.map(template => (
-                    <div key={template.id} className="bg-black/30 border border-white/5 rounded-xl overflow-hidden group hover:border-[#bc13fe]/50 transition-colors flex flex-col">
-                      <div className="aspect-square relative">
-                        <img src={template.thumbnail} alt={template.name} className="w-full h-full object-cover" />
-                        {template.ref_image && (
-                          <div className="absolute top-2 right-2 bg-black/80 text-[9px] px-1.5 py-0.5 rounded border border-white/10">
-                            + Ref
-                          </div>
-                        )}
+                conceptTemplates.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <p>No templates found.</p>
+                    <p className="text-sm mt-2">Create your own templates in the Concept Studio.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {conceptTemplates.map(template => (
+                      <div key={template.id} className="bg-black/30 border border-white/5 rounded-xl overflow-hidden group hover:border-[#bc13fe]/50 transition-colors flex flex-col">
+                        <div className="aspect-square relative">
+                          <img src={template.reference_image_split || template.reference_image_bg || 'https://picsum.photos/seed/concept/300/500'} alt={template.name} className="w-full h-full object-cover" />
+                          {(template.reference_image_split || template.reference_image_bg) && (
+                            <div className="absolute top-2 right-2 bg-black/80 text-[9px] px-1.5 py-0.5 rounded border border-white/10">
+                              + Ref
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3 flex flex-col flex-1">
+                          <h3 className="font-bold text-xs mb-1 truncate" title={template.name}>{template.name}</h3>
+                          <p className="text-[9px] text-gray-500 mb-3 flex-1 italic">{template.style_preset || 'TEMPLATE'}</p>
+                          <button
+                            onClick={() => handleUseTemplate(template, 'new')}
+                            className="w-full py-1.5 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-md text-[10px] font-bold transition-colors"
+                          >
+                            LOAD
+                          </button>
+                        </div>
                       </div>
-                      <div className="p-3 flex flex-col flex-1">
-                        <h3 className="font-bold text-xs mb-1 truncate" title={template.name}>{template.name}</h3>
-                        <p className="text-[9px] text-gray-500 mb-3 flex-1 italic">TEMPLATE</p>
-                        <button
-                          onClick={() => handleUseTemplate(template)}
-                          className="w-full py-1.5 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-md text-[10px] font-bold transition-colors tour-load-template"
-                        >
-                          LOAD
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )
               )}
             </div>
           </div>

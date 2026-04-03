@@ -242,6 +242,28 @@ CREATE POLICY "Anyone can view template concepts" ON template_concepts FOR SELEC
 -- Allow super admin to manage template concepts
 CREATE POLICY "Super admin can manage template concepts" ON template_concepts FOR ALL USING (auth.jwt() ->> 'email' = 'admin@coroai.app');
 
+-- Insert storage bucket for concept assets
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('concept_assets', 'concept_assets', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage policies for concept_assets
+CREATE POLICY "Public Access concept_assets"
+ON storage.objects FOR SELECT
+USING ( bucket_id = 'concept_assets' );
+
+CREATE POLICY "Authenticated users can upload concept_assets"
+ON storage.objects FOR INSERT
+WITH CHECK ( bucket_id = 'concept_assets' AND auth.role() = 'authenticated' );
+
+CREATE POLICY "Users can update own concept_assets"
+ON storage.objects FOR UPDATE
+USING ( bucket_id = 'concept_assets' AND auth.uid() = owner );
+
+CREATE POLICY "Users can delete own concept_assets"
+ON storage.objects FOR DELETE
+USING ( bucket_id = 'concept_assets' AND auth.uid() = owner );
+
 -- Enable Realtime for sessions table
 -- Note: Supabase creates the 'supabase_realtime' publication by default.
 -- We just need to add our table to it.
@@ -256,3 +278,34 @@ BEGIN
   END IF;
 END
 $$;
+
+-- 9. Concept Templates Table (For Concept Studio)
+CREATE TABLE concept_templates (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE, -- NULL means Superadmin template
+  name TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  reference_image_split TEXT,
+  reference_image_bg TEXT,
+  style_preset TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Enable RLS for concept_templates
+ALTER TABLE concept_templates ENABLE ROW LEVEL SECURITY;
+
+-- Vendors can view superadmin templates (vendor_id IS NULL) OR their own templates
+CREATE POLICY "Vendors can view templates" ON concept_templates 
+FOR SELECT USING (vendor_id IS NULL OR vendor_id = auth.uid() OR is_superadmin());
+
+-- Vendors can insert their own templates
+CREATE POLICY "Vendors can insert their own templates" ON concept_templates 
+FOR INSERT WITH CHECK (vendor_id = auth.uid() OR is_superadmin());
+
+-- Vendors can update their own templates
+CREATE POLICY "Vendors can update their own templates" ON concept_templates 
+FOR UPDATE USING (vendor_id = auth.uid() OR is_superadmin());
+
+-- Vendors can delete their own templates
+CREATE POLICY "Vendors can delete their own templates" ON concept_templates 
+FOR DELETE USING (vendor_id = auth.uid() OR is_superadmin());

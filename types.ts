@@ -6,6 +6,9 @@ export interface Concept {
   prompt: string;
   thumbnail: string;
   refImage?: string; // Optional: Reference image for style/clothes/background
+  reference_image_split?: string;
+  reference_image_bg?: string;
+  style_preset?: string;
 }
 
 export interface TemplateConcept {
@@ -14,6 +17,17 @@ export interface TemplateConcept {
   prompt: string;
   thumbnail: string;
   ref_image?: string;
+  created_at?: string;
+}
+
+export interface ConceptTemplate {
+  id: string;
+  vendor_id?: string | null;
+  name: string;
+  prompt: string;
+  reference_image_split?: string;
+  reference_image_bg?: string;
+  style_preset?: string;
   created_at?: string;
 }
 
