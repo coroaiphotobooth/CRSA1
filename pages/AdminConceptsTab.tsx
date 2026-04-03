@@ -125,7 +125,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
         concept_id: `concept_studio_${t.id}`,
         name: t.name,
         prompt: t.prompt,
-        thumbnail: t.reference_image_split || t.reference_image_bg || 'https://picsum.photos/seed/concept/300/500',
+        thumbnail: t.thumbnail || t.reference_image_split || t.reference_image_bg || 'https://picsum.photos/seed/concept/300/500',
         reference_image_split: t.reference_image_split,
         reference_image_bg: t.reference_image_bg,
         style_preset: t.style_preset

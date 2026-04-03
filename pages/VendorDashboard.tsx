@@ -441,7 +441,10 @@ export default function VendorDashboard() {
             name: concept.name,
             prompt: concept.prompt,
             thumbnail: concept.thumbnail,
-            ref_image: concept.ref_image || concept.refImage || null
+            ref_image: concept.ref_image || concept.refImage || null,
+            reference_image_split: concept.reference_image_split || null,
+            reference_image_bg: concept.reference_image_bg || null,
+            style_preset: concept.style_preset || null
           };
         });
 

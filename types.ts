@@ -25,6 +25,7 @@ export interface ConceptTemplate {
   vendor_id?: string | null;
   name: string;
   prompt: string;
+  thumbnail?: string;
   reference_image_split?: string;
   reference_image_bg?: string;
   style_preset?: string;

@@ -195,7 +195,10 @@ const PhotoboothFlow: React.FC = () => {
                 name: c.name,
                 prompt: c.prompt,
                 thumbnail: c.thumbnail,
-                refImage: c.ref_image || undefined
+                refImage: c.ref_image || undefined,
+                reference_image_split: c.reference_image_split || undefined,
+                reference_image_bg: c.reference_image_bg || undefined,
+                style_preset: c.style_preset || undefined
               }));
               setConcepts(mappedConcepts);
               saveLargeData('pb_concepts', mappedConcepts).catch(err => 
