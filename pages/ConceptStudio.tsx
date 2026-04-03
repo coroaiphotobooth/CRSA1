@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Upload, Image as ImageIcon, Play, Save, Loader2 } from 'lucide-react';
+import { Upload, Image as ImageIcon, Play, Save, Loader2, Trash2, Edit2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useDialog } from '../components/DialogProvider';
+import { ConceptTemplate } from '../types';
 
 interface ConceptStudioProps {
   vendorId: string;
@@ -21,7 +22,32 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
   const [isRendering, setIsRendering] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [renderResult, setRenderResult] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<ConceptTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
+  const [editingTemplate, setEditingTemplate] = useState<ConceptTemplate | null>(null);
   const { showDialog } = useDialog();
+
+  useEffect(() => {
+    fetchTemplates();
+  }, [vendorId]);
+
+  const fetchTemplates = async () => {
+    setIsLoadingTemplates(true);
+    try {
+      const { data, error } = await supabase
+        .from('concept_templates')
+        .select('*')
+        .eq('vendor_id', vendorId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setTemplates(data || []);
+    } catch (err) {
+      console.error("Failed to fetch templates:", err);
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setter: React.Dispatch<React.SetStateAction<File | null>>) => {
     if (e.target.files && e.target.files[0]) {
@@ -169,77 +195,149 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
       return;
     }
 
-    if (!manOutfit || !womanOutfit || !background) {
+    if (!editingTemplate && (!manOutfit || !womanOutfit || !background)) {
       await showDialog('alert', 'Missing Inputs', 'Please upload Man Outfit, Woman Outfit, and Background images to save the template.');
       return;
     }
 
     setIsSaving(true);
     try {
-      // 1. Stitch images
-      const stitchedBase64 = await stitchImages(manOutfit, womanOutfit);
-      const bgBase64 = await resizeAndCompressImage(background);
+      let url1 = editingTemplate?.reference_image_split || '';
+      let url2 = editingTemplate?.reference_image_bg || '';
+      let thumbUrl = editingTemplate?.thumbnail || '';
 
-      // 2. Upload to Supabase Storage
-      const stitchedFileName = `${vendorId}/${Date.now()}_split.jpg`;
-      const bgFileName = `${vendorId}/${Date.now()}_bg.jpg`;
-      const thumbFileName = `${vendorId}/${Date.now()}_thumb.jpg`;
+      // If new images are uploaded, process and upload them
+      if (manOutfit && womanOutfit && background) {
+        // 1. Stitch images
+        const stitchedBase64 = await stitchImages(manOutfit, womanOutfit);
+        const bgBase64 = await resizeAndCompressImage(background);
 
-      // Convert base64 to blob for upload
-      const stitchedBlob = await (await fetch(stitchedBase64)).blob();
-      const bgBlob = await (await fetch(bgBase64)).blob();
+        // 2. Upload to Supabase Storage
+        const stitchedFileName = `${vendorId}/${Date.now()}_split.jpg`;
+        const bgFileName = `${vendorId}/${Date.now()}_bg.jpg`;
+        const thumbFileName = `${vendorId}/${Date.now()}_thumb.jpg`;
 
-      const { error: uploadError1 } = await supabase.storage
-        .from('concept_assets')
-        .upload(stitchedFileName, stitchedBlob, { contentType: 'image/jpeg' });
-      
-      if (uploadError1) throw uploadError1;
+        // Convert base64 to blob for upload
+        const stitchedBlob = await (await fetch(stitchedBase64)).blob();
+        const bgBlob = await (await fetch(bgBase64)).blob();
 
-      const { error: uploadError2 } = await supabase.storage
-        .from('concept_assets')
-        .upload(bgFileName, bgBlob, { contentType: background.type || 'image/jpeg' });
+        const { error: uploadError1 } = await supabase.storage
+          .from('concept_assets')
+          .upload(stitchedFileName, stitchedBlob, { contentType: 'image/jpeg' });
+        
+        if (uploadError1) throw uploadError1;
 
-      if (uploadError2) throw uploadError2;
+        const { error: uploadError2 } = await supabase.storage
+          .from('concept_assets')
+          .upload(bgFileName, bgBlob, { contentType: background.type || 'image/jpeg' });
 
-      let thumbUrl = '';
-      if (renderResult) {
-        try {
-          const thumbBlob = await (await fetch(renderResult)).blob();
-          await supabase.storage
-            .from('concept_assets')
-            .upload(thumbFileName, thumbBlob, { contentType: 'image/jpeg' });
-          const { data } = supabase.storage.from('concept_assets').getPublicUrl(thumbFileName);
-          thumbUrl = data.publicUrl;
-        } catch (e) {
-          console.error("Failed to upload thumbnail", e);
+        if (uploadError2) throw uploadError2;
+
+        if (renderResult) {
+          try {
+            const thumbBlob = await (await fetch(renderResult)).blob();
+            await supabase.storage
+              .from('concept_assets')
+              .upload(thumbFileName, thumbBlob, { contentType: 'image/jpeg' });
+            const { data } = supabase.storage.from('concept_assets').getPublicUrl(thumbFileName);
+            thumbUrl = data.publicUrl;
+          } catch (e) {
+            console.error("Failed to upload thumbnail", e);
+          }
         }
+
+        const { data: url1Data } = supabase.storage.from('concept_assets').getPublicUrl(stitchedFileName);
+        const { data: url2Data } = supabase.storage.from('concept_assets').getPublicUrl(bgFileName);
+        url1 = url1Data.publicUrl;
+        url2 = url2Data.publicUrl;
+        if (!thumbUrl) thumbUrl = url1;
       }
 
-      const { data: url1 } = supabase.storage.from('concept_assets').getPublicUrl(stitchedFileName);
-      const { data: url2 } = supabase.storage.from('concept_assets').getPublicUrl(bgFileName);
+      const templateData = {
+        vendor_id: vendorId,
+        name: templateName,
+        prompt: `A ${composition} shot. ${additionalPrompt}`,
+        thumbnail: thumbUrl,
+        reference_image_split: url1,
+        reference_image_bg: url2,
+        style_preset: stylePreset,
+      };
 
       // 3. Save to database
-      const { error } = await supabase.from('concept_templates').insert([
-        {
-          vendor_id: vendorId,
-          name: templateName,
-          prompt: `A ${composition} shot. ${additionalPrompt}`,
-          thumbnail: thumbUrl || url1.publicUrl,
-          reference_image_split: url1.publicUrl,
-          reference_image_bg: url2.publicUrl,
-          style_preset: stylePreset,
-        }
-      ]);
-
-      if (error) throw error;
-
-      await showDialog('alert', 'Success', 'Template saved successfully!');
-      onClose();
+      if (editingTemplate) {
+        const { error } = await supabase.from('concept_templates').update(templateData).eq('id', editingTemplate.id);
+        if (error) throw error;
+        await showDialog('alert', 'Success', 'Template updated successfully!');
+      } else {
+        const { error } = await supabase.from('concept_templates').insert([templateData]);
+        if (error) throw error;
+        await showDialog('alert', 'Success', 'Template saved successfully!');
+      }
+      
+      fetchTemplates();
+      handleReset();
     } catch (error: any) {
       console.error('Save error:', error);
       await showDialog('alert', 'Error', `Failed to save template: ${error.message}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleReset = () => {
+    setManOutfit(null);
+    setWomanOutfit(null);
+    setBackground(null);
+    setDummyFace(null);
+    setRenderResult(null);
+    setTemplateName('');
+    setAdditionalPrompt('');
+    setComposition('Medium Shot');
+    setStylePreset('Photorealistic');
+    setEditingTemplate(null);
+  };
+
+  const handleEditTemplate = (template: ConceptTemplate) => {
+    setEditingTemplate(template);
+    setTemplateName(template.name);
+    setStylePreset(template.style_preset || 'Photorealistic');
+    
+    // Parse prompt
+    let comp = 'Medium Shot';
+    let addPrompt = template.prompt;
+    const match = template.prompt.match(/^A (.*?) shot\.\s*(.*)/);
+    if (match) {
+      comp = match[1];
+      addPrompt = match[2];
+    }
+    setComposition(comp);
+    setAdditionalPrompt(addPrompt);
+    
+    // Reset files
+    setManOutfit(null);
+    setWomanOutfit(null);
+    setBackground(null);
+    setDummyFace(null);
+    setRenderResult(null);
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteTemplate = async (id: string) => {
+    const confirm = await showDialog('confirm', 'Delete Template', 'Are you sure you want to delete this template? This action cannot be undone.');
+    if (!confirm) return;
+
+    try {
+      const { error } = await supabase.from('concept_templates').delete().eq('id', id);
+      if (error) throw error;
+      
+      if (editingTemplate?.id === id) {
+        handleReset();
+      }
+      fetchTemplates();
+    } catch (error: any) {
+      console.error("Failed to delete template:", error);
+      await showDialog('alert', 'Error', `Failed to delete template: ${error.message}`);
     }
   };
 
@@ -258,6 +356,18 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
         </button>
       </div>
 
+      {editingTemplate && (
+        <div className="bg-blue-900/30 border border-blue-500/50 rounded-xl p-4 flex justify-between items-center">
+          <div>
+            <h3 className="font-bold text-blue-400">Editing Template: {editingTemplate.name}</h3>
+            <p className="text-sm text-blue-200/70">You can update the settings below. To change the images, please upload new ones.</p>
+          </div>
+          <button onClick={handleReset} className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-sm transition-colors">
+            Cancel Edit
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Inputs */}
         <div className="lg:col-span-2 space-y-6">
@@ -270,6 +380,14 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
                 <div className="relative aspect-[3/4] bg-black/50 border-2 border-dashed border-white/20 rounded-xl overflow-hidden hover:border-[#bc13fe]/50 transition-colors group">
                   {manOutfit ? (
                     <img src={URL.createObjectURL(manOutfit)} alt="Man Outfit" className="w-full h-full object-cover" />
+                  ) : editingTemplate?.reference_image_split ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
+                      <img src={editingTemplate.reference_image_split} alt="Existing Split" className="w-full h-full object-cover opacity-50" />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                        <span className="text-xs font-bold bg-black/50 px-2 py-1 rounded">Existing Image</span>
+                        <span className="text-[10px] text-gray-300 mt-1">Upload to replace</span>
+                      </div>
+                    </div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-[#bc13fe]">
                       <Upload className="w-8 h-8 mb-2" />
@@ -286,6 +404,14 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
                 <div className="relative aspect-[3/4] bg-black/50 border-2 border-dashed border-white/20 rounded-xl overflow-hidden hover:border-[#bc13fe]/50 transition-colors group">
                   {womanOutfit ? (
                     <img src={URL.createObjectURL(womanOutfit)} alt="Woman Outfit" className="w-full h-full object-cover" />
+                  ) : editingTemplate?.reference_image_split ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
+                      <img src={editingTemplate.reference_image_split} alt="Existing Split" className="w-full h-full object-cover opacity-50" />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                        <span className="text-xs font-bold bg-black/50 px-2 py-1 rounded">Existing Image</span>
+                        <span className="text-[10px] text-gray-300 mt-1">Upload to replace</span>
+                      </div>
+                    </div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-[#bc13fe]">
                       <Upload className="w-8 h-8 mb-2" />
@@ -302,6 +428,14 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
                 <div className="relative aspect-[3/4] bg-black/50 border-2 border-dashed border-white/20 rounded-xl overflow-hidden hover:border-[#bc13fe]/50 transition-colors group">
                   {background ? (
                     <img src={URL.createObjectURL(background)} alt="Background" className="w-full h-full object-cover" />
+                  ) : editingTemplate?.reference_image_bg ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
+                      <img src={editingTemplate.reference_image_bg} alt="Existing BG" className="w-full h-full object-cover opacity-50" />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                        <span className="text-xs font-bold bg-black/50 px-2 py-1 rounded">Existing Image</span>
+                        <span className="text-[10px] text-gray-300 mt-1">Upload to replace</span>
+                      </div>
+                    </div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 group-hover:text-[#bc13fe]">
                       <Upload className="w-8 h-8 mb-2" />
@@ -417,11 +551,62 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
                 className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                {isSaving ? 'Saving...' : 'Save as My Template'}
+                {isSaving ? 'Saving...' : (editingTemplate ? 'Update Template' : 'Save as My Template')}
               </button>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* My Templates Section */}
+      <div className="mt-12">
+        <h3 className="text-xl font-heading font-bold mb-6 border-b border-white/10 pb-4">My Templates</h3>
+        {isLoadingTemplates ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+          </div>
+        ) : templates.length === 0 ? (
+          <div className="text-center py-12 text-gray-500 bg-black/20 rounded-xl border border-white/5">
+            You haven't created any templates yet.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {templates.map(template => (
+              <div key={template.id} className="bg-black/40 border border-white/10 rounded-xl overflow-hidden group relative">
+                <div className="aspect-[3/4] relative">
+                  <img 
+                    src={template.thumbnail || template.reference_image_split || template.reference_image_bg || 'https://picsum.photos/seed/concept/300/400'} 
+                    alt={template.name} 
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80" />
+                  
+                  {/* Actions overlay */}
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm">
+                    <button 
+                      onClick={() => handleEditTemplate(template)}
+                      className="p-2 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 rounded-full transition-colors"
+                      title="Edit Template"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteTemplate(template.id)}
+                      className="p-2 bg-red-500/20 hover:bg-red-500/40 text-red-400 rounded-full transition-colors"
+                      title="Delete Template"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="p-3">
+                  <h4 className="font-bold text-sm truncate">{template.name}</h4>
+                  <p className="text-[10px] text-gray-400 mt-1 truncate">{template.style_preset}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
