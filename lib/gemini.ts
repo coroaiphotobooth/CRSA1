@@ -252,7 +252,7 @@ Instruction: ${finalPrompt}`;
       }
 
       // 2. Add Text Prompt (First)
-      parts.push({ text: executionPrompt });
+      parts.push({ text: "MAIN PHOTO (People to redraw):" });
 
       // 3. Add Person Image (Image 1)
       parts.push({ inlineData: { data: cleanBase64, mimeType: mimeType } });
@@ -290,31 +290,34 @@ Instruction: ${finalPrompt}`;
       // 4. Add Concept Studio References (Split & BG)
       if (concept.reference_image_split || concept.reference_image_bg) {
         if (concept.reference_image_split) {
+          parts.push({ text: "REFERENCE IMAGE 1 (Clothing/Outfits):" });
           const img = await fetchImageAsBase64(concept.reference_image_split);
           parts.push({ inlineData: img });
         }
         if (concept.reference_image_bg) {
+          parts.push({ text: "REFERENCE IMAGE 2 (Background/Environment):" });
           const img = await fetchImageAsBase64(concept.reference_image_bg);
           parts.push({ inlineData: img });
         }
 
         // Update prompt to instruct Gemini on how to use these new references
-        parts[0].text = `Redraw the people in the main photo.
-CRITICAL INSTRUCTION:
-Look at the provided reference images.
-- If a split reference image is provided (Reference Image 1), the man in the photo MUST wear the exact outfit shown on the LEFT side of Reference Image 1. The woman MUST wear the exact outfit shown on the RIGHT side of Reference Image 1. Retain the exact fabric, pattern, and design of the outfits.
-- Place them in the exact environment shown in the background reference image (Reference Image 2).
-Style: ${concept.style_preset || 'Photorealistic'}.
-Additional instructions: ${finalPrompt}`;
+        parts.push({ text: `${executionPrompt}
+
+CRITICAL INSTRUCTION FOR REFERENCE IMAGES:
+Redraw the people from the MAIN PHOTO.
+- If REFERENCE IMAGE 1 is provided, the man MUST wear the exact outfit shown on the LEFT side of REFERENCE IMAGE 1. The woman MUST wear the exact outfit shown on the RIGHT side. Retain the exact fabric, pattern, and design.
+- If REFERENCE IMAGE 2 is provided, place them in the exact environment shown in REFERENCE IMAGE 2.
+Style: ${concept.style_preset || 'Photorealistic'}.` });
 
       } else if (concept.refImage && concept.refImage.trim() !== '') {
          // Fallback to old refImage logic
+         parts.push({ text: "REFERENCE IMAGE (Style/Background/Clothing):" });
          const img = await fetchImageAsBase64(concept.refImage);
          parts.push({ inlineData: img });
          
-         if (promptMode === 'wrapped') {
-             parts[0].text += `\n\n[IMPORTANT]: The SECOND image provided is a VISUAL REFERENCE for the style, background, or clothing. Combine the person from the FIRST image with the style/aesthetics of the SECOND image.`;
-         }
+         parts.push({ text: executionPrompt + `\n\n[IMPORTANT]: The REFERENCE IMAGE provided is a VISUAL REFERENCE for the style, background, or clothing. Combine the person from the MAIN PHOTO with the style/aesthetics of the REFERENCE IMAGE.` });
+      } else {
+         parts.push({ text: executionPrompt });
       }
 
       // E. Logging Debug (Before Request)
