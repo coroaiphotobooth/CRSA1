@@ -223,12 +223,34 @@ keep it if someone is wearing glasses, hijab, or head accessories,s
       const generatedPrompt = mandatoryPrefix + (response.text || '').trim();
 
       const newId = crypto.randomUUID();
+      let thumbUrl = 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500';
+      
+      if (eventId && createFromImageFile) {
+         try {
+            const fileExt = createFromImageFile.name.split('.').pop() || 'jpg';
+            const folderName = settings.storage_folder || eventId;
+            const fileName = `${folderName}/assets/thumbnail-${Date.now()}.${fileExt}`;
+            const { error: uploadError } = await supabase.storage
+              .from('photobooth')
+              .upload(fileName, createFromImageFile, { upsert: true });
+            
+            if (!uploadError) {
+               const { data: { publicUrl } } = supabase.storage
+                 .from('photobooth')
+                 .getPublicUrl(fileName);
+               thumbUrl = publicUrl;
+            }
+         } catch (e) {
+            console.error("Failed to upload thumbnail", e);
+         }
+      }
+
       const newConcept: Concept = {
         id: newId,
         concept_id: 'smart_' + newId,
         name: createFromImageName,
         prompt: generatedPrompt,
-        thumbnail: 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500',
+        thumbnail: thumbUrl,
         refImage: undefined
       };
       
@@ -548,7 +570,15 @@ Output ONLY the enhanced prompt text, nothing else.`;
   return (
     <div className="flex flex-col gap-10">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {localConcepts.map((concept, index) => (
+        {localConcepts.map((concept, index) => {
+          const isTemplateOrSmart = concept.concept_id?.startsWith('template_') || 
+                                    concept.id.startsWith('template_') || 
+                                    concept.concept_id?.startsWith('smart_') || 
+                                    concept.id.startsWith('smart_') ||
+                                    concept.concept_id?.startsWith('concept_studio_') ||
+                                    concept.id.startsWith('concept_studio_');
+
+          return (
           <div key={concept.id} className="glass-card p-6 flex flex-col gap-4 relative group backdrop-blur-md bg-black/60 rounded-xl border border-white/10">
             <button 
               onClick={(e) => { e.stopPropagation(); handleDeleteConcept(index); }} 
@@ -599,58 +629,60 @@ Output ONLY the enhanced prompt text, nothing else.`;
                  </label>
                </div>
 
-               {/* REFERENCE IMAGE (NEW) */}
-               <div className={`flex flex-col gap-2 items-center w-24 shrink-0 ${index === localConcepts.length - 1 ? 'tour-reference' : ''}`}>
-                 <div className="w-full aspect-[9/16] bg-white/5 border border-dashed border-white/20 rounded-xl overflow-hidden relative group/ref shadow-lg flex items-center justify-center">
-                    {concept.refImage ? (
-                       <>
-                          <img src={concept.refImage} className="w-full h-full object-cover" />
-                          <button 
-                             onClick={() => handleRemoveRefImage(index)}
-                             className="absolute top-1 right-1 bg-red-600 rounded-full w-4 h-4 flex items-center justify-center text-white z-20 hover:scale-110"
-                          >
-                             <span className="text-[10px]">✕</span>
-                          </button>
-                       </>
-                    ) : (
-                       <span className="text-[8px] text-white/30 text-center px-2">Ref Image (Style)</span>
-                    )}
-                    
-                    <label className="absolute inset-0 bg-blue-600/80 opacity-0 group-hover/ref:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
-                       UPLOAD REFERENCE
-                       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                             if (file.size > 2 * 1024 * 1024) {
-                                await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
-                                return;
-                             }
-                             setIsSavingConcepts(true);
-                             await handleUploadAsset(file, 'refImage', index);
-                             setIsSavingConcepts(false);
-                          }
-                       }} />
-                    </label>
+               {/* REFERENCE IMAGE (NEW) - HIDDEN FOR TEMPLATES/SMART */}
+               {!isTemplateOrSmart && (
+                 <div className={`flex flex-col gap-2 items-center w-24 shrink-0 ${index === localConcepts.length - 1 ? 'tour-reference' : ''}`}>
+                   <div className="w-full aspect-[9/16] bg-white/5 border border-dashed border-white/20 rounded-xl overflow-hidden relative group/ref shadow-lg flex items-center justify-center">
+                      {concept.refImage ? (
+                         <>
+                            <img src={concept.refImage} className="w-full h-full object-cover" />
+                            <button 
+                               onClick={() => handleRemoveRefImage(index)}
+                               className="absolute top-1 right-1 bg-red-600 rounded-full w-4 h-4 flex items-center justify-center text-white z-20 hover:scale-110"
+                            >
+                               <span className="text-[10px]">✕</span>
+                            </button>
+                         </>
+                      ) : (
+                         <span className="text-[8px] text-white/30 text-center px-2">Ref Image (Style)</span>
+                      )}
+                      
+                      <label className="absolute inset-0 bg-blue-600/80 opacity-0 group-hover/ref:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
+                         UPLOAD REFERENCE
+                         <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                               if (file.size > 2 * 1024 * 1024) {
+                                  await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
+                                  return;
+                               }
+                               setIsSavingConcepts(true);
+                               await handleUploadAsset(file, 'refImage', index);
+                               setIsSavingConcepts(false);
+                            }
+                         }} />
+                      </label>
+                   </div>
+                   <div className="text-[8px] text-gray-400 font-bold text-center uppercase tracking-wider leading-tight">
+                     REFERENCE IMAGE (MAX 2MB)
+                   </div>
+                   <label className="bg-white/10 hover:bg-blue-600/80 text-[9px] px-2 py-1.5 rounded cursor-pointer transition-colors text-white uppercase font-bold text-center w-full">
+                     Upload
+                     <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                           if (file.size > 2 * 1024 * 1024) {
+                              await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
+                              return;
+                           }
+                           setIsSavingConcepts(true);
+                           await handleUploadAsset(file, 'refImage', index);
+                           setIsSavingConcepts(false);
+                        }
+                     }} />
+                   </label>
                  </div>
-                 <div className="text-[8px] text-gray-400 font-bold text-center uppercase tracking-wider leading-tight">
-                   REFERENCE IMAGE (MAX 2MB)
-                 </div>
-                 <label className="bg-white/10 hover:bg-blue-600/80 text-[9px] px-2 py-1.5 rounded cursor-pointer transition-colors text-white uppercase font-bold text-center w-full">
-                   Upload
-                   <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                         if (file.size > 2 * 1024 * 1024) {
-                            await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
-                            return;
-                         }
-                         setIsSavingConcepts(true);
-                         await handleUploadAsset(file, 'refImage', index);
-                         setIsSavingConcepts(false);
-                      }
-                   }} />
-                 </label>
-               </div>
+               )}
 
                {/* TEXT INPUTS */}
                <div className="flex-1 flex flex-col gap-4">
@@ -663,11 +695,9 @@ Output ONLY the enhanced prompt text, nothing else.`;
                        title="Edit concept name"
                     />
                   </div>
-                  {(concept.concept_id?.startsWith('template_') || concept.id.startsWith('template_') || concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_')) ? (
-                    <div className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-500 w-full rounded-lg flex items-center justify-center italic">
-                      {(concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_')) ? 'COROAI SMART CONCEPT' : 'COROAI CONCEPT TEMPLATE'}
-                    </div>
-                  ) : (
+                  
+                  {/* HIDDEN PROMPT FOR TEMPLATES/SMART */}
+                  {!isTemplateOrSmart && (
                     <div className={`w-full flex flex-col gap-2 ${index === localConcepts.length - 1 ? 'tour-prompt' : ''}`}>
                       <textarea 
                          className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
@@ -693,16 +723,27 @@ Output ONLY the enhanced prompt text, nothing else.`;
                       </div>
                     </div>
                   )}
+                  
+                  {/* BADGE FOR TEMPLATES/SMART */}
+                  {isTemplateOrSmart && (
+                    <div className="mt-auto pt-4 flex items-center gap-2">
+                       <span className="px-2 py-1 bg-white/10 rounded text-[10px] font-bold uppercase tracking-wider text-white/50">
+                          {(concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_')) ? 'AI GENERATED' : 'TEMPLATE'}
+                       </span>
+                    </div>
+                  )}
                </div>
             </div>
             
             {/* HELPER TEXT */}
-            <div className="bg-white/5 p-2 rounded text-[9px] text-gray-500 italic">
-               * <strong>Thumbnail:</strong> Displayed in concept menu. <br/>
-               * <strong>Reference Image:</strong> Optional. If uploaded, AI will use it as style/clothing/background reference.
-            </div>
+            {!isTemplateOrSmart && (
+              <div className="bg-white/5 p-2 rounded text-[9px] text-gray-500 italic">
+                 * <strong>Thumbnail:</strong> Displayed in concept menu. <br/>
+                 * <strong>Reference Image:</strong> Optional. If uploaded, AI will use it as style/clothing/background reference.
+              </div>
+            )}
           </div>
-        ))}
+        )})}
         <div className="glass-card p-8 flex flex-col items-center justify-center gap-6 border-2 border-dashed border-white/10 rounded-xl backdrop-blur-sm">
           <button 
             onClick={handleAddConcept} 
