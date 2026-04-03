@@ -696,8 +696,8 @@ Output ONLY the enhanced prompt text, nothing else.`;
                     />
                   </div>
                   
-                  {/* HIDDEN PROMPT FOR TEMPLATES/SMART */}
-                  {!isTemplateOrSmart && (
+                  {/* PROMPT OR TEMPLATE PLACEHOLDER */}
+                  {!isTemplateOrSmart ? (
                     <div className={`w-full flex flex-col gap-2 ${index === localConcepts.length - 1 ? 'tour-prompt' : ''}`}>
                       <textarea 
                          className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
@@ -722,13 +722,11 @@ Output ONLY the enhanced prompt text, nothing else.`;
                         <span className="text-[8px] text-gray-500 italic">use OPTIMIZE PROMPT if you use a simple prompt, we will make it better</span>
                       </div>
                     </div>
-                  )}
-                  
-                  {/* BADGE FOR TEMPLATES/SMART */}
-                  {isTemplateOrSmart && (
-                    <div className="mt-auto pt-4 flex items-center gap-2">
-                       <span className="px-2 py-1 bg-white/10 rounded text-[10px] font-bold uppercase tracking-wider text-white/50">
-                          {(concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_')) ? 'AI GENERATED' : 'TEMPLATE'}
+                  ) : (
+                    <div className="flex-1 bg-black/40 border border-white/10 rounded-lg flex flex-col items-center justify-center p-6 text-center min-h-[120px]">
+                       <Sparkles className="w-8 h-8 text-[#bc13fe]/50 mb-3" />
+                       <span className="text-lg md:text-xl font-heading font-bold uppercase tracking-widest text-white/70">
+                          {(concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_')) ? 'CREATE FROM AI IMAGE' : 'LOAD FROM TEMPLATE CONCEPT'}
                        </span>
                     </div>
                   )}
