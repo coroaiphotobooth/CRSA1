@@ -108,7 +108,7 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
     let finalPrompt = prompt;
 
     // Default to 'booth' mode if a reference image is provided and mode is 'wrapped' (default)
-    if (concept.refImage && promptMode === 'wrapped') {
+    if ((concept.refImage || concept.reference_image_split || concept.reference_image_bg) && promptMode === 'wrapped') {
         promptMode = 'booth';
         console.log("Auto-switching to BOOTH mode for Reference Image workflow");
     }
@@ -225,7 +225,21 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
 
       // 1. Construct Prompt based on Mode
       if (promptMode === 'booth') {
-          executionPrompt = `[SYSTEM INSTRUCTION]
+          if (concept.reference_image_split || concept.reference_image_bg) {
+              executionPrompt = `[SYSTEM INSTRUCTION]
+You are a professional photobooth AI. Your task is to redraw the people from the MAIN PHOTO using the provided REFERENCE IMAGES and THEME INSTRUCTION.
+
+[CRITICAL RULES]
+1. FACE IDENTITY LOCK: The face from the MAIN PHOTO must be preserved with high fidelity. Do not change facial features, age, or expression.
+2. CLOTHING TRANSFORMATION: If REFERENCE IMAGE 1 (Clothing) is provided, you MUST change the person's clothing to match it exactly.
+3. BACKGROUND: If REFERENCE IMAGE 2 (Background) is provided, place them in that exact environment.
+4. NO MERGING/GHOSTING: The person must be clearly separated from the background. Enforce depth separation (air gap). No "pasted" look.
+5. LIGHTING & SHADOWS: Apply realistic ground shadows and rim lighting to match the reference environment.
+
+[THEME INSTRUCTION]
+${finalPrompt}`;
+          } else {
+              executionPrompt = `[SYSTEM INSTRUCTION]
 You are a professional photobooth AI. Your task is to place the person from the FIRST image into the background/environment of the SECOND image (Reference), while changing their clothing based on the THEME INSTRUCTION.
 
 [CRITICAL RULES]
@@ -242,6 +256,7 @@ You are a professional photobooth AI. Your task is to place the person from the 
 
 [THEME INSTRUCTION]
 ${finalPrompt}`;
+          }
       } else if (promptMode === 'wrapped') {
           executionPrompt = `Edit the provided photo.
 Rules:

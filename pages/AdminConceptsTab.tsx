@@ -541,7 +541,10 @@ Output ONLY the enhanced prompt text, nothing else.`;
             name: c.name,
             prompt: c.prompt,
             thumbnail: c.thumbnail,
-            refImage: c.ref_image || undefined
+            refImage: c.ref_image || undefined,
+            reference_image_split: c.reference_image_split || undefined,
+            reference_image_bg: c.reference_image_bg || undefined,
+            style_preset: c.style_preset || undefined
           }));
           setLocalConcepts(mapped);
           onSaveConcepts(mapped);

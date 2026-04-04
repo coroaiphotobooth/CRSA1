@@ -926,7 +926,7 @@ export default function VendorDashboard() {
     12: 6000000,
   };
 
-  const EXCHANGE_RATE = 17000;
+  const EXCHANGE_RATE = 15000;
 
   const formatPrice = (priceIDR: number) => {
     if (buyCurrency === 'IDR') {
