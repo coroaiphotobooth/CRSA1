@@ -22,6 +22,33 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const decrementCredits = async (eventId: string, amount: number = 1): Promise<boolean> => {
   try {
     console.log(`[decrementCredits] Start. eventId: ${eventId}, amount: ${amount}`);
+    
+    // 1. Check if the vendor has an active unlimited timer
+    const { data: eventData, error: eventError } = await supabase
+      .from('events')
+      .select('vendor_id, vendors(credits, credits_used, is_timer_running, timer_last_started_at, unlimited_seconds_left)')
+      .eq('id', eventId)
+      .single();
+      
+    if (!eventError && eventData) {
+      const vendor = Array.isArray(eventData.vendors) ? eventData.vendors[0] : eventData.vendors as any;
+      if (vendor?.is_timer_running && vendor?.timer_last_started_at) {
+        const elapsed = Math.floor((Date.now() - new Date(vendor.timer_last_started_at).getTime()) / 1000);
+        const remaining = Math.max(0, (vendor.unlimited_seconds_left || 0) - elapsed);
+        if (remaining > 0) {
+          console.log(`[decrementCredits] Unlimited timer active. Remaining seconds: ${remaining}. Skipping deduction.`);
+          return true;
+        } else {
+          // Timer expired, auto-pause
+          await supabase.from('vendors').update({
+            is_timer_running: false,
+            timer_last_started_at: null,
+            unlimited_seconds_left: 0
+          }).eq('id', eventData.vendor_id);
+        }
+      }
+    }
+
     // Try the new RPC first
     const { data, error } = await supabase.rpc('decrement_credits_by_amount', { p_event_id: eventId, p_amount: amount });
     
@@ -47,21 +74,15 @@ export const decrementCredits = async (eventId: string, amount: number = 1): Pro
 
     console.log(`[decrementCredits] Falling back to manual check for eventId: ${eventId}`);
     // Manual fallback (subject to race conditions, but works if RPC is missing)
-    const { data: eventData, error: eventError } = await supabase
-      .from('events')
-      .select('vendor_id, vendors(credits, credits_used)')
-      .eq('id', eventId)
-      .single();
-      
     if (eventError || !eventData) {
       console.warn("Warning: Could not fetch event/vendor for credits. Proceeding anyway.", eventError);
       return true;
     }
 
     const vendorId = eventData.vendor_id;
-    // Handle array or object return from join
-    const currentCredits = Array.isArray(eventData.vendors) ? eventData.vendors[0]?.credits : (eventData.vendors as any)?.credits;
-    const currentCreditsUsed = Array.isArray(eventData.vendors) ? eventData.vendors[0]?.credits_used : (eventData.vendors as any)?.credits_used;
+    const vendor = Array.isArray(eventData.vendors) ? eventData.vendors[0] : eventData.vendors as any;
+    const currentCredits = vendor?.credits;
+    const currentCreditsUsed = vendor?.credits_used;
     
     console.log(`[decrementCredits] Manual check. vendorId: ${vendorId}, currentCredits: ${currentCredits}, amount: ${amount}`);
 

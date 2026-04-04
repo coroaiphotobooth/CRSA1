@@ -28,6 +28,75 @@ export default function VendorDashboard() {
   const [buyCurrency, setBuyCurrency] = useState<'IDR' | 'USD'>('IDR');
   const [creditAmount, setCreditAmount] = useState<number>(10);
   const [eventDuration, setEventDuration] = useState<number>(2);
+
+  // Timer State
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+
+  useEffect(() => {
+    if (vendor) {
+      if (vendor.is_timer_running && vendor.timer_last_started_at) {
+        setIsTimerRunning(true);
+        const interval = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - new Date(vendor.timer_last_started_at!).getTime()) / 1000);
+          const remaining = Math.max(0, (vendor.unlimited_seconds_left || 0) - elapsed);
+          setTimeLeft(remaining);
+          if (remaining === 0) {
+            handlePauseTimer();
+          }
+        }, 1000);
+        return () => clearInterval(interval);
+      } else {
+        setIsTimerRunning(false);
+        setTimeLeft(vendor.unlimited_seconds_left || 0);
+      }
+    }
+  }, [vendor]);
+
+  const handleStartTimer = async () => {
+    if (!vendor || timeLeft <= 0) return;
+    try {
+      const { error } = await supabase
+        .from('vendors')
+        .update({
+          is_timer_running: true,
+          timer_last_started_at: new Date().toISOString()
+        })
+        .eq('id', vendor.id);
+      if (error) throw error;
+      setVendor({ ...vendor, is_timer_running: true, timer_last_started_at: new Date().toISOString() });
+    } catch (err) {
+      console.error("Failed to start timer", err);
+    }
+  };
+
+  const handlePauseTimer = async () => {
+    if (!vendor || !vendor.timer_last_started_at) return;
+    try {
+      const elapsed = Math.floor((Date.now() - new Date(vendor.timer_last_started_at).getTime()) / 1000);
+      const remaining = Math.max(0, (vendor.unlimited_seconds_left || 0) - elapsed);
+      
+      const { error } = await supabase
+        .from('vendors')
+        .update({
+          is_timer_running: false,
+          timer_last_started_at: null,
+          unlimited_seconds_left: remaining
+        })
+        .eq('id', vendor.id);
+      if (error) throw error;
+      setVendor({ ...vendor, is_timer_running: false, timer_last_started_at: null, unlimited_seconds_left: remaining });
+    } catch (err) {
+      console.error("Failed to pause timer", err);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
   const [rentDuration, setRentDuration] = useState<'minggu' | 'bulan'>('minggu');
   const [newEventName, setNewEventName] = useState('');
   const [newEventDescription, setNewEventDescription] = useState('AI PHOTOBOOTH EXPERIENCE');
@@ -1095,7 +1164,7 @@ export default function VendorDashboard() {
         {/* Stats / Overview */}
         {activeTab === 'events' ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
           <div className="glass-card p-6 rounded-2xl border border-white/10 tour-total-events">
             <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.totalEvents}</h3>
             <p className="text-4xl font-bold">{events.length}</p>
@@ -1117,6 +1186,29 @@ export default function VendorDashboard() {
               >
                 {t.buyCredits}
               </button>
+            </div>
+          </div>
+          <div className="glass-card p-6 rounded-2xl border border-white/10 bg-gradient-to-br from-blue-500/10 to-transparent flex flex-col">
+            <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">Unlimited Time</h3>
+            <p className={`text-4xl font-bold font-mono ${isTimerRunning ? 'text-green-400' : 'text-white'}`}>
+              {formatTime(timeLeft)}
+            </p>
+            <div className="mt-auto pt-4 flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                {isTimerRunning ? 'Credits paused' : 'Credits active'}
+              </p>
+              {timeLeft > 0 && (
+                <button 
+                  onClick={isTimerRunning ? handlePauseTimer : handleStartTimer}
+                  className={`text-xs px-3 py-1.5 rounded-md font-bold transition-colors ${
+                    isTimerRunning 
+                      ? 'bg-red-500 hover:bg-red-600 text-white' 
+                      : 'bg-green-500 hover:bg-green-600 text-white'
+                  }`}
+                >
+                  {isTimerRunning ? 'PAUSE' : 'START'}
+                </button>
+              )}
             </div>
           </div>
         </div>

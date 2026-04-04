@@ -210,9 +210,27 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
       setRenderResult(`data:image/png;base64,${data.imageBase64}`);
       
       // Deduct credit
-      const { data: vendorData } = await supabase.from('vendors').select('credits').eq('id', vendorId).single();
+      const { data: vendorData } = await supabase.from('vendors').select('credits, is_timer_running, timer_last_started_at, unlimited_seconds_left').eq('id', vendorId).single();
       if (vendorData) {
-        await supabase.from('vendors').update({ credits: Math.max(0, vendorData.credits - 1) }).eq('id', vendorId);
+        let isUnlimitedActive = false;
+        if (vendorData.is_timer_running && vendorData.timer_last_started_at) {
+          const elapsed = Math.floor((Date.now() - new Date(vendorData.timer_last_started_at).getTime()) / 1000);
+          const remaining = Math.max(0, (vendorData.unlimited_seconds_left || 0) - elapsed);
+          if (remaining > 0) {
+            isUnlimitedActive = true;
+          } else {
+            // Timer expired, auto-pause
+            await supabase.from('vendors').update({
+              is_timer_running: false,
+              timer_last_started_at: null,
+              unlimited_seconds_left: 0
+            }).eq('id', vendorId);
+          }
+        }
+        
+        if (!isUnlimitedActive) {
+          await supabase.from('vendors').update({ credits: Math.max(0, vendorData.credits - 1) }).eq('id', vendorId);
+        }
       }
 
     } catch (error: any) {

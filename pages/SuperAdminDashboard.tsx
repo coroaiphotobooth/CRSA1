@@ -16,7 +16,7 @@ export default function SuperAdminDashboard() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', company_name: '', country: '', phone: '', plan: 'free', credits: 0 });
+  const [editForm, setEditForm] = useState({ name: '', company_name: '', country: '', phone: '', plan: 'free', credits: 0, unlimited_seconds_left: 0 });
   
   // Template Concept Form State
   const [showConceptModal, setShowConceptModal] = useState(false);
@@ -62,7 +62,7 @@ export default function SuperAdminDashboard() {
       
       if (vendorsData && vendorsData.length <= 1) {
           setShowSqlModal(true);
-      } else if (vendorsData && vendorsData.length > 0 && (!('company_name' in vendorsData[0]) || !('email_confirmed' in vendorsData[0]) || !('credits_used' in vendorsData[0]))) {
+      } else if (vendorsData && vendorsData.length > 0 && (!('company_name' in vendorsData[0]) || !('email_confirmed' in vendorsData[0]) || !('credits_used' in vendorsData[0]) || !('unlimited_seconds_left' in vendorsData[0]))) {
           setShowSqlModal(true);
       }
       
@@ -202,7 +202,8 @@ export default function SuperAdminDashboard() {
       country: vendor.country || '',
       phone: vendor.phone || '',
       plan: vendor.plan || 'free',
-      credits: vendor.credits || 0
+      credits: vendor.credits || 0,
+      unlimited_seconds_left: vendor.unlimited_seconds_left || 0
     });
   };
 
@@ -217,7 +218,8 @@ export default function SuperAdminDashboard() {
           country: editForm.country,
           phone: editForm.phone,
           plan: editForm.plan,
-          credits: editForm.credits
+          credits: editForm.credits,
+          unlimited_seconds_left: editForm.unlimited_seconds_left
         })
         .eq('id', editingVendor.id);
 
@@ -589,6 +591,9 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT false;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS admin_message TEXT;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS email_confirmed BOOLEAN DEFAULT false;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS credits_used INTEGER DEFAULT 0;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS unlimited_seconds_left INTEGER DEFAULT 0;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS is_timer_running BOOLEAN DEFAULT false;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS timer_last_started_at TIMESTAMPTZ;
 
 -- Add storage_folder to events table
 ALTER TABLE events ADD COLUMN IF NOT EXISTS storage_folder TEXT;
@@ -715,17 +720,36 @@ $$;
 -- 5. Grant execute permission to authenticated users (the function itself checks the email)
 GRANT EXECUTE ON FUNCTION delete_user(user_id UUID) TO authenticated;
 
--- 6. Update decrement_credits functions to track usage
+-- 6. Update decrement_credits functions to track usage and support unlimited timer
 CREATE OR REPLACE FUNCTION decrement_credits(p_event_id UUID)
 RETURNS BOOLEAN AS $$
 DECLARE
   v_vendor_id UUID;
   v_credits INTEGER;
+  v_is_timer_running BOOLEAN;
+  v_timer_last_started_at TIMESTAMPTZ;
+  v_unlimited_seconds_left INTEGER;
+  v_elapsed INTEGER;
+  v_remaining INTEGER;
 BEGIN
-  SELECT v.id, v.credits INTO v_vendor_id, v_credits
+  SELECT v.id, v.credits, v.is_timer_running, v.timer_last_started_at, v.unlimited_seconds_left 
+  INTO v_vendor_id, v_credits, v_is_timer_running, v_timer_last_started_at, v_unlimited_seconds_left
   FROM events e JOIN vendors v ON e.vendor_id = v.id
   WHERE e.id = p_event_id AND e.is_active = true;
-  IF v_vendor_id IS NULL OR v_credits <= 0 THEN RETURN FALSE; END IF;
+  
+  IF v_vendor_id IS NULL THEN RETURN FALSE; END IF;
+
+  IF v_is_timer_running AND v_timer_last_started_at IS NOT NULL THEN
+    v_elapsed := EXTRACT(EPOCH FROM (NOW() - v_timer_last_started_at))::INTEGER;
+    v_remaining := GREATEST(0, COALESCE(v_unlimited_seconds_left, 0) - v_elapsed);
+    IF v_remaining > 0 THEN
+      RETURN TRUE;
+    ELSE
+      UPDATE vendors SET is_timer_running = false, timer_last_started_at = null, unlimited_seconds_left = 0 WHERE id = v_vendor_id;
+    END IF;
+  END IF;
+
+  IF v_credits <= 0 THEN RETURN FALSE; END IF;
   UPDATE vendors SET credits = credits - 1, credits_used = COALESCE(credits_used, 0) + 1 WHERE id = v_vendor_id;
   RETURN TRUE;
 END;
@@ -736,11 +760,30 @@ RETURNS BOOLEAN AS $$
 DECLARE
   v_vendor_id UUID;
   v_credits INTEGER;
+  v_is_timer_running BOOLEAN;
+  v_timer_last_started_at TIMESTAMPTZ;
+  v_unlimited_seconds_left INTEGER;
+  v_elapsed INTEGER;
+  v_remaining INTEGER;
 BEGIN
-  SELECT v.id, v.credits INTO v_vendor_id, v_credits
+  SELECT v.id, v.credits, v.is_timer_running, v.timer_last_started_at, v.unlimited_seconds_left 
+  INTO v_vendor_id, v_credits, v_is_timer_running, v_timer_last_started_at, v_unlimited_seconds_left
   FROM events e JOIN vendors v ON e.vendor_id = v.id
   WHERE e.id = p_event_id AND e.is_active = true;
-  IF v_vendor_id IS NULL OR v_credits < p_amount THEN RETURN FALSE; END IF;
+  
+  IF v_vendor_id IS NULL THEN RETURN FALSE; END IF;
+
+  IF v_is_timer_running AND v_timer_last_started_at IS NOT NULL THEN
+    v_elapsed := EXTRACT(EPOCH FROM (NOW() - v_timer_last_started_at))::INTEGER;
+    v_remaining := GREATEST(0, COALESCE(v_unlimited_seconds_left, 0) - v_elapsed);
+    IF v_remaining > 0 THEN
+      RETURN TRUE;
+    ELSE
+      UPDATE vendors SET is_timer_running = false, timer_last_started_at = null, unlimited_seconds_left = 0 WHERE id = v_vendor_id;
+    END IF;
+  END IF;
+
+  IF v_credits < p_amount THEN RETURN FALSE; END IF;
   UPDATE vendors SET credits = credits - p_amount, credits_used = COALESCE(credits_used, 0) + p_amount WHERE id = v_vendor_id;
   RETURN TRUE;
 END;
@@ -1013,6 +1056,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                       <th className="pb-4 font-medium">Phone</th>
                       <th className="pb-4 font-medium">Plan</th>
                       <th className="pb-4 font-medium">Credits</th>
+                      <th className="pb-4 font-medium">Unlimited Time (Hours)</th>
                       <th className="pb-4 font-medium">Used</th>
                       <th className="pb-4 font-medium text-right">Actions</th>
                     </tr>
@@ -1103,6 +1147,21 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                               className="bg-black/50 border border-white/20 rounded px-2 py-1 w-20"
                             />
                           ) : (v.credits || 0)}
+                        </td>
+                        <td className="py-4">
+                          {editingVendor?.id === v.id ? (
+                            <input 
+                              type="number" 
+                              step="0.5"
+                              value={editForm.unlimited_seconds_left / 3600} 
+                              onChange={e => setEditForm({...editForm, unlimited_seconds_left: Math.floor(parseFloat(e.target.value || '0') * 3600)})}
+                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-20"
+                            />
+                          ) : (
+                            <span className={v.is_timer_running ? "text-green-400 font-bold" : ""}>
+                              {((v.unlimited_seconds_left || 0) / 3600).toFixed(1)}h
+                            </span>
+                          )}
                         </td>
                         <td className="py-4 text-gray-400">
                           {v.credits_used || 0}

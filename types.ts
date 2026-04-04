@@ -132,6 +132,9 @@ export interface Vendor {
   plan: 'free' | 'pay_as_you_go' | 'rent';
   credits: number;
   credits_used?: number;
+  unlimited_seconds_left?: number;
+  is_timer_running?: boolean;
+  timer_last_started_at?: string | null;
   created_at: string;
   is_blocked?: boolean;
   admin_message?: string;
