@@ -6,9 +6,10 @@ interface ThemesPageProps {
   concepts: Concept[];
   onSelect: (concept: Concept) => void;
   onBack: () => void;
+  onAdmin?: (tab?: 'settings' | 'concepts') => void;
 }
 
-const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack }) => {
+const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onAdmin }) => {
   return (
     <div className="w-full min-h-screen flex flex-col items-center p-6 md:p-10 bg-transparent font-sans">
       
@@ -28,9 +29,16 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack }) =
       {/* CENTERED GRID WRAPPER - Takes remaining height and centers content */}
       <div className="flex-1 w-full max-w-6xl flex items-center justify-center py-4">
         {concepts.length === 0 ? (
-          <div className="text-center bg-black/50 p-8 rounded-2xl border border-white/10 backdrop-blur-md">
-            <h3 className="text-xl font-bold text-white mb-2">No Concepts Available</h3>
-            <p className="text-gray-400 text-sm">Go to SETTINGS - CONCEPT<br/>Create a concept there or use the one we provide.</p>
+          <div className="text-center bg-black/50 p-8 rounded-2xl border border-white/10 backdrop-blur-md flex flex-col items-center">
+            <h3 className="text-xl font-bold text-white mb-6">No Concepts Available</h3>
+            {onAdmin && (
+              <button 
+                onClick={() => onAdmin('concepts')}
+                className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white font-bold rounded-xl transition-all shadow-lg shadow-[#bc13fe]/20 uppercase tracking-widest text-sm"
+              >
+                Add concept to this event
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full animate-[popIn_0.5s_ease-out]">

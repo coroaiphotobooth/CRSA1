@@ -1505,49 +1505,6 @@ export default function VendorDashboard() {
                 </div>
               )}
 
-              {buyModalTab === 'event' && (
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm text-gray-300 font-medium mb-2">{buyCurrency === 'USD' ? 'Event Duration' : 'Durasi Event'}</label>
-                    <select 
-                      value={eventDuration}
-                      onChange={(e) => setEventDuration(parseInt(e.target.value))}
-                      className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
-                    >
-                      {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(hours => (
-                        <option key={hours} value={hours}>{hours} {buyCurrency === 'USD' ? 'Hours' : 'Jam'}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
-                    <span className="text-gray-400 text-sm">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
-                    <span className="text-2xl font-bold text-[#bc13fe]">{formatPrice(eventPrices[eventDuration])}</span>
-                  </div>
-                </div>
-              )}
-
-              {buyModalTab === 'rent' && (
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm text-gray-300 font-medium mb-2">{buyCurrency === 'USD' ? 'Rent Duration' : 'Durasi Sewa'}</label>
-                    <select 
-                      value={rentDuration}
-                      onChange={(e) => setRentDuration(e.target.value as 'minggu' | 'bulan')}
-                      className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
-                    >
-                      <option value="minggu">{buyCurrency === 'USD' ? 'Per Week' : 'Per Minggu'}</option>
-                      <option value="bulan">{buyCurrency === 'USD' ? 'Per Month' : 'Per Bulan'}</option>
-                    </select>
-                  </div>
-                  
-                  <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
-                    <span className="text-gray-400 text-sm">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
-                    <span className="text-2xl font-bold text-white">{buyCurrency === 'USD' ? 'Call for price' : 'Hubungi untuk harga'}</span>
-                  </div>
-                </div>
-              )}
-
               {buyModalTab === 'free' && (
                 <div className="space-y-4">
                   <div className="bg-[#bc13fe]/10 border border-[#bc13fe]/30 p-4 rounded-xl">

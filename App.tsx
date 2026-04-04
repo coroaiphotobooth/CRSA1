@@ -400,7 +400,14 @@ const PhotoboothFlow: React.FC = () => {
       case AppState.LANDING:
         return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} />;
       case AppState.THEMES:
-        return <ThemesPage concepts={concepts} onSelect={(c) => { setSelectedConcept(c); setCurrentPage(AppState.CAMERA); }} onBack={() => setCurrentPage(AppState.LANDING)} />;
+        return (
+          <ThemesPage 
+            concepts={concepts} 
+            onSelect={(c) => { setSelectedConcept(c); setCurrentPage(AppState.CAMERA); }} 
+            onBack={() => setCurrentPage(AppState.LANDING)}
+            onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }}
+          />
+        );
       case AppState.CAMERA:
         return <CameraPage 
             onCapture={handleCapture} 
