@@ -16,7 +16,7 @@ export default function SuperAdminDashboard() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', company_name: '', country: '', phone: '', plan: 'free', credits: 0, unlimited_seconds_left: 0 });
+  const [editForm, setEditForm] = useState({ name: '', company_name: '', country: '', phone: '', plan: 'free', credits: 0, unlimited_seconds_left: 0, _original_unlimited_seconds_left: 0, unlimited_expires_at: null as string | null });
   
   // Template Concept Form State
   const [showConceptModal, setShowConceptModal] = useState(false);
@@ -196,6 +196,13 @@ export default function SuperAdminDashboard() {
 
   const startEdit = (vendor: Vendor) => {
     setEditingVendor(vendor);
+    
+    let currentRemaining = vendor.unlimited_seconds_left || 0;
+    if (vendor.is_timer_running && vendor.timer_last_started_at) {
+      const elapsed = Math.floor((Date.now() - new Date(vendor.timer_last_started_at).getTime()) / 1000);
+      currentRemaining = Math.max(0, currentRemaining - elapsed);
+    }
+
     setEditForm({
       name: vendor.name || '',
       company_name: vendor.company_name || '',
@@ -203,29 +210,40 @@ export default function SuperAdminDashboard() {
       phone: vendor.phone || '',
       plan: vendor.plan || 'free',
       credits: vendor.credits || 0,
-      unlimited_seconds_left: vendor.unlimited_seconds_left || 0
+      unlimited_seconds_left: currentRemaining,
+      _original_unlimited_seconds_left: currentRemaining,
+      unlimited_expires_at: vendor.unlimited_expires_at || null
     });
   };
 
   const saveEdit = async () => {
     if (!editingVendor) return;
     try {
-      const { error } = await supabase
-        .from('vendors')
-        .update({
-          name: editForm.name,
-          company_name: editForm.company_name,
-          country: editForm.country,
-          phone: editForm.phone,
-          plan: editForm.plan,
-          credits: editForm.credits,
-          unlimited_seconds_left: editForm.unlimited_seconds_left
-        })
-        .eq('id', editingVendor.id);
-
-      if (error) throw error;
+      const updatePayload: any = {};
+      if (editForm.name !== editingVendor.name) updatePayload.name = editForm.name;
+      if (editForm.company_name !== editingVendor.company_name) updatePayload.company_name = editForm.company_name;
+      if (editForm.country !== editingVendor.country) updatePayload.country = editForm.country;
+      if (editForm.phone !== editingVendor.phone) updatePayload.phone = editForm.phone;
+      if (editForm.plan !== editingVendor.plan) updatePayload.plan = editForm.plan;
+      if (editForm.credits !== editingVendor.credits) updatePayload.credits = editForm.credits;
+      if (editForm.unlimited_expires_at !== editingVendor.unlimited_expires_at) updatePayload.unlimited_expires_at = editForm.unlimited_expires_at;
       
-      setVendors(vendors.map(v => v.id === editingVendor.id ? { ...v, ...editForm } as Vendor : v));
+      if (editForm.unlimited_seconds_left !== editForm._original_unlimited_seconds_left) {
+        updatePayload.unlimited_seconds_left = editForm.unlimited_seconds_left;
+        updatePayload.is_timer_running = false;
+        updatePayload.timer_last_started_at = null;
+      }
+
+      if (Object.keys(updatePayload).length > 0) {
+        const { error } = await supabase
+          .from('vendors')
+          .update(updatePayload)
+          .eq('id', editingVendor.id);
+
+        if (error) throw error;
+      }
+      
+      setVendors(vendors.map(v => v.id === editingVendor.id ? { ...v, ...updatePayload } as Vendor : v));
       setEditingVendor(null);
     } catch (err: any) {
       await showDialog('alert', 'Error', `Failed to update vendor: ${err.message}`);
@@ -490,6 +508,14 @@ export default function SuperAdminDashboard() {
     (v.company_name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const getRemainingTime = (v: Vendor) => {
+    if (v.is_timer_running && v.timer_last_started_at) {
+      const elapsed = Math.floor((Date.now() - new Date(v.timer_last_started_at).getTime()) / 1000);
+      return Math.max(0, (v.unlimited_seconds_left || 0) - elapsed);
+    }
+    return v.unlimited_seconds_left || 0;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center text-white">
@@ -594,6 +620,7 @@ ALTER TABLE vendors ADD COLUMN IF NOT EXISTS credits_used INTEGER DEFAULT 0;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS unlimited_seconds_left INTEGER DEFAULT 0;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS is_timer_running BOOLEAN DEFAULT false;
 ALTER TABLE vendors ADD COLUMN IF NOT EXISTS timer_last_started_at TIMESTAMPTZ;
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS unlimited_expires_at TIMESTAMPTZ;
 
 -- Add storage_folder to events table
 ALTER TABLE events ADD COLUMN IF NOT EXISTS storage_folder TEXT;
@@ -729,15 +756,22 @@ DECLARE
   v_is_timer_running BOOLEAN;
   v_timer_last_started_at TIMESTAMPTZ;
   v_unlimited_seconds_left INTEGER;
+  v_unlimited_expires_at TIMESTAMPTZ;
   v_elapsed INTEGER;
   v_remaining INTEGER;
 BEGIN
-  SELECT v.id, v.credits, v.is_timer_running, v.timer_last_started_at, v.unlimited_seconds_left 
-  INTO v_vendor_id, v_credits, v_is_timer_running, v_timer_last_started_at, v_unlimited_seconds_left
+  SELECT v.id, v.credits, v.is_timer_running, v.timer_last_started_at, v.unlimited_seconds_left, v.unlimited_expires_at
+  INTO v_vendor_id, v_credits, v_is_timer_running, v_timer_last_started_at, v_unlimited_seconds_left, v_unlimited_expires_at
   FROM events e JOIN vendors v ON e.vendor_id = v.id
   WHERE e.id = p_event_id AND e.is_active = true;
   
   IF v_vendor_id IS NULL THEN RETURN FALSE; END IF;
+
+  IF v_unlimited_expires_at IS NOT NULL AND NOW() > v_unlimited_expires_at THEN
+    UPDATE vendors SET is_timer_running = false, timer_last_started_at = null, unlimited_seconds_left = 0, unlimited_expires_at = null WHERE id = v_vendor_id;
+    v_is_timer_running := false;
+    v_unlimited_seconds_left := 0;
+  END IF;
 
   IF v_is_timer_running AND v_timer_last_started_at IS NOT NULL THEN
     v_elapsed := EXTRACT(EPOCH FROM (NOW() - v_timer_last_started_at))::INTEGER;
@@ -763,15 +797,22 @@ DECLARE
   v_is_timer_running BOOLEAN;
   v_timer_last_started_at TIMESTAMPTZ;
   v_unlimited_seconds_left INTEGER;
+  v_unlimited_expires_at TIMESTAMPTZ;
   v_elapsed INTEGER;
   v_remaining INTEGER;
 BEGIN
-  SELECT v.id, v.credits, v.is_timer_running, v.timer_last_started_at, v.unlimited_seconds_left 
-  INTO v_vendor_id, v_credits, v_is_timer_running, v_timer_last_started_at, v_unlimited_seconds_left
+  SELECT v.id, v.credits, v.is_timer_running, v.timer_last_started_at, v.unlimited_seconds_left, v.unlimited_expires_at
+  INTO v_vendor_id, v_credits, v_is_timer_running, v_timer_last_started_at, v_unlimited_seconds_left, v_unlimited_expires_at
   FROM events e JOIN vendors v ON e.vendor_id = v.id
   WHERE e.id = p_event_id AND e.is_active = true;
   
   IF v_vendor_id IS NULL THEN RETURN FALSE; END IF;
+
+  IF v_unlimited_expires_at IS NOT NULL AND NOW() > v_unlimited_expires_at THEN
+    UPDATE vendors SET is_timer_running = false, timer_last_started_at = null, unlimited_seconds_left = 0, unlimited_expires_at = null WHERE id = v_vendor_id;
+    v_is_timer_running := false;
+    v_unlimited_seconds_left := 0;
+  END IF;
 
   IF v_is_timer_running AND v_timer_last_started_at IS NOT NULL THEN
     v_elapsed := EXTRACT(EPOCH FROM (NOW() - v_timer_last_started_at))::INTEGER;
@@ -1057,6 +1098,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                       <th className="pb-4 font-medium">Plan</th>
                       <th className="pb-4 font-medium">Credits</th>
                       <th className="pb-4 font-medium">Unlimited Time (Hours)</th>
+                      <th className="pb-4 font-medium">Unlimited Expiry</th>
                       <th className="pb-4 font-medium">Used</th>
                       <th className="pb-4 font-medium text-right">Actions</th>
                     </tr>
@@ -1159,7 +1201,31 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                             />
                           ) : (
                             <span className={v.is_timer_running ? "text-green-400 font-bold" : ""}>
-                              {((v.unlimited_seconds_left || 0) / 3600).toFixed(1)}h
+                              {(getRemainingTime(v) / 3600).toFixed(2)}h
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-4">
+                          {editingVendor?.id === v.id ? (
+                            <div className="flex flex-col gap-1">
+                              <input 
+                                type="datetime-local" 
+                                value={editForm.unlimited_expires_at ? new Date(new Date(editForm.unlimited_expires_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                                onChange={e => setEditForm({...editForm, unlimited_expires_at: e.target.value ? new Date(e.target.value).toISOString() : null})}
+                                className="bg-black/50 border border-white/20 rounded px-2 py-1 w-40 text-xs"
+                              />
+                              <div className="flex gap-1 text-[10px]">
+                                <button onClick={() => setEditForm({...editForm, unlimited_expires_at: null})} className="bg-gray-700 px-1 rounded">Reset</button>
+                                <button onClick={() => setEditForm({...editForm, unlimited_expires_at: new Date(Date.now() + 86400000).toISOString()})} className="bg-blue-600 px-1 rounded">+1d</button>
+                                <button onClick={() => setEditForm({...editForm, unlimited_expires_at: new Date(Date.now() + 86400000 * 2).toISOString()})} className="bg-blue-600 px-1 rounded">+2d</button>
+                                <button onClick={() => setEditForm({...editForm, unlimited_expires_at: new Date(Date.now() + 86400000 * 7).toISOString()})} className="bg-blue-600 px-1 rounded">+7d</button>
+                                <button onClick={() => setEditForm({...editForm, unlimited_expires_at: new Date(Date.now() - 1000).toISOString()})} className="bg-red-600 px-1 rounded">Expire</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className={v.unlimited_expires_at && new Date(v.unlimited_expires_at).getTime() < Date.now() ? "text-red-400 font-bold" : "text-gray-400"}>
+                              {v.unlimited_expires_at ? new Date(v.unlimited_expires_at).toLocaleString() : 'Never'}
+                              {v.unlimited_expires_at && new Date(v.unlimited_expires_at).getTime() < Date.now() && " (Expired)"}
                             </span>
                           )}
                         </td>

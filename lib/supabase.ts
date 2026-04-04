@@ -26,13 +26,28 @@ export const decrementCredits = async (eventId: string, amount: number = 1): Pro
     // 1. Check if the vendor has an active unlimited timer
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select('vendor_id, vendors(credits, credits_used, is_timer_running, timer_last_started_at, unlimited_seconds_left)')
+      .select('vendor_id, vendors(credits, credits_used, is_timer_running, timer_last_started_at, unlimited_seconds_left, unlimited_expires_at)')
       .eq('id', eventId)
       .single();
       
     if (!eventError && eventData) {
       const vendor = Array.isArray(eventData.vendors) ? eventData.vendors[0] : eventData.vendors as any;
-      if (vendor?.is_timer_running && vendor?.timer_last_started_at) {
+      
+      let isExpired = false;
+      if (vendor?.unlimited_expires_at && new Date(vendor.unlimited_expires_at).getTime() < Date.now()) {
+        isExpired = true;
+      }
+
+      if (isExpired) {
+        if (vendor?.is_timer_running) {
+          await supabase.from('vendors').update({
+            is_timer_running: false,
+            timer_last_started_at: null,
+            unlimited_seconds_left: 0,
+            unlimited_expires_at: null
+          }).eq('id', eventData.vendor_id);
+        }
+      } else if (vendor?.is_timer_running && vendor?.timer_last_started_at) {
         const elapsed = Math.floor((Date.now() - new Date(vendor.timer_last_started_at).getTime()) / 1000);
         const remaining = Math.max(0, (vendor.unlimited_seconds_left || 0) - elapsed);
         if (remaining > 0) {

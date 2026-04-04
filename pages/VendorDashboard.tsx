@@ -35,9 +35,26 @@ export default function VendorDashboard() {
 
   useEffect(() => {
     if (vendor) {
-      if (vendor.is_timer_running && vendor.timer_last_started_at) {
+      let isExpired = false;
+      if (vendor.unlimited_expires_at && new Date(vendor.unlimited_expires_at).getTime() < Date.now()) {
+        isExpired = true;
+      }
+
+      if (isExpired) {
+        setIsTimerRunning(false);
+        setTimeLeft(0);
+        if (vendor.is_timer_running) {
+          handlePauseTimer(true); // Force pause if it was running but expired
+        }
+      } else if (vendor.is_timer_running && vendor.timer_last_started_at) {
         setIsTimerRunning(true);
         const interval = setInterval(() => {
+          // Check expiration inside interval too
+          if (vendor.unlimited_expires_at && new Date(vendor.unlimited_expires_at).getTime() < Date.now()) {
+            handlePauseTimer(true);
+            return;
+          }
+
           const elapsed = Math.floor((Date.now() - new Date(vendor.timer_last_started_at!).getTime()) / 1000);
           const remaining = Math.max(0, (vendor.unlimited_seconds_left || 0) - elapsed);
           setTimeLeft(remaining);
@@ -55,37 +72,48 @@ export default function VendorDashboard() {
 
   const handleStartTimer = async () => {
     if (!vendor || timeLeft <= 0) return;
+    if (vendor.unlimited_expires_at && new Date(vendor.unlimited_expires_at).getTime() < Date.now()) {
+      await showDialog('alert', 'Error', 'Unlimited time has expired.');
+      return;
+    }
     try {
+      const now = new Date().toISOString();
       const { error } = await supabase
         .from('vendors')
         .update({
           is_timer_running: true,
-          timer_last_started_at: new Date().toISOString()
+          timer_last_started_at: now
         })
         .eq('id', vendor.id);
       if (error) throw error;
-      setVendor({ ...vendor, is_timer_running: true, timer_last_started_at: new Date().toISOString() });
+      setVendor({ ...vendor, is_timer_running: true, timer_last_started_at: now });
     } catch (err) {
       console.error("Failed to start timer", err);
     }
   };
 
-  const handlePauseTimer = async () => {
-    if (!vendor || !vendor.timer_last_started_at) return;
+  const handlePauseTimer = async (forceZero = false) => {
+    if (!vendor || (!vendor.timer_last_started_at && !forceZero)) return;
     try {
-      const elapsed = Math.floor((Date.now() - new Date(vendor.timer_last_started_at).getTime()) / 1000);
-      const remaining = Math.max(0, (vendor.unlimited_seconds_left || 0) - elapsed);
+      const elapsed = vendor.timer_last_started_at ? Math.floor((Date.now() - new Date(vendor.timer_last_started_at).getTime()) / 1000) : 0;
+      const remaining = forceZero ? 0 : Math.max(0, (vendor.unlimited_seconds_left || 0) - elapsed);
       
+      const updatePayload: any = {
+        is_timer_running: false,
+        timer_last_started_at: null,
+        unlimited_seconds_left: remaining
+      };
+
+      if (forceZero) {
+        updatePayload.unlimited_expires_at = null;
+      }
+
       const { error } = await supabase
         .from('vendors')
-        .update({
-          is_timer_running: false,
-          timer_last_started_at: null,
-          unlimited_seconds_left: remaining
-        })
+        .update(updatePayload)
         .eq('id', vendor.id);
       if (error) throw error;
-      setVendor({ ...vendor, is_timer_running: false, timer_last_started_at: null, unlimited_seconds_left: remaining });
+      setVendor({ ...vendor, ...updatePayload });
     } catch (err) {
       console.error("Failed to pause timer", err);
     }

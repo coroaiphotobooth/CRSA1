@@ -210,10 +210,25 @@ Additional instructions: A ${composition} shot. ${additionalPrompt}`
       setRenderResult(`data:image/png;base64,${data.imageBase64}`);
       
       // Deduct credit
-      const { data: vendorData } = await supabase.from('vendors').select('credits, is_timer_running, timer_last_started_at, unlimited_seconds_left').eq('id', vendorId).single();
+      const { data: vendorData } = await supabase.from('vendors').select('credits, is_timer_running, timer_last_started_at, unlimited_seconds_left, unlimited_expires_at').eq('id', vendorId).single();
       if (vendorData) {
         let isUnlimitedActive = false;
-        if (vendorData.is_timer_running && vendorData.timer_last_started_at) {
+        
+        let isExpired = false;
+        if (vendorData.unlimited_expires_at && new Date(vendorData.unlimited_expires_at).getTime() < Date.now()) {
+          isExpired = true;
+        }
+
+        if (isExpired) {
+          if (vendorData.is_timer_running) {
+            await supabase.from('vendors').update({
+              is_timer_running: false,
+              timer_last_started_at: null,
+              unlimited_seconds_left: 0,
+              unlimited_expires_at: null
+            }).eq('id', vendorId);
+          }
+        } else if (vendorData.is_timer_running && vendorData.timer_last_started_at) {
           const elapsed = Math.floor((Date.now() - new Date(vendorData.timer_last_started_at).getTime()) / 1000);
           const remaining = Math.max(0, (vendorData.unlimited_seconds_left || 0) - elapsed);
           if (remaining > 0) {

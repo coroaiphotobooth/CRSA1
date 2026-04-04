@@ -135,6 +135,7 @@ export interface Vendor {
   unlimited_seconds_left?: number;
   is_timer_running?: boolean;
   timer_last_started_at?: string | null;
+  unlimited_expires_at?: string | null;
   created_at: string;
   is_blocked?: boolean;
   admin_message?: string;
