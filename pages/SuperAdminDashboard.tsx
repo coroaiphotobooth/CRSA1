@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Loader2, LogOut, Trash2, Edit, Save, Settings, ShieldAlert, Lock, Unlock, ExternalLink, Search, MessageSquare } from 'lucide-react';
+import { Loader2, LogOut, Trash2, Edit, Save, Settings, ShieldAlert, Lock, Unlock, ExternalLink, Search, MessageSquare, MoreVertical } from 'lucide-react';
 import { Vendor, TemplateConcept } from '../types';
 import { useDialog } from '../components/DialogProvider';
 
@@ -16,6 +16,7 @@ export default function SuperAdminDashboard() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
+  const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', company_name: '', country: '', phone: '', plan: 'free', credits: 0, unlimited_seconds_left: 0, _original_unlimited_seconds_left: 0, unlimited_expires_at: null as string | null });
   
   // Template Concept Form State
@@ -214,6 +215,20 @@ export default function SuperAdminDashboard() {
       _original_unlimited_seconds_left: currentRemaining,
       unlimited_expires_at: vendor.unlimited_expires_at || null
     });
+  };
+
+  const saveExpiryOnly = async (vendorId: string, expiresAt: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('vendors')
+        .update({ unlimited_expires_at: expiresAt })
+        .eq('id', vendorId);
+      if (error) throw error;
+      setVendors(vendors.map(v => v.id === vendorId ? { ...v, unlimited_expires_at: expiresAt } : v));
+      await showDialog('alert', 'Success', 'Expiry updated successfully');
+    } catch (err: any) {
+      await showDialog('alert', 'Error', `Failed to update expiry: ${err.message}`);
+    }
   };
 
   const saveEdit = async () => {
@@ -1207,19 +1222,24 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                         </td>
                         <td className="py-4">
                           {editingVendor?.id === v.id ? (
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-2">
                               <input 
                                 type="datetime-local" 
                                 value={editForm.unlimited_expires_at ? new Date(new Date(editForm.unlimited_expires_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
                                 onChange={e => setEditForm({...editForm, unlimited_expires_at: e.target.value ? new Date(e.target.value).toISOString() : null})}
                                 className="bg-black/50 border border-white/20 rounded px-2 py-1 w-40 text-xs"
                               />
-                              <div className="flex gap-1 text-[10px]">
-                                <button onClick={() => setEditForm({...editForm, unlimited_expires_at: null})} className="bg-gray-700 px-1 rounded">Reset</button>
-                                <button onClick={() => setEditForm({...editForm, unlimited_expires_at: new Date(Date.now() + 86400000).toISOString()})} className="bg-blue-600 px-1 rounded">+1d</button>
-                                <button onClick={() => setEditForm({...editForm, unlimited_expires_at: new Date(Date.now() + 86400000 * 2).toISOString()})} className="bg-blue-600 px-1 rounded">+2d</button>
-                                <button onClick={() => setEditForm({...editForm, unlimited_expires_at: new Date(Date.now() + 86400000 * 7).toISOString()})} className="bg-blue-600 px-1 rounded">+7d</button>
-                                <button onClick={() => setEditForm({...editForm, unlimited_expires_at: new Date(Date.now() - 1000).toISOString()})} className="bg-red-600 px-1 rounded">Expire</button>
+                              <div className="flex flex-wrap gap-1 text-[10px]">
+                                <button onClick={() => saveExpiryOnly(v.id, editForm.unlimited_expires_at)} className="bg-blue-600 px-2 py-1 rounded font-bold">Set Expired</button>
+                                <button onClick={() => {
+                                  const expiredDate = new Date(Date.now() - 1000).toISOString();
+                                  setEditForm({...editForm, unlimited_expires_at: expiredDate});
+                                  saveExpiryOnly(v.id, expiredDate);
+                                }} className="bg-red-600 px-2 py-1 rounded font-bold">Expire Now</button>
+                                <button onClick={() => {
+                                  setEditForm({...editForm, unlimited_expires_at: null});
+                                  saveExpiryOnly(v.id, null);
+                                }} className="bg-gray-700 px-2 py-1 rounded font-bold">Reset</button>
                               </div>
                             </div>
                           ) : (
@@ -1243,34 +1263,53 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                               </button>
                             </div>
                           ) : (
-                            <div className="flex justify-end gap-2">
-                              <button 
-                                onClick={() => handleMessageVendor(v.id)} 
-                                className="p-2 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30"
-                                title="Send Message"
-                              >
-                                <MessageSquare className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => navigate(`/dashboard?vendorId=${v.id}`)} 
-                                className="p-2 bg-purple-500/20 text-purple-400 rounded hover:bg-purple-500/30"
-                                title="Enter Vendor Dashboard"
-                              >
-                                <ExternalLink className="w-4 h-4" />
-                              </button>
-                              <button 
-                                onClick={() => handleToggleBlock(v)} 
-                                className={`p-2 rounded ${v.is_blocked ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30' : 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'}`}
-                                title={v.is_blocked ? "Unblock Vendor" : "Block Vendor"}
-                              >
-                                {v.is_blocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                              </button>
-                              <button onClick={() => startEdit(v)} className="p-2 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30">
+                            <div className="flex justify-end gap-2 relative">
+                              <button onClick={() => startEdit(v)} className="p-2 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30" title="Edit Vendor">
                                 <Edit className="w-4 h-4" />
                               </button>
-                              <button onClick={() => handleDeleteVendor(v.id)} className="p-2 bg-red-500/20 text-red-400 rounded hover:bg-red-500/30">
-                                <Trash2 className="w-4 h-4" />
+                              <button 
+                                onClick={() => setOpenActionMenuId(openActionMenuId === v.id ? null : v.id)}
+                                className="p-2 bg-white/5 text-gray-300 rounded hover:bg-white/10"
+                                title="More Actions"
+                              >
+                                <MoreVertical className="w-4 h-4" />
                               </button>
+
+                              {openActionMenuId === v.id && (
+                                <>
+                                  <div className="fixed inset-0 z-10" onClick={() => setOpenActionMenuId(null)}></div>
+                                  <div className="absolute right-0 top-full mt-1 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-20 overflow-hidden flex flex-col">
+                                    <button 
+                                      onClick={() => { handleMessageVendor(v.id); setOpenActionMenuId(null); }} 
+                                      className="flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors text-blue-400"
+                                    >
+                                      <MessageSquare className="w-4 h-4" />
+                                      <span className="text-sm font-medium">Send Message</span>
+                                    </button>
+                                    <button 
+                                      onClick={() => { navigate(`/dashboard?vendorId=${v.id}`); setOpenActionMenuId(null); }} 
+                                      className="flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors text-purple-400 border-t border-white/5"
+                                    >
+                                      <ExternalLink className="w-4 h-4" />
+                                      <span className="text-sm font-medium">Enter Dashboard</span>
+                                    </button>
+                                    <button 
+                                      onClick={() => { handleToggleBlock(v); setOpenActionMenuId(null); }} 
+                                      className={`flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-t border-white/5 ${v.is_blocked ? 'text-yellow-400' : 'text-orange-400'}`}
+                                    >
+                                      {v.is_blocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                                      <span className="text-sm font-medium">{v.is_blocked ? "Unblock Vendor" : "Block Vendor"}</span>
+                                    </button>
+                                    <button 
+                                      onClick={() => { handleDeleteVendor(v.id); setOpenActionMenuId(null); }} 
+                                      className="flex items-center gap-3 px-4 py-3 text-left hover:bg-red-500/10 transition-colors text-red-400 border-t border-white/5"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      <span className="text-sm font-medium">Remove Vendor</span>
+                                    </button>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           )}
                         </td>

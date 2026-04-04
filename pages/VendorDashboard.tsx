@@ -1221,13 +1221,20 @@ export default function VendorDashboard() {
             <p className={`text-4xl font-bold font-mono ${isTimerRunning ? 'text-green-400' : 'text-white'}`}>
               {formatTime(timeLeft)}
             </p>
+            {vendor?.unlimited_expires_at && (
+              <p className={`text-xs mt-2 font-bold ${new Date(vendor.unlimited_expires_at).getTime() < Date.now() ? 'text-red-400' : 'text-yellow-400'}`}>
+                {new Date(vendor.unlimited_expires_at).getTime() < Date.now() 
+                  ? 'Your unlimited has expired' 
+                  : `Your unlimited will end in ${Math.ceil((new Date(vendor.unlimited_expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days`}
+              </p>
+            )}
             <div className="mt-auto pt-4 flex items-center justify-between">
               <p className="text-xs text-gray-500">
                 {isTimerRunning ? 'Credits paused' : 'Credits active'}
               </p>
               {timeLeft > 0 && (
                 <button 
-                  onClick={isTimerRunning ? handlePauseTimer : handleStartTimer}
+                  onClick={() => isTimerRunning ? handlePauseTimer() : handleStartTimer()}
                   className={`text-xs px-3 py-1.5 rounded-md font-bold transition-colors ${
                     isTimerRunning 
                       ? 'bg-red-500 hover:bg-red-600 text-white' 
