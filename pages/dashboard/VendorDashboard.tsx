@@ -894,7 +894,8 @@ export default function VendorDashboard() {
       backToAdmin: "Back to Super Admin",
       impersonating: "Impersonating",
       myEvents: "Your Events",
-      noEvents: "No events found. Create your first photobooth event!",
+      noEvents: "Create new event to start Photobooth",
+      createNewEvents: "Create new events",
       startEvent: "Please click \"Create Event\" to start the photobooth page.",
       conceptTip: "In \"Settings - Concept,\" you can create your own concept by entering a prompt and uploading a thumbnail image, or load one we provide for free.",
       downloading: "Downloading Data",
@@ -929,7 +930,8 @@ export default function VendorDashboard() {
       backToAdmin: "Kembali ke Super Admin",
       impersonating: "Menyamar",
       myEvents: "Event Anda",
-      noEvents: "Belum ada event. Buat event photobooth pertama Anda!",
+      noEvents: "Buat event baru untuk memulai Photobooth",
+      createNewEvents: "Buat event baru",
       startEvent: "Silakan klik \"Buat Event\" untuk memulai halaman photobooth.",
       conceptTip: "Di \"Pengaturan - Konsep,\" Anda dapat membuat konsep Anda sendiri dengan memasukkan prompt dan mengunggah gambar thumbnail, atau memuat konsep yang kami sediakan secara gratis.",
       downloading: "Mengunduh Data",
@@ -1027,40 +1029,72 @@ export default function VendorDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-4 md:p-8">
-      {showOnboarding && vendor && (
-        <CinematicIntro 
-          vendorName={vendor.name} 
-          isInstallable={isInstallable}
-          onInstall={handleInstallClick}
-          onComplete={async (lang) => {
-            setLanguage(lang);
-            localStorage.setItem('vendor_language', lang);
-            
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              localStorage.setItem(`has_seen_onboarding_${user.id}`, 'true');
-            }
-            
-            setShowOnboarding(false);
-            if (!isActive) {
-              setShowTourPrompt(true);
-            }
-            
-            try {
-              const { error } = await supabase.auth.updateUser({
-                data: { has_seen_onboarding: true }
-              });
-              if (error) {
-                console.error("Failed to save onboarding status:", error);
+    <div className="min-h-screen bg-[#050505] text-white p-4 md:p-8 relative overflow-hidden">
+      {/* Space Background Effect */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        {/* Animated Stars/Particles */}
+        {[...Array(40)].map((_, i) => (
+          <motion.div
+            key={i}
+            initial={{ 
+              x: Math.random() * 2000 - 500, 
+              y: Math.random() * 2000 - 500,
+              opacity: Math.random() * 0.5 + 0.4,
+              scale: Math.random() * 0.8 + 0.6
+            }}
+            animate={{ 
+              x: [null, Math.random() * 2000 - 500],
+              y: [null, Math.random() * 2000 - 500],
+              opacity: [null, Math.random() * 0.4 + 0.5, Math.random() * 0.5 + 0.4]
+            }}
+            transition={{ 
+              duration: Math.random() * 40 + 40, 
+              repeat: Infinity, 
+              ease: "linear" 
+            }}
+            className="absolute w-[1.5px] h-[1.5px] bg-white rounded-full shadow-[0_0_3px_rgba(255,255,255,0.8)]"
+          />
+        ))}
+        
+        {/* Nebula/Glow Effects */}
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#bc13fe]/10 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-[30%] right-[10%] w-[30%] h-[30%] bg-purple-500/5 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '4s' }} />
+      </div>
+
+      <div className="relative z-10 max-w-6xl mx-auto">
+        {showOnboarding && vendor && (
+          <CinematicIntro 
+            vendorName={vendor.name} 
+            isInstallable={isInstallable}
+            onInstall={handleInstallClick}
+            onComplete={async (lang) => {
+              setLanguage(lang);
+              localStorage.setItem('vendor_language', lang);
+              
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) {
+                localStorage.setItem(`has_seen_onboarding_${user.id}`, 'true');
               }
-            } catch (err) {
-              console.error("Failed to save onboarding status:", err);
-            }
-          }} 
-        />
-      )}
-      <div className="max-w-6xl mx-auto">
+              
+              setShowOnboarding(false);
+              if (!isActive) {
+                setShowTourPrompt(true);
+              }
+              
+              try {
+                const { error } = await supabase.auth.updateUser({
+                  data: { has_seen_onboarding: true }
+                });
+                if (error) {
+                  console.error("Failed to save onboarding status:", error);
+                }
+              } catch (err) {
+                console.error("Failed to save onboarding status:", err);
+              }
+            }} 
+          />
+        )}
         
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
@@ -1235,20 +1269,18 @@ export default function VendorDashboard() {
         )}
 
         {/* Stats / Overview */}
-        {activeTab === 'events' ? (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-          <div className="glass-card p-6 rounded-2xl border border-white/10 tour-total-events">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
+          <div className="glass-card py-4 px-6 rounded-2xl border border-white/10 tour-total-events">
             <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.totalEvents}</h3>
             <p className="text-4xl font-bold">{events.length}</p>
           </div>
-          <div className="glass-card p-6 rounded-2xl border border-white/10 tour-current-plan">
+          <div className="glass-card py-4 px-6 rounded-2xl border border-white/10 tour-current-plan">
             <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.currentPlan}</h3>
             <p className="text-4xl font-bold capitalize text-[#bc13fe]">
               {vendor?.plan === 'pay_as_you_go' ? 'PAY AS YOU GO' : vendor?.plan === 'rent' ? 'RENT' : vendor?.plan}
             </p>
           </div>
-          <div className="glass-card p-6 rounded-2xl border border-white/10 bg-gradient-to-br from-[#bc13fe]/10 to-transparent flex flex-col tour-available-credits">
+          <div className="glass-card py-4 px-6 rounded-2xl border border-white/10 bg-gradient-to-br from-[#bc13fe]/10 to-transparent flex flex-col tour-available-credits">
             <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">{t.availableCredits}</h3>
             <p className="text-4xl font-bold">{vendor?.credits}</p>
             <div className="mt-auto pt-4 flex items-center justify-between">
@@ -1261,7 +1293,7 @@ export default function VendorDashboard() {
               </button>
             </div>
           </div>
-          <div className="glass-card p-6 rounded-2xl border border-white/10 bg-gradient-to-br from-blue-500/10 to-transparent flex flex-col">
+          <div className="glass-card py-4 px-6 rounded-2xl border border-white/10 bg-gradient-to-br from-blue-500/10 to-transparent flex flex-col">
             <h3 className="text-gray-400 text-sm uppercase tracking-widest mb-2">Unlimited Time</h3>
             <p className={`text-4xl font-bold font-mono ${isTimerRunning ? 'text-green-400' : 'text-white'}`}>
               {formatTime(timeLeft)}
@@ -1301,8 +1333,10 @@ export default function VendorDashboard() {
           </div>
         </div>
 
-        {/* Events List */}
-        <div className="relative flex flex-col md:flex-row items-center justify-between mb-6 gap-6">
+        {activeTab === 'events' ? (
+          <>
+            {/* Events List */}
+            <div className="relative flex flex-col md:flex-row items-center justify-between mb-6 gap-6">
           <h2 className="text-2xl font-heading font-bold md:w-1/4 text-center md:text-left">{t.myEvents}</h2>
           
           <div className="flex flex-wrap justify-center items-center gap-3 md:absolute md:left-1/2 md:-translate-x-1/2 z-10">
@@ -1326,78 +1360,87 @@ export default function VendorDashboard() {
           <div className="hidden md:block md:w-1/4"></div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10 bg-white/[0.02]">
           {events.length === 0 ? (
-            <div className="col-span-full glass-card p-10 rounded-2xl border border-white/10 text-center text-gray-500 flex flex-col items-center justify-center tour-event-card">
+            <div className="text-center text-gray-500 flex flex-col items-center justify-center tour-event-card py-10">
               <ImageIcon className="w-12 h-12 mb-4 opacity-20" />
-              <p>{t.noEvents}</p>
+              <p className="mb-6">{t.noEvents}</p>
+              <button 
+                onClick={() => setShowCreateModal(true)}
+                className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-[#bc13fe]/20"
+              >
+                <Plus className="w-4 h-4" />
+                {t.createNewEvents}
+              </button>
             </div>
           ) : (
-            events.map((event, index) => (
-              <div key={event.id} className={`glass-card p-6 rounded-2xl border border-white/10 flex flex-col gap-4 hover:border-[#bc13fe]/50 transition-colors group ${index === 0 ? 'tour-event-card' : ''}`}>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">{event.name}</h3>
-                    <p className="text-xs text-gray-400">{event.date ? new Date(event.date).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {events.map((event, index) => (
+                <div key={event.id} className={`glass-card p-6 rounded-2xl border border-white/10 flex flex-col gap-4 hover:border-[#bc13fe]/50 transition-colors group ${index === 0 ? 'tour-event-card' : ''}`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-lg mb-1">{event.name}</h3>
+                      <p className="text-xs text-gray-400">{event.date ? new Date(event.date).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+                    </div>
+                    <div className={`w-3 h-3 rounded-full ${event.is_active !== false ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-gray-600'}`} title={event.is_active !== false ? 'Active' : 'Inactive'} />
                   </div>
-                  <div className={`w-3 h-3 rounded-full ${event.is_active !== false ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-gray-600'}`} title={event.is_active !== false ? 'Active' : 'Inactive'} />
+                  
+                  <p className="text-sm text-gray-400 line-clamp-2">{event.description || 'New Photobooth Event'}</p>
+                  
+                  <div className="mt-auto pt-4 border-t border-white/10 flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => navigate(`/app/${event.id}`)}
+                        className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 tour-app-page"
+                      >
+                        <Play className="w-3 h-3" />
+                        {t.launch}
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/admin/${event.id}`)}
+                        className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Settings className="w-3 h-3" />
+                        {t.settings}
+                      </button>
+                      <button 
+                        onClick={() => navigate(`/app/${event.id}?page=gallery`)}
+                        className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <ImageIcon className="w-3 h-3" />
+                        {t.gallery}
+                      </button>
+                    </div>
+                    <div className="flex gap-2 mt-1">
+                      <button 
+                        onClick={() => handleDownloadAllData(event.id)}
+                        className="flex-1 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                        title={t.download}
+                      >
+                        <Download className="w-3 h-3" />
+                        {t.download}
+                      </button>
+                      <button 
+                        onClick={() => handleBackupToDrive(event.id)}
+                        className="flex-1 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                        title={t.backup}
+                      >
+                        <CloudUpload className="w-3 h-3" />
+                        {t.backup}
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteEvent(event.id)}
+                        className="flex-1 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                        title={t.delete}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        {t.delete}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                
-                <p className="text-sm text-gray-400 line-clamp-2">{event.description || 'New Photobooth Event'}</p>
-                
-                <div className="mt-auto pt-4 border-t border-white/10 flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => navigate(`/app/${event.id}`)}
-                      className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 tour-app-page"
-                    >
-                      <Play className="w-3 h-3" />
-                      {t.launch}
-                    </button>
-                    <button 
-                      onClick={() => navigate(`/admin/${event.id}`)}
-                      className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Settings className="w-3 h-3" />
-                      {t.settings}
-                    </button>
-                    <button 
-                      onClick={() => navigate(`/app/${event.id}?page=gallery`)}
-                      className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                    >
-                      <ImageIcon className="w-3 h-3" />
-                      {t.gallery}
-                    </button>
-                  </div>
-                  <div className="flex gap-2 mt-1">
-                    <button 
-                      onClick={() => handleDownloadAllData(event.id)}
-                      className="flex-1 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                      title={t.download}
-                    >
-                      <Download className="w-3 h-3" />
-                      {t.download}
-                    </button>
-                    <button 
-                      onClick={() => handleBackupToDrive(event.id)}
-                      className="flex-1 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                      title={t.backup}
-                    >
-                      <CloudUpload className="w-3 h-3" />
-                      {t.backup}
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteEvent(event.id)}
-                      className="flex-1 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
-                      title={t.delete}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      {t.delete}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
         </>
@@ -1405,9 +1448,7 @@ export default function VendorDashboard() {
           <ConceptStudio vendorId={vendor?.id || ''} onClose={() => setActiveTab('events')} />
         )}
 
-      </div>
-
-      {/* Progress Modals */}
+        {/* Progress Modals */}
       {downloadProgress && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
           <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-md text-center">
@@ -2022,7 +2063,7 @@ export default function VendorDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
-
     </div>
-  );
+  </div>
+);
 }
