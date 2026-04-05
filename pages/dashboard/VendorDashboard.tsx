@@ -155,7 +155,14 @@ export default function VendorDashboard() {
   const [isInstallable, setIsInstallable] = useState(false);
 
   useEffect(() => {
+    // Check if it's already available on window (captured in index.html)
+    if ((window as any).deferredPrompt) {
+      setDeferredPrompt((window as any).deferredPrompt);
+      setIsInstallable(true);
+    }
+
     const handleBeforeInstallPrompt = (e: any) => {
+      console.log('VendorDashboard: beforeinstallprompt event fired');
       e.preventDefault();
       setDeferredPrompt(e);
       setIsInstallable(true);
@@ -167,21 +174,37 @@ export default function VendorDashboard() {
       console.log('PWA was installed');
     };
 
+    // Listen for custom event from index.html
+    const handlePwaInstallable = () => {
+      console.log('VendorDashboard: pwa-installable custom event received');
+      if ((window as any).deferredPrompt) {
+        setDeferredPrompt((window as any).deferredPrompt);
+        setIsInstallable(true);
+      }
+    };
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener('pwa-installable', handlePwaInstallable);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('pwa-installable', handlePwaInstallable);
     };
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    const prompt = deferredPrompt || (window as any).deferredPrompt;
+    if (!prompt) {
+      console.log('No deferred prompt available');
+      return;
+    }
+    prompt.prompt();
+    const { outcome } = await prompt.userChoice;
     console.log(`User response to the install prompt: ${outcome}`);
     setDeferredPrompt(null);
+    (window as any).deferredPrompt = null;
     setIsInstallable(false);
   };
 
@@ -886,14 +909,7 @@ export default function VendorDashboard() {
       create: "CREATE",
       creating: "CREATING...",
       error: "Error",
-      close: "CLOSE",
-      messageFromCoroai: "Message from coroai",
-      defaultAdminMessage: `Hi, welcome to Coroai!
-- Please click "Create Event" to start the photobooth page.
-- On the settings page, you can change the background, branding overlay, and other settings.
-- In "Settings - Concept," you can create your own concept by entering a prompt and uploading a thumbnail image, or load one we provide for free.
-- If you'd like a custom concept created for you, let us know via WhatsApp. We'll create a concept according to your request for free.
-- Good luck, have fun!`
+      close: "CLOSE"
     },
     id: {
       welcome: "Selamat datang kembali,",
@@ -928,14 +944,7 @@ export default function VendorDashboard() {
       create: "BUAT",
       creating: "MEMBUAT...",
       error: "Kesalahan",
-      close: "TUTUP",
-      messageFromCoroai: "Pesan dari coroai",
-      defaultAdminMessage: `Hai, selamat datang di Coroai!
-- Silakan klik "BUAT EVENT" untuk memulai halaman photobooth.
-- Di halaman pengaturan, Anda dapat mengubah latar belakang, overlay branding, dan pengaturan lainnya.
-- Di "PENGATURAN - KONSEP," Anda dapat membuat konsep sendiri dengan memasukkan prompt dan mengunggah gambar thumbnail, atau load template yang kami sediakan secara gratis.
-- Jika Anda membutuhkan konsep khusus dibuat untuk Anda, beri tahu kami melalui WhatsApp. Kami akan membuatkan konsep sesuai permintaan Anda secara gratis.
-- selamat mencoba, Terimakasih`
+      close: "TUTUP"
     }
   };
 
@@ -1224,18 +1233,6 @@ export default function VendorDashboard() {
             </div>
           </div>
         )}
-
-        <div className="bg-blue-500/10 border border-blue-500/50 text-blue-400 p-6 rounded-xl mb-8 flex items-start gap-4">
-          <div className="w-8 h-8 flex-shrink-0 mt-1 flex items-center justify-center bg-blue-500/20 rounded-full">
-            <span className="text-blue-400 font-bold text-lg">i</span>
-          </div>
-          <div>
-            <h3 className="text-lg font-bold mb-2">{t.messageFromCoroai}</h3>
-            <p className="text-sm opacity-90 whitespace-pre-wrap">
-              {vendor?.admin_message || t.defaultAdminMessage}
-            </p>
-          </div>
-        </div>
 
         {/* Stats / Overview */}
         {activeTab === 'events' ? (
