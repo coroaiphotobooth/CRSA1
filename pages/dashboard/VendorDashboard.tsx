@@ -1302,24 +1302,28 @@ export default function VendorDashboard() {
         </div>
 
         {/* Events List */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-heading font-bold">{t.myEvents}</h2>
-          <div className="flex items-center gap-3">
+        <div className="relative flex flex-col md:flex-row items-center justify-between mb-12 gap-6">
+          <h2 className="text-2xl font-heading font-bold md:w-1/4 text-center md:text-left">{t.myEvents}</h2>
+          
+          <div className="flex flex-wrap justify-center items-center gap-4 md:absolute md:left-1/2 md:-translate-x-1/2 z-10">
             <button
               onClick={() => setActiveTab('concept_studio')}
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2"
+              className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold text-base transition-all flex items-center gap-3 border border-white/10 shadow-lg"
             >
-              <Palette className="w-4 h-4" />
-              <span className="hidden sm:inline">Concept Studio</span>
+              <Palette className="w-5 h-5 text-[#bc13fe]" />
+              <span>Concept Studio</span>
             </button>
             <button 
               onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2 tour-create-event-btn"
+              className="px-8 py-4 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold text-base transition-all flex items-center gap-3 shadow-lg shadow-[#bc13fe]/20 tour-create-event-btn"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-5 h-5" />
               {t.createEvent}
             </button>
           </div>
+
+          {/* Spacer to maintain layout balance on desktop */}
+          <div className="hidden md:block md:w-1/4"></div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
