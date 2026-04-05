@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Concept, PhotoboothSettings } from '../types';
-import { DEFAULT_GAS_URL } from '../constants';
+import { Concept, PhotoboothSettings } from '../../../../types';
+import { DEFAULT_GAS_URL } from '../../../../constants';
 
 import AdminSettingsTab, { AdminSettingsTabRef } from './AdminSettingsTab';
 import AdminConceptsTab, { AdminConceptsTabRef } from './AdminConceptsTab';
 import AdminMonitorTab from './AdminMonitorTab';
-import { useDialog } from '../components/DialogProvider';
+import { useDialog } from '../../../../components/DialogProvider';
 
 interface AdminPageProps {
   settings: PhotoboothSettings;

@@ -226,6 +226,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Function to manually confirm a vendor's email
+CREATE OR REPLACE FUNCTION confirm_vendor_email(vendor_id UUID)
+RETURNS void AS $$
+BEGIN
+  IF auth.jwt() ->> 'email' != 'admin@coroai.app' THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+  UPDATE auth.users SET email_confirmed_at = NOW() WHERE id = vendor_id;
+  UPDATE public.vendors SET email_confirmed = true WHERE id = vendor_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 8. Template Concepts Table (For Super Admin)
 CREATE TABLE template_concepts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

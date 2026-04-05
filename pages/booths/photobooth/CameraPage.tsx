@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { AspectRatio, PhotoboothSettings } from '../types';
+import { AspectRatio, PhotoboothSettings } from '../../../types';
 
 interface CameraPageProps {
   onCapture: (image: string) => void;

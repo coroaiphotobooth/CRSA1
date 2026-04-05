@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GalleryItem, MonitorTheme } from '../types';
-import { fetchGallery } from '../lib/appsScript';
-import { supabase } from '../lib/supabase';
+import { GalleryItem, MonitorTheme } from '../../../types';
+import { fetchGallery } from '../../../lib/appsScript';
+import { supabase } from '../../../lib/supabase';
 
 interface MonitorPageProps {
   onBack: () => void;

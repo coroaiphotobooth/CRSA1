@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Concept, PhotoboothSettings, TemplateConcept, ConceptTemplate } from '../types';
-import { saveConceptsToGas } from '../lib/appsScript';
-import { supabase } from '../lib/supabase';
-import { useDialog } from '../components/DialogProvider';
+import { Concept, PhotoboothSettings, TemplateConcept, ConceptTemplate } from '../../../../types';
+import { saveConceptsToGas } from '../../../../lib/appsScript';
+import { supabase } from '../../../../lib/supabase';
+import { useDialog } from '../../../../components/DialogProvider';
 import { Loader2, Sparkles, Plus, X, Palette } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
-import { useTourState, setTourState } from '../lib/tourState';
+import { useTourState, setTourState } from '../../../../lib/tourState';
 
 export interface AdminConceptsTabRef {
   saveConcepts: () => Promise<void>;
@@ -884,7 +884,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                 className={`flex-1 py-3 text-sm font-bold transition-colors ${templateTab === 'superadmin' ? 'text-[#bc13fe] border-b-2 border-[#bc13fe]' : 'text-gray-400 hover:text-white'}`}
                 onClick={() => setTemplateTab('superadmin')}
               >
-                Superadmin Templates
+                Coroai Templates
               </button>
               <button
                 className={`flex-1 py-3 text-sm font-bold transition-colors ${templateTab === 'mine' ? 'text-[#bc13fe] border-b-2 border-[#bc13fe]' : 'text-gray-400 hover:text-white'}`}

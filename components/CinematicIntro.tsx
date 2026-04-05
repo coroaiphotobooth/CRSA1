@@ -4,10 +4,13 @@ import { motion, AnimatePresence } from 'motion/react';
 interface CinematicIntroProps {
   vendorName: string;
   onComplete: (language: 'en' | 'id') => void;
+  isInstallable?: boolean;
+  onInstall?: () => void;
 }
 
-export default function CinematicIntro({ vendorName, onComplete }: CinematicIntroProps) {
+export default function CinematicIntro({ vendorName, onComplete, isInstallable, onInstall }: CinematicIntroProps) {
   const [step, setStep] = useState(0);
+  const [selectedLang, setSelectedLang] = useState<'en' | 'id'>('en');
 
   useEffect(() => {
     if (step === 0) {
@@ -74,16 +77,61 @@ export default function CinematicIntro({ vendorName, onComplete }: CinematicIntr
             </h3>
             <div className="flex flex-col sm:flex-row gap-6">
               <button 
-                onClick={() => onComplete('en')}
+                onClick={() => {
+                  setSelectedLang('en');
+                  if (isInstallable) {
+                    setStep(3);
+                  } else {
+                    onComplete('en');
+                  }
+                }}
                 className="px-10 py-5 border border-white/20 rounded-lg hover:bg-white hover:text-black transition-all tracking-widest uppercase font-bold"
               >
                 English
               </button>
               <button 
-                onClick={() => onComplete('id')}
+                onClick={() => {
+                  setSelectedLang('id');
+                  if (isInstallable) {
+                    setStep(3);
+                  } else {
+                    onComplete('id');
+                  }
+                }}
                 className="px-10 py-5 border border-white/20 rounded-lg hover:bg-white hover:text-black transition-all tracking-widest uppercase font-bold"
               >
                 Indonesia
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {step === 3 && (
+          <motion.div
+            key="step3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
+            className="flex flex-col items-center gap-10"
+          >
+            <h3 className="text-2xl font-light tracking-widest text-center">
+              {selectedLang === 'id' ? 'Instal Aplikasi ke Desktop/HP' : 'Install App to Desktop/Mobile'}
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-6">
+              <button 
+                onClick={() => {
+                  if (onInstall) onInstall();
+                  onComplete(selectedLang);
+                }}
+                className="px-10 py-5 bg-[#bc13fe] text-white rounded-lg hover:bg-[#a010d8] transition-all tracking-widest uppercase font-bold"
+              >
+                Install App
+              </button>
+              <button 
+                onClick={() => onComplete(selectedLang)}
+                className="px-10 py-5 border border-white/20 rounded-lg hover:bg-white hover:text-black transition-all tracking-widest uppercase font-bold"
+              >
+                {selectedLang === 'id' ? 'Nanti Saja' : 'Install Later'}
               </button>
             </div>
           </motion.div>

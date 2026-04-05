@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Upload, Image as ImageIcon, Play, Save, Loader2, Trash2, Edit2 } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { useDialog } from '../components/DialogProvider';
-import { ConceptTemplate } from '../types';
+import { supabase } from '../../lib/supabase';
+import { useDialog } from '../../components/DialogProvider';
+import { ConceptTemplate } from '../../types';
 
 interface ConceptStudioProps {
   vendorId: string;

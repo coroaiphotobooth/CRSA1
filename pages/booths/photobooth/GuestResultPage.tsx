@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { fetchSessionFromCloud } from '../lib/appsScript';
+import { fetchSessionFromCloud } from '../../../lib/appsScript';
 import { Download, Image as ImageIcon, Video, Loader2 } from 'lucide-react';
 
 export default function GuestResultPage() {

@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { PhotoboothSettings, AspectRatio, MonitorTheme } from '../types';
+import { PhotoboothSettings, AspectRatio, MonitorTheme } from '../../../../types';
 import { 
   uploadOverlayToGas, 
   uploadBackgroundToGas,
   saveSettingsToGas 
-} from '../lib/appsScript';
-import { getGoogleDriveDirectLink } from '../lib/imageUtils';
-import { supabase } from '../lib/supabase';
-import { useDialog } from '../components/DialogProvider';
+} from '../../../../lib/appsScript';
+import { getGoogleDriveDirectLink } from '../../../../lib/imageUtils';
+import { supabase } from '../../../../lib/supabase';
+import { useDialog } from '../../../../components/DialogProvider';
 
 export interface AdminSettingsTabRef {
   saveSettings: () => Promise<void>;

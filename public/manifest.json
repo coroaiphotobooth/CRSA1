@@ -1,0 +1,21 @@
+{
+  "name": "Coroai Photobooth",
+  "short_name": "Coroai",
+  "description": "Coroai Photobooth Application",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#bc13fe",
+  "icons": [
+    {
+      "src": "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOGO/ICON%20S.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOGO/ICON%20S.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

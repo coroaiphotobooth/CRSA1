@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { Loader2, LogOut, Trash2, Edit, Save, Settings, ShieldAlert, Lock, Unlock, ExternalLink, Search, MessageSquare, MoreVertical } from 'lucide-react';
-import { Vendor, TemplateConcept } from '../types';
-import { useDialog } from '../components/DialogProvider';
+import { supabase } from '../../lib/supabase';
+import { Loader2, LogOut, Trash2, Edit, Save, Settings, ShieldAlert, Lock, Unlock, ExternalLink, Search, MessageSquare, MoreVertical, Plus, X } from 'lucide-react';
+import { Vendor, TemplateConcept } from '../../types';
+import { useDialog } from '../../components/DialogProvider';
 
 export default function SuperAdminDashboard() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'vendors'>('dashboard');
@@ -28,6 +28,11 @@ export default function SuperAdminDashboard() {
   // Message Form State
   const [messageForm, setMessageForm] = useState({ vendorId: 'all', message: '' });
   const [sendingMessage, setSendingMessage] = useState(false);
+
+  // Add Vendor State
+  const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
+  const [addVendorForm, setAddVendorForm] = useState({ email: '', password: '', name: '', company_name: '' });
+  const [addingVendor, setAddingVendor] = useState(false);
 
   // Template Event State
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
@@ -151,6 +156,55 @@ export default function SuperAdminDashboard() {
     navigate('/login');
   };
 
+  const handleAddVendor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addVendorForm.email || !addVendorForm.password || !addVendorForm.name) {
+      await showDialog('alert', 'Error', 'Please fill in all required fields.');
+      return;
+    }
+
+    try {
+      setAddingVendor(true);
+      
+      // Create a secondary Supabase client to avoid logging out the super admin
+      const { createClient } = await import('@supabase/supabase-js');
+      const tempSupabase = createClient(
+        import.meta.env.VITE_SUPABASE_URL || '',
+        import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+        { auth: { persistSession: false, autoRefreshToken: false } }
+      );
+
+      const { data, error } = await tempSupabase.auth.signUp({
+        email: addVendorForm.email,
+        password: addVendorForm.password,
+        options: {
+          data: {
+            full_name: addVendorForm.name,
+            company_name: addVendorForm.company_name
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Update company name if provided (since trigger might not catch it)
+        if (addVendorForm.company_name) {
+          await supabase.from('vendors').update({ company_name: addVendorForm.company_name }).eq('id', data.user.id);
+        }
+        
+        await showDialog('alert', 'Success', 'Vendor added successfully! They can now log in.');
+        setIsAddVendorOpen(false);
+        setAddVendorForm({ email: '', password: '', name: '', company_name: '' });
+        fetchData(); // Refresh vendors list
+      }
+    } catch (err: any) {
+      await showDialog('alert', 'Error', `Failed to add vendor: ${err.message}`);
+    } finally {
+      setAddingVendor(false);
+    }
+  };
+
   const handleDeleteVendor = async (id: string) => {
     const confirmed = await showDialog('confirm', 'Confirm Deletion', 'Are you sure you want to delete this vendor? This will delete all their events and data.');
     if (!confirmed) return;
@@ -192,6 +246,23 @@ export default function SuperAdminDashboard() {
       await showDialog('alert', 'Success', `Vendor ${action}ed successfully.`);
     } catch (err: any) {
       await showDialog('alert', 'Error', `Failed to ${action} vendor: ${err.message}`);
+    }
+  };
+
+  const handleConfirmEmail = async (vendor: Vendor) => {
+    const confirmed = await showDialog('confirm', 'Confirm Email', `Are you sure you want to manually confirm the email for ${vendor.name}?`);
+    if (!confirmed) return;
+
+    try {
+      const { error } = await supabase.rpc('confirm_vendor_email', { vendor_id: vendor.id });
+      if (error) throw error;
+
+      setVendors(vendors.map(v => 
+        v.id === vendor.id ? { ...v, email_confirmed: true } : v
+      ));
+      await showDialog('alert', 'Success', 'Vendor email confirmed successfully.');
+    } catch (err: any) {
+      await showDialog('alert', 'Error', `Failed to confirm email: ${err.message}\n\nNote: You may need to run the SQL command in the yellow warning box at the top of the page to enable this feature.`);
     }
   };
 
@@ -843,6 +914,18 @@ BEGIN
   UPDATE vendors SET credits = credits - p_amount, credits_used = COALESCE(credits_used, 0) + p_amount WHERE id = v_vendor_id;
   RETURN TRUE;
 END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 7. Function to manually confirm a vendor's email
+CREATE OR REPLACE FUNCTION confirm_vendor_email(vendor_id UUID)
+RETURNS void AS $$
+BEGIN
+  IF auth.jwt() ->> 'email' != 'admin@coroai.app' THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+  UPDATE auth.users SET email_confirmed_at = NOW() WHERE id = vendor_id;
+  UPDATE public.vendors SET email_confirmed = true WHERE id = vendor_id;
+END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;`}
               </pre>
               <button 
@@ -1087,15 +1170,24 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                   <Settings className="w-6 h-6 text-[#bc13fe]" />
                   Vendor Management
                 </h2>
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search vendors..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white focus:border-[#bc13fe] outline-none transition-colors"
-                  />
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search vendors..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-black/50 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white focus:border-[#bc13fe] outline-none transition-colors"
+                    />
+                  </div>
+                  <button
+                    onClick={() => setIsAddVendorOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#bc13fe] hover:bg-[#bc13fe]/80 text-white rounded-lg transition-colors whitespace-nowrap"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Vendor
+                  </button>
                 </div>
               </div>
               
@@ -1279,9 +1371,18 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                                 <>
                                   <div className="fixed inset-0 z-10" onClick={() => setOpenActionMenuId(null)}></div>
                                   <div className="absolute right-0 top-full mt-1 w-48 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-xl z-20 overflow-hidden flex flex-col">
+                                    {!v.email_confirmed && (
+                                      <button 
+                                        onClick={() => { handleConfirmEmail(v); setOpenActionMenuId(null); }} 
+                                        className="flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors text-green-400"
+                                      >
+                                        <ShieldAlert className="w-4 h-4" />
+                                        <span className="text-sm font-medium">Confirm Email</span>
+                                      </button>
+                                    )}
                                     <button 
                                       onClick={() => { handleMessageVendor(v.id); setOpenActionMenuId(null); }} 
-                                      className="flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors text-blue-400"
+                                      className={`flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors text-blue-400 ${!v.email_confirmed ? 'border-t border-white/5' : ''}`}
                                     >
                                       <MessageSquare className="w-4 h-4" />
                                       <span className="text-sm font-medium">Send Message</span>
@@ -1450,6 +1551,90 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                 Save Concept
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Vendor Modal */}
+      {isAddVendorOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center sticky top-0 bg-[#111] z-10">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Plus className="w-5 h-5 text-[#bc13fe]" />
+                Add New Vendor
+              </h2>
+              <button onClick={() => setIsAddVendorOpen(false)} className="text-gray-400 hover:text-white transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleAddVendor} className="p-6 overflow-y-auto">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Email <span className="text-red-500">*</span></label>
+                  <input
+                    type="email"
+                    required
+                    value={addVendorForm.email}
+                    onChange={e => setAddVendorForm({...addVendorForm, email: e.target.value})}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-[#bc13fe] outline-none"
+                    placeholder="vendor@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Password <span className="text-red-500">*</span></label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={addVendorForm.password}
+                    onChange={e => setAddVendorForm({...addVendorForm, password: e.target.value})}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-[#bc13fe] outline-none"
+                    placeholder="Minimum 6 characters"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Full Name <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    required
+                    value={addVendorForm.name}
+                    onChange={e => setAddVendorForm({...addVendorForm, name: e.target.value})}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-[#bc13fe] outline-none"
+                    placeholder="John Doe"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Company Name</label>
+                  <input
+                    type="text"
+                    value={addVendorForm.company_name}
+                    onChange={e => setAddVendorForm({...addVendorForm, company_name: e.target.value})}
+                    className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white focus:border-[#bc13fe] outline-none"
+                    placeholder="Photography Studio"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end gap-4">
+                <button
+                  type="button"
+                  onClick={() => setIsAddVendorOpen(false)}
+                  className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl font-bold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addingVendor}
+                  className="px-6 py-2 bg-[#bc13fe] hover:bg-[#a010d8] rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {addingVendor ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                  Add Vendor
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

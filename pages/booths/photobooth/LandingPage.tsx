@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PhotoboothSettings, ProcessNotification } from '../types';
+import { PhotoboothSettings, ProcessNotification } from '../../../types';
 import { ChevronDown, Settings } from 'lucide-react';
 
 interface LandingPageProps {

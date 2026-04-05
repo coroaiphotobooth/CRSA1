@@ -1,13 +1,13 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Concept, PhotoboothSettings, AspectRatio } from '../types';
-import { generateAIImage } from '../lib/gemini';
-import { uploadToDrive, createSessionFolder, queueVideoTask, saveSessionToCloud } from '../lib/appsScript';
-import { applyOverlay, getGoogleDriveDirectLink } from '../lib/imageUtils';
-import { OverlayCache } from '../lib/overlayCache'; 
-import { printImage } from '../lib/printUtils';
-import { decrementCredits } from '../lib/supabase';
-import { useDialog } from '../components/DialogProvider';
+import { Concept, PhotoboothSettings, AspectRatio } from '../../../types';
+import { generateAIImage } from '../../../lib/gemini';
+import { uploadToDrive, createSessionFolder, queueVideoTask, saveSessionToCloud } from '../../../lib/appsScript';
+import { applyOverlay, getGoogleDriveDirectLink } from '../../../lib/imageUtils';
+import { OverlayCache } from '../../../lib/overlayCache'; 
+import { printImage } from '../../../lib/printUtils';
+import { decrementCredits } from '../../../lib/supabase';
+import { useDialog } from '../../../components/DialogProvider';
 
 interface ResultPageProps {
   capturedImage: string;

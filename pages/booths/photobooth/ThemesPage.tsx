@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Concept } from '../types';
+import { Concept } from '../../../types';
 
 interface ThemesPageProps {
   concepts: Concept[];

@@ -1,16 +1,16 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft, Palette } from 'lucide-react';
-import { Vendor, Event } from '../types';
+import { Vendor, Event } from '../../types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { robustFetch } from '../lib/appsScript';
-import { useDialog } from '../components/DialogProvider';
-import { DEFAULT_SETTINGS, DEFAULT_CONCEPTS, DEFAULT_GAS_URL } from '../constants';
-import CinematicIntro from '../components/CinematicIntro';
-import { useTourState, setTourState } from '../lib/tourState';
+import { robustFetch } from '../../lib/appsScript';
+import { useDialog } from '../../components/DialogProvider';
+import { DEFAULT_SETTINGS, DEFAULT_CONCEPTS, DEFAULT_GAS_URL } from '../../constants';
+import CinematicIntro from '../../components/CinematicIntro';
+import { useTourState, setTourState } from '../../lib/tourState';
 import ConceptStudio from './ConceptStudio';
 
 export default function VendorDashboard() {
@@ -149,6 +149,41 @@ export default function VendorDashboard() {
   const { startTour, isActive, tourType, stepIndex, status } = useTourState();
   const prevTourTypeRef = useRef<string | null>(null);
   const prevIsActive = useRef(isActive);
+
+  // PWA Install State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    const handleAppInstalled = () => {
+      setDeferredPrompt(null);
+      setIsInstallable(false);
+      console.log('PWA was installed');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
 
   // Close modal if tour is skipped and modal is empty
   useEffect(() => {
@@ -987,6 +1022,8 @@ export default function VendorDashboard() {
       {showOnboarding && vendor && (
         <CinematicIntro 
           vendorName={vendor.name} 
+          isInstallable={isInstallable}
+          onInstall={handleInstallClick}
           onComplete={async (lang) => {
             setLanguage(lang);
             localStorage.setItem('vendor_language', lang);
@@ -1034,6 +1071,15 @@ export default function VendorDashboard() {
             <p className="text-gray-400">{t.welcome} {vendor?.name} {isSuperAdmin && impersonatedVendorId && <span className="text-yellow-400 text-xs ml-2 px-2 py-0.5 bg-yellow-400/10 rounded-full border border-yellow-400/30">{t.impersonating}</span>}</p>
           </div>
           <div className="flex items-center gap-4">
+            {isInstallable && (
+              <button
+                onClick={handleInstallClick}
+                className="flex items-center gap-2 px-4 py-2 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/30 text-[#bc13fe] rounded-full font-bold transition-all text-sm border border-[#bc13fe]/30"
+              >
+                <Download className="w-4 h-4" />
+                {language === 'id' ? 'Install App' : 'Install App'}
+              </button>
+            )}
             <div className="relative">
               <button
                 ref={tutorialBtnRef}

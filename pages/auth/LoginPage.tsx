@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { Loader2 } from 'lucide-react';
-import { useDialog } from '../components/DialogProvider';
+import { useDialog } from '../../components/DialogProvider';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');

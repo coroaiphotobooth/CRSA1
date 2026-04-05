@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { GalleryItem, Concept, PhotoboothSettings, ProcessNotification } from '../types';
-import { fetchGallery, fetchImageBase64, deletePhotoFromGas, deleteAllPhotosFromGas, queueVideoTask } from '../lib/appsScript';
-import { printImage } from '../lib/printUtils'; // Import Print Utils
-import { decrementCredits } from '../lib/supabase';
-import { useDialog } from '../components/DialogProvider';
+import { GalleryItem, Concept, PhotoboothSettings, ProcessNotification } from '../../../types';
+import { fetchGallery, fetchImageBase64, deletePhotoFromGas, deleteAllPhotosFromGas, queueVideoTask } from '../../../lib/appsScript';
+import { printImage } from '../../../lib/printUtils'; // Import Print Utils
+import { decrementCredits } from '../../../lib/supabase';
+import { useDialog } from '../../../components/DialogProvider';
 
 interface GalleryPageProps {
   onBack: () => void;
