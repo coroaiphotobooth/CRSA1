@@ -46,7 +46,8 @@ const GuestbookAdmin: React.FC = () => {
         .select('id, guest_name, guest_message, result_image_url, created_at')
         .eq('event_id', eventId)
         .eq('is_posted_to_wall', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100); // Limit to 100 to prevent high Disk IO
 
       if (entriesData) setEntries(entriesData);
 

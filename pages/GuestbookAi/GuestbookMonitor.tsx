@@ -99,7 +99,8 @@ const GuestbookMonitor: React.FC = () => {
         .select('id, guest_name, guest_message, result_image_url, created_at')
         .eq('event_id', eventId)
         .eq('is_posted_to_wall', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50); // Limit to 50 to prevent high Disk IO
 
       if (sessionData) {
         setEntries(sessionData);
@@ -113,7 +114,7 @@ const GuestbookMonitor: React.FC = () => {
 
     // Subscribe to new entries
     const subscription = supabase
-      .channel('guestbook_updates')
+      .channel(`guestbook_updates_${eventId}`)
       .on(
         'postgres_changes',
         {

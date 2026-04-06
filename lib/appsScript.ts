@@ -324,7 +324,8 @@ export const fetchGallery = async (eventId?: string, since?: number): Promise<{ 
         .select('*')
         .eq('event_id', eventId)
         .not('result_image_url', 'is', null)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100); // Limit to 100 to prevent high Disk IO
         
       if (since && since > 0) {
         query = query.gt('created_at', new Date(since).toISOString());
