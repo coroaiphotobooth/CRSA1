@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Concept, PhotoboothSettings } from '../../types';
 import { fetchSettings, fetchEvents, uploadToDrive, saveSessionToCloud, createSessionFolder } from '../../lib/appsScript';
@@ -88,7 +88,12 @@ const GuestbookFlow: React.FC = () => {
     setCurrentState(GuestbookState.CAMERA);
   };
 
-  const handleCapture = async (imageSrc: string) => {
+  const isCapturing = useRef(false);
+
+  const handleCapture = useCallback(async (imageSrc: string) => {
+    if (isCapturing.current) return;
+    isCapturing.current = true;
+
     setCapturedImage(imageSrc);
     setCurrentState(GuestbookState.GENERATING);
 
@@ -165,8 +170,10 @@ const GuestbookFlow: React.FC = () => {
       console.error("Generation failed:", error);
       alert("Failed to generate image. Please try again.");
       setCurrentState(GuestbookState.CAMERA);
+    } finally {
+      isCapturing.current = false;
     }
-  };
+  }, [selectedConcept, settings, eventId, guestName, guestMessage]);
 
   if (isLoading) {
     return (

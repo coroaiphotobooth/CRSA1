@@ -30,7 +30,7 @@ const CARD_WIDTH = 300;
 const CARD_HEIGHT = 400;
 const MAX_SPEED = 2;
 
-const GuestbookMonitor: React.FC = () => {
+const GuestbookMonitor: React.FC = React.memo(() => {
   const { eventId } = useParams<{ eventId: string }>();
   const [searchParams] = useSearchParams();
   const themeParam = searchParams.get('theme') as MonitorTheme | null;
@@ -621,6 +621,6 @@ const GuestbookMonitor: React.FC = () => {
       </AnimatePresence>
     </div>
   );
-};
+});
 
 export default GuestbookMonitor;

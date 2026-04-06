@@ -162,11 +162,13 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
       setIsFinalizing(false);
       if (timerRef.current) clearInterval(timerRef.current);
     }
-  }, [capturedImage, concept, settings, outputRatio, currentQuality, existingSession]);
+  }, [capturedImage, concept, settings, outputRatio, currentQuality, existingSession, sessionFolder]);
 
   useEffect(() => {
-    hasProcessed.current = false;
-    handleProcessFlow();
+    // Only run if not processed yet, do NOT reset hasProcessed.current here
+    if (!hasProcessed.current) {
+      handleProcessFlow();
+    }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [handleProcessFlow]); 
 
