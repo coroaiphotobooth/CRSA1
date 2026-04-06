@@ -478,11 +478,12 @@ const GuestbookMonitor: React.FC = () => {
       {/* 3. SLIDER MODE (Vertical Chat-like Feed) */}
       {theme === 'slider' && (
         <div className="absolute inset-0 z-10 flex flex-col items-center pt-32 pb-8 px-8 overflow-hidden">
-          <div className="w-full max-w-xl space-y-4 overflow-y-auto no-scrollbar pb-32">
+          <div className="w-full max-w-2xl space-y-4 overflow-y-auto no-scrollbar pb-32">
             <AnimatePresence initial={false}>
               {entries.slice(0, settings.guestbookSliderCount || 5).map((item, index) => {
                 const cardStyle = settings.guestbookCardStyle || 'glass';
-                const textPos = settings.guestbookTextPosition || 'side';
+                // Slider theme always uses 'side' (Beside Photo) layout
+                const textPos = 'side'; 
                 const fontSize = settings.guestbookFontSize || 14;
                 // Scale down photo size for slider mode specifically
                 const basePhotoSize = settings.guestbookPhotoSize || 200;
@@ -493,37 +494,47 @@ const GuestbookMonitor: React.FC = () => {
                 if (cardStyle === 'solid') bgClass = 'bg-[#111] border border-white/10 shadow-xl';
                 if (cardStyle === 'minimal') bgClass = 'bg-transparent border-transparent';
 
-                const photoRounded = textPos === 'side' ? 'rounded-l-2xl' : 'rounded-t-2xl';
-                const messageRounded = textPos === 'side' ? 'rounded-r-2xl' : 'rounded-b-2xl';
-                const junctionMargin = textPos === 'side' ? '-ml-[1px]' : '-mt-[1px]';
+                // Alternating layout: index 0, 2, 4... (left), index 1, 3, 5... (right)
+                const isEven = index % 2 === 0;
+                const photoRounded = isEven ? 'rounded-l-2xl' : 'rounded-r-2xl';
+                const messageRounded = isEven ? 'rounded-r-2xl' : 'rounded-l-2xl';
+                const junctionMargin = isEven ? '-ml-[1px]' : '-mr-[1px]';
 
                 return (
                   <motion.div
                     key={item.id}
-                    initial={{ opacity: 0, y: -50, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    initial={{ opacity: 0, x: isEven ? -100 : 100, scale: 0.8, rotate: isEven ? -5 : 5 }}
+                    animate={{ opacity: 1, x: 0, scale: 1, rotate: 0 }}
+                    exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.3 } }}
+                    transition={{ 
+                      type: "spring",
+                      stiffness: 100,
+                      damping: 15,
+                      delay: index * 0.05 
+                    }}
                     onClick={() => setLightboxItem(item)}
-                    className={`relative cursor-pointer hover:scale-105 transition-all group flex ${textPos === 'side' ? 'flex-row items-center' : 'flex-col'}`}
+                    className={`relative cursor-pointer hover:scale-105 transition-all group flex items-center ${isEven ? 'flex-row' : 'flex-row-reverse'}`}
                   >
                     <div 
-                      className={`relative overflow-hidden ${textPos === 'side' ? 'w-1/4' : 'w-full'} ${photoRounded} ${bgClass} pointer-events-none`} 
-                      style={{ height: textPos === 'side' ? `${photoSize}px` : `${photoSize}px`, width: textPos === 'side' ? `${photoSize}px` : '100%' }}
+                      className={`relative overflow-hidden flex-shrink-0 ${photoRounded} ${bgClass} pointer-events-none`} 
+                      style={{ 
+                        width: `${photoSize}px`,
+                        height: `${photoSize * 1.33}px` // 3:4 Aspect Ratio
+                      }}
                     >
                       <img 
                         src={item.result_image_url} 
-                        className="w-full h-full object-contain p-1" 
+                        className="w-full h-full object-cover" 
                       />
                     </div>
-                    <div className={`p-3 px-5 flex-1 flex flex-col justify-center ${messageRounded} ${bgClass} ${junctionMargin} min-h-[60px]`}>
-                      <div className="flex items-start gap-2">
+                    <div className={`p-3 px-5 flex-1 flex flex-col justify-center ${messageRounded} ${bgClass} ${junctionMargin} min-h-[60px] ${isEven ? 'items-start text-left' : 'items-end text-right'}`}>
+                      <div className={`flex items-start gap-2 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}>
                         <span className="text-[#bc13fe] text-xl leading-none">"</span>
                         <p className="text-white italic leading-tight" style={{ fontSize: `${fontSize}px` }}>
                           {item.guest_message}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className={`flex items-center gap-2 mt-2 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}>
                         <div className="w-4 h-[1px] bg-[#bc13fe] rounded-full" />
                         <h3 className="font-bold text-[#bc13fe] uppercase tracking-widest" style={{ fontSize: `${Math.max(10, fontSize - 4)}px` }}>
                           {item.guest_name}

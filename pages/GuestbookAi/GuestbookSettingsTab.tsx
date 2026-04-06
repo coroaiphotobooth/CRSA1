@@ -299,17 +299,6 @@ const GuestbookSettingsTab = forwardRef<GuestbookSettingsTabRef, GuestbookSettin
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-2">Text Position</label>
-                  <select
-                    value={localSettings.guestbookTextPosition || 'bottom'}
-                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookTextPosition: e.target.value as any })}
-                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors appearance-none"
-                  >
-                    <option value="bottom">Below Photo</option>
-                    <option value="side">Beside Photo</option>
-                  </select>
-                </div>
-                <div>
                   <label className="block text-sm text-gray-400 mb-2">Number of Photos Displayed</label>
                   <input
                     type="number"
