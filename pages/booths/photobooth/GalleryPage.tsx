@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GalleryItem, Concept, PhotoboothSettings, ProcessNotification } from '../../../types';
 import { fetchGallery, fetchImageBase64, deletePhotoFromGas, deleteAllPhotosFromGas, queueVideoTask } from '../../../lib/appsScript';
+import { supabase } from '../../../lib/supabase';
 import { printImage } from '../../../lib/printUtils'; // Import Print Utils
 import { decrementCredits } from '../../../lib/supabase';
 import { useDialog } from '../../../components/DialogProvider';
@@ -133,7 +134,28 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
 
   useEffect(() => {
      loadGallery();
-     const pollIntv = setInterval(loadGallery, 5000); 
+     // Fallback polling reduced from 5s to 30s to save DB load
+     const pollIntv = setInterval(loadGallery, 30000); 
+
+     // Realtime subscription for instant updates without aggressive polling
+     let subscription: any;
+     if (activeEventId) {
+       subscription = supabase
+         .channel(`gallery_sessions_${activeEventId}`)
+         .on(
+           'postgres_changes',
+           {
+             event: '*',
+             schema: 'public',
+             table: 'sessions',
+             filter: `event_id=eq.${activeEventId}`
+           },
+           () => {
+             loadGallery();
+           }
+         )
+         .subscribe();
+     }
 
      // Only poll tick if boothMode is video
      let tickIntv: ReturnType<typeof setInterval> | null = null;
@@ -147,6 +169,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
      return () => { 
         clearInterval(pollIntv); 
         if (tickIntv) clearInterval(tickIntv);
+        if (subscription) supabase.removeChannel(subscription);
      };
   }, [activeEventId, settings?.boothMode]);
 
