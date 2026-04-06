@@ -35,8 +35,15 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState("INITIATING...");
   const [timer, setTimer] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [showQR, setShowQR] = useState(false);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isProcessing) {
+      interval = setInterval(() => setTimer(prev => prev + 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isProcessing]);
   const [isVideoRequested, setIsVideoRequested] = useState(false);
   const [videoRedirectTimer, setVideoRedirectTimer] = useState<number | null>(null);
   const [videoStatusText, setVideoStatusText] = useState("PREPARING REQUEST...");
@@ -68,9 +75,6 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
     setTimer(0);
     setResultImage(null);
     setPhotoId(null);
-    
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => setTimer(prev => prev + 1), 1000);
 
     try {
       const currentSessionId = sessionFolder?.id || existingSession?.id;
@@ -120,7 +124,6 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
       
       setResultImage(finalImage);
       setIsProcessing(false);
-      if (timerRef.current) clearInterval(timerRef.current);
 
       const sessionRes = await sessionTask;
       const originalRes = await originalUploadTask;
@@ -160,7 +163,6 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
       setError(err.message || "Processing Failed");
       setIsProcessing(false);
       setIsFinalizing(false);
-      if (timerRef.current) clearInterval(timerRef.current);
     }
   }, [capturedImage, concept, settings, outputRatio, currentQuality, existingSession, sessionFolder]);
 
@@ -169,7 +171,6 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
     if (!hasProcessed.current) {
       handleProcessFlow();
     }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [handleProcessFlow]); 
 
   // FIXED: Trigger queueing instead of direct generate and AWAIT RESPONSE
@@ -285,7 +286,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
              <div className="absolute inset-0 border-[6px] border-t-purple-500 rounded-full animate-spin shadow-[0_0_30px_rgba(188,19,254,0.4)]" />
              <div className="absolute inset-0 flex items-center justify-center flex-col">
                <span className="text-[10px] tracking-[0.3em] text-purple-400 font-bold mb-1 uppercase italic">Processing</span>
-               <span className="text-3xl md:text-5xl font-heading text-white italic">{timer}S</span>
+               <span className="text-3xl md:text-5xl font-heading text-white italic">{timer}<span className="text-lg md:text-2xl text-white/50 ml-1">s</span></span>
              </div>
           </div>
           <div className="max-w-md bg-black/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl">
