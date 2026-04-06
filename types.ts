@@ -78,6 +78,20 @@ export interface PhotoboothSettings {
   promptMode?: 'raw' | 'wrapped' | 'booth'; // New Setting: 'raw' = free transform, 'wrapped' = strict face lock, 'booth' = outfit swap
   enableModelShortcut?: boolean; // New Setting: Show Quick Model Toggle on Camera
   enablePrint?: boolean; // New Setting: Enable Direct Printing Feature
+  
+  // Guestbook specific settings
+  guestbookPhotoSize?: number; // Scale factor or width
+  guestbookPhysicsSpeed?: number;
+  guestbookFontSize?: number;
+  guestbookCardStyle?: 'glass' | 'solid' | 'minimal';
+  guestbookTextPosition?: 'bottom' | 'side';
+  guestbookQrSize?: number;
+  guestbookHideQr?: boolean;
+  guestbookTitleSize?: number;
+  guestbookDescSize?: number;
+  guestbookSliderCount?: number;
+  guestbookGridCount?: number;
+  guestbookPhysicsCount?: number;
 }
 
 export interface GalleryItem {

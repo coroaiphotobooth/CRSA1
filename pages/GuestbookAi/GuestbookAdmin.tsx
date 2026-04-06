@@ -132,7 +132,7 @@ const GuestbookAdmin: React.FC = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-10">
           <div className="flex items-center gap-4">
             <button 
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate(`/guestbook/${eventId}/monitor`)}
               className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
             >
               <ArrowLeft className="w-6 h-6" />
@@ -156,6 +156,12 @@ const GuestbookAdmin: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-4">
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-heading tracking-widest uppercase italic transition-all rounded-lg shadow-xl text-xs"
+            >
+              DASHBOARD
+            </button>
             {activeTab === 'settings' && (
               <button 
                 onClick={() => adminSettingsRef.current?.saveSettings()} 

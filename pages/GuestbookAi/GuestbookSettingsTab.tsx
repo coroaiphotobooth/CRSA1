@@ -224,7 +224,7 @@ const GuestbookSettingsTab = forwardRef<GuestbookSettingsTabRef, GuestbookSettin
           Display Theme
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <button 
             onClick={() => setLocalSettings({ ...localSettings, monitorTheme: 'slider' })}
             className={`p-4 rounded-xl border flex items-center gap-4 transition-all ${localSettings.monitorTheme === 'slider' ? 'border-[#bc13fe] bg-[#bc13fe]/10' : 'border-white/10 hover:border-white/30 bg-black/30'}`}
@@ -258,6 +258,203 @@ const GuestbookSettingsTab = forwardRef<GuestbookSettingsTabRef, GuestbookSettin
             </div>
           </button>
         </div>
+
+        {/* Theme Specific Settings */}
+        <div className="mt-8 pt-8 border-t border-white/10">
+          {localSettings.monitorTheme === 'slider' && (
+            <div className="space-y-6">
+              <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                <Monitor className="w-4 h-4 text-[#bc13fe]" />
+                Slider Theme Settings
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Photo Size on Wall (px)</label>
+                  <input
+                    type="number"
+                    value={localSettings.guestbookPhotoSize || 300}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookPhotoSize: Number(e.target.value) })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Message Font Size (px)</label>
+                  <input
+                    type="number"
+                    value={localSettings.guestbookFontSize || 14}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookFontSize: Number(e.target.value) })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Card Style</label>
+                  <select
+                    value={localSettings.guestbookCardStyle || 'glass'}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookCardStyle: e.target.value as any })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors appearance-none"
+                  >
+                    <option value="glass">Glass (Translucent)</option>
+                    <option value="solid">Solid (Dark)</option>
+                    <option value="minimal">Minimal (No Border)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Text Position</label>
+                  <select
+                    value={localSettings.guestbookTextPosition || 'bottom'}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookTextPosition: e.target.value as any })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors appearance-none"
+                  >
+                    <option value="bottom">Below Photo</option>
+                    <option value="side">Beside Photo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Number of Photos Displayed</label>
+                  <input
+                    type="number"
+                    value={localSettings.guestbookSliderCount || 5}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookSliderCount: Number(e.target.value) })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {localSettings.monitorTheme === 'grid' && (
+            <div className="space-y-6">
+              <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                <LayoutGrid className="w-4 h-4 text-[#bc13fe]" />
+                Grid Wall Settings
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Photo Size on Wall (px)</label>
+                  <input
+                    type="number"
+                    value={localSettings.guestbookPhotoSize || 300}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookPhotoSize: Number(e.target.value) })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Message Font Size (px)</label>
+                  <input
+                    type="number"
+                    value={localSettings.guestbookFontSize || 14}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookFontSize: Number(e.target.value) })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Card Style</label>
+                  <select
+                    value={localSettings.guestbookCardStyle || 'glass'}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookCardStyle: e.target.value as any })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors appearance-none"
+                  >
+                    <option value="glass">Glass (Translucent)</option>
+                    <option value="solid">Solid (Dark)</option>
+                    <option value="minimal">Minimal (No Border)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Text Position</label>
+                  <select
+                    value={localSettings.guestbookTextPosition || 'bottom'}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookTextPosition: e.target.value as any })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors appearance-none"
+                  >
+                    <option value="bottom">Below Photo</option>
+                    <option value="side">Beside Photo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Number of Photos Displayed</label>
+                  <input
+                    type="number"
+                    value={localSettings.guestbookGridCount || 12}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookGridCount: Number(e.target.value) })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {localSettings.monitorTheme === 'physics' && (
+            <div className="space-y-6">
+              <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#bc13fe]" />
+                Floating Physics Settings
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Photo Size on Wall (px)</label>
+                  <input
+                    type="number"
+                    value={localSettings.guestbookPhotoSize || 300}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookPhotoSize: Number(e.target.value) })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Message Font Size (px)</label>
+                  <input
+                    type="number"
+                    value={localSettings.guestbookFontSize || 14}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookFontSize: Number(e.target.value) })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Card Style</label>
+                  <select
+                    value={localSettings.guestbookCardStyle || 'glass'}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookCardStyle: e.target.value as any })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors appearance-none"
+                  >
+                    <option value="glass">Glass (Translucent)</option>
+                    <option value="solid">Solid (Dark)</option>
+                    <option value="minimal">Minimal (No Border)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Text Position</label>
+                  <select
+                    value={localSettings.guestbookTextPosition || 'bottom'}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookTextPosition: e.target.value as any })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors appearance-none"
+                  >
+                    <option value="bottom">Below Photo</option>
+                    <option value="side">Beside Photo</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Physics Speed (1-10)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={localSettings.guestbookPhysicsSpeed || 2}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookPhysicsSpeed: Number(e.target.value) })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Max Photos on Wall</label>
+                  <input
+                    type="number"
+                    value={localSettings.guestbookPhysicsCount || 20}
+                    onChange={(e) => setLocalSettings({ ...localSettings, guestbookPhysicsCount: Number(e.target.value) })}
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* General Settings */}
@@ -281,6 +478,43 @@ const GuestbookSettingsTab = forwardRef<GuestbookSettingsTabRef, GuestbookSettin
               onChange={(e) => setLocalSettings({ ...localSettings, eventDescription: e.target.value })}
               className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
             />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Event Title Size (px)</label>
+            <input
+              type="number"
+              value={localSettings.guestbookTitleSize || 48}
+              onChange={(e) => setLocalSettings({ ...localSettings, guestbookTitleSize: Number(e.target.value) })}
+              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Event Description Size (px)</label>
+            <input
+              type="number"
+              value={localSettings.guestbookDescSize || 24}
+              onChange={(e) => setLocalSettings({ ...localSettings, guestbookDescSize: Number(e.target.value) })}
+              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">QR Code Size (px)</label>
+            <input
+              type="number"
+              value={localSettings.guestbookQrSize || 150}
+              onChange={(e) => setLocalSettings({ ...localSettings, guestbookQrSize: Number(e.target.value) })}
+              className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] transition-colors"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <input
+              type="checkbox"
+              id="hideQr"
+              checked={localSettings.guestbookHideQr || false}
+              onChange={(e) => setLocalSettings({ ...localSettings, guestbookHideQr: e.target.checked })}
+              className="w-5 h-5 rounded border-white/10 bg-black/50 text-[#bc13fe] focus:ring-[#bc13fe]"
+            />
+            <label htmlFor="hideQr" className="text-sm text-gray-300">Hide QR Code on Wall</label>
           </div>
         </div>
       </div>
@@ -321,14 +555,45 @@ const GuestbookSettingsTab = forwardRef<GuestbookSettingsTabRef, GuestbookSettin
       {/* Background & Overlay */}
       <div className="glass-card p-6 md:p-8 rounded-3xl border border-white/10">
         <h3 className="text-xl font-bold mb-6 text-[#bc13fe]">Background & Overlay</h3>
+        
+        {/* Video Templates */}
+        <div className="flex flex-col gap-2 bg-white/5 p-4 rounded-xl border border-white/10 mb-8">
+          <label className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Video Templates</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+            {[
+              'https://cdn.pixabay.com/video/2020/05/25/40131-424933973_large.mp4',
+              'https://cdn.pixabay.com/video/2016/09/21/5320-183786499_large.mp4',
+              'https://cdn.pixabay.com/video/2023/10/22/186008-876823422_large.mp4',
+              'https://cdn.pixabay.com/video/2020/04/09/35716-407425126_large.mp4'
+            ].map((url, idx) => (
+              <button
+                key={idx}
+                onClick={() => setLocalSettings({...localSettings, backgroundVideoUrl: url})}
+                className={`aspect-video rounded-lg overflow-hidden border-2 transition-colors ${localSettings.backgroundVideoUrl === url ? 'border-[#bc13fe]' : 'border-transparent hover:border-white/30'}`}
+              >
+                <video src={url} className="w-full h-full object-cover" muted playsInline />
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Background Upload */}
           <div>
             <label className="block text-sm text-gray-400 mb-2">Monitor Wall Background (JPG/PNG/MP4)</label>
             <div className="flex flex-col gap-4">
-              {localSettings.backgroundImage && !localSettings.backgroundVideoUrl && (
+              {localSettings.backgroundVideoUrl ? (
+                <div className="relative aspect-video rounded-xl overflow-hidden border border-white/10 group">
+                  <video src={localSettings.backgroundVideoUrl} className="w-full h-full object-cover" autoPlay loop muted playsInline />
+                  <div className="absolute top-2 right-2 bg-[#bc13fe] px-2 py-1 rounded text-[8px] font-bold">VIDEO MODE</div>
+                </div>
+              ) : localSettings.backgroundImage ? (
                 <div className="relative aspect-video rounded-xl overflow-hidden border border-white/10 group">
                   <img src={localSettings.backgroundImage} alt="Background" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="relative aspect-video rounded-xl overflow-hidden border border-white/10 flex items-center justify-center bg-black/50">
+                  <span className="text-[10px] text-gray-700 font-mono">DEFAULT_DARK</span>
                 </div>
               )}
               {localSettings.backgroundVideoUrl && (
@@ -378,11 +643,17 @@ const GuestbookSettingsTab = forwardRef<GuestbookSettingsTabRef, GuestbookSettin
           <div>
             <label className="block text-sm text-gray-400 mb-2">Photo Overlay (PNG only)</label>
             <div className="flex flex-col gap-4">
-              {localSettings.overlayImage && (
-                <div className="relative aspect-[9/16] max-w-[200px] mx-auto rounded-xl overflow-hidden border border-white/10 group bg-black/50">
-                  <img src={localSettings.overlayImage} alt="Overlay" className="w-full h-full object-contain" />
-                </div>
-              )}
+              <div 
+                className="bg-white/5 border border-white/10 rounded-lg flex items-center justify-center overflow-hidden mx-auto shadow-2xl transition-all duration-300"
+                style={{
+                  width: '180px',
+                  aspectRatio: '9/16'
+                }}
+              >
+                {localSettings.overlayImage ? (
+                  <img src={localSettings.overlayImage} className="w-full h-full object-contain" alt="Overlay" />
+                ) : <span className="text-[10px] text-gray-700 font-mono">NO_OVERLAY</span>}
+              </div>
               
               <input
                 type="file"
