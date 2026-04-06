@@ -52,8 +52,19 @@ const GuestbookFlow: React.FC = () => {
 
         if (eventData) {
           setSettings({ ...DEFAULT_SETTINGS, ...eventData.settings, activeEventId: eventId });
-          if (eventData.concepts && eventData.concepts.length > 0) {
-            setConcepts(eventData.concepts);
+          if (eventData.concepts) {
+            const mappedConcepts = eventData.concepts.map((c: any) => ({
+              id: c.id,
+              concept_id: c.concept_id || c.id,
+              name: c.name,
+              prompt: c.prompt,
+              thumbnail: c.thumbnail,
+              refImage: c.ref_image || undefined,
+              reference_image_split: c.reference_image_split || undefined,
+              reference_image_bg: c.reference_image_bg || undefined,
+              style_preset: c.style_preset || undefined
+            }));
+            setConcepts(mappedConcepts);
           }
         }
       } catch (err) {

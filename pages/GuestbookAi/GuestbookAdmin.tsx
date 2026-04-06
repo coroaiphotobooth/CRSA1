@@ -59,7 +59,20 @@ const GuestbookAdmin: React.FC = () => {
         
       if (eventData) {
         if (eventData.settings) setSettings({ ...DEFAULT_SETTINGS, ...eventData.settings });
-        if (eventData.concepts && eventData.concepts.length > 0) setConcepts(eventData.concepts);
+        if (eventData.concepts) {
+          const mappedConcepts = eventData.concepts.map((c: any) => ({
+            id: c.id,
+            concept_id: c.concept_id || c.id,
+            name: c.name,
+            prompt: c.prompt,
+            thumbnail: c.thumbnail,
+            refImage: c.ref_image || undefined,
+            reference_image_split: c.reference_image_split || undefined,
+            reference_image_bg: c.reference_image_bg || undefined,
+            style_preset: c.style_preset || undefined
+          }));
+          setConcepts(mappedConcepts);
+        }
       }
     };
 
@@ -84,37 +97,8 @@ const GuestbookAdmin: React.FC = () => {
     }
   };
 
-  const handleSaveConcepts = async (newConcepts: Concept[]) => {
-    if (!eventId) return;
-    setIsSaving(true);
-    try {
-      // Delete existing concepts
-      await supabase.from('concepts').delete().eq('event_id', eventId);
-      
-      // Insert new concepts
-      if (newConcepts.length > 0) {
-        const conceptsToInsert = newConcepts.map(c => ({
-          id: c.id,
-          event_id: eventId,
-          name: c.name,
-          prompt: c.prompt,
-          thumbnail: c.thumbnail,
-          ref_image: c.refImage,
-          concept_id: c.concept_id,
-          reference_image_split: c.reference_image_split,
-          reference_image_bg: c.reference_image_bg,
-          style_preset: c.style_preset
-        }));
-        await supabase.from('concepts').insert(conceptsToInsert);
-      }
-      setConcepts(newConcepts);
-      alert('Concepts saved successfully!');
-    } catch (error) {
-      console.error('Error saving concepts:', error);
-      alert('Failed to save concepts.');
-    } finally {
-      setIsSaving(false);
-    }
+  const handleSaveConcepts = (newConcepts: Concept[]) => {
+    setConcepts(newConcepts);
   };
 
   const handleDelete = async (id: string) => {
