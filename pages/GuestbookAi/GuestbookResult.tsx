@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Download, Send, Loader2, CheckCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -18,6 +19,7 @@ const GuestbookResult: React.FC<GuestbookResultProps> = ({
   guestMessage, 
   onPostSuccess 
 }) => {
+  const { eventId } = useParams<{ eventId: string }>();
   const [isPosting, setIsPosting] = useState(false);
   const [isPosted, setIsPosted] = useState(false);
 
@@ -51,6 +53,21 @@ const GuestbookResult: React.FC<GuestbookResultProps> = ({
         .eq('id', sessionId);
 
       if (error) throw error;
+      
+      // BROADCAST TO MONITOR
+      if (eventId) {
+        await supabase.channel(`guestbook_updates_${eventId}`).send({
+          type: 'broadcast',
+          event: 'new_guestbook_entry',
+          payload: {
+            id: sessionId,
+            guest_name: guestName,
+            guest_message: guestMessage,
+            result_image_url: imageUrl,
+            created_at: new Date().toISOString()
+          }
+        });
+      }
       
       setIsPosted(true);
       setTimeout(() => {

@@ -112,30 +112,17 @@ const GuestbookMonitor: React.FC = React.memo(() => {
 
     loadData();
 
-    // Subscribe to new entries
+    // Subscribe to new entries via Broadcast to reduce Disk IO
     const channel = supabase.channel(`guestbook_updates_${eventId}`);
     
     channel.on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'sessions',
-        filter: `event_id=eq.${eventId}`
-      },
+      'broadcast',
+      { event: 'new_guestbook_entry' },
       (payload) => {
-        const newRecord = payload.new as any;
-        if (newRecord.is_posted_to_wall) {
-          const newEntry: GuestbookEntry = {
-            id: newRecord.id,
-            guest_name: newRecord.guest_name,
-            guest_message: newRecord.guest_message,
-            result_image_url: newRecord.result_image_url,
-            created_at: newRecord.created_at
-          };
-
+        const newEntry = payload.payload as GuestbookEntry;
+        if (newEntry) {
           setEntries(prev => {
-            if (prev.some(e => e.id === newRecord.id)) return prev;
+            if (prev.some(e => e.id === newEntry.id)) return prev;
             return [newEntry, ...prev];
           });
           
