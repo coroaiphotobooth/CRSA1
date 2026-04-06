@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft, Palette } from 'lucide-react';
+import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft, Palette, Monitor } from 'lucide-react';
 import { Vendor, Event } from '../../types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -130,6 +130,7 @@ export default function VendorDashboard() {
   const [rentDuration, setRentDuration] = useState<'minggu' | 'bulan'>('minggu');
   const [newEventName, setNewEventName] = useState('');
   const [newEventDescription, setNewEventDescription] = useState('AI PHOTOBOOTH EXPERIENCE');
+  const [newEventType, setNewEventType] = useState<'photobooth' | 'guestbook'>('photobooth');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ current: number, total: number } | null>(null);
   const [backupProgress, setBackupProgress] = useState<{ current: number, total: number, success: number, fail: number } | null>(null);
@@ -577,7 +578,8 @@ export default function VendorDashboard() {
               ...initialSettings,
               eventName: newEventName.trim(),
               eventDescription: newEventDescription.trim(),
-              storage_folder: folderName
+              storage_folder: folderName,
+              eventType: newEventType
             }
           }
         ])
@@ -1348,12 +1350,31 @@ export default function VendorDashboard() {
               <span>Concept Studio</span>
             </button>
             <button 
-              onClick={() => setShowCreateModal(true)}
+              onClick={() => {
+                setNewEventName('');
+                setNewEventDescription('');
+                setNewEventType('photobooth');
+                setShowCreateModal(true);
+              }}
               className="px-4 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-[#bc13fe]/20 tour-create-event-btn"
             >
               <Plus className="w-4 h-4" />
               {t.createEvent}
             </button>
+            {vendor?.email === 'coroaiphotobooth@gmail.com' && (
+              <button 
+                onClick={() => {
+                  setNewEventName('Guestbook AI Event');
+                  setNewEventDescription('Live Social Wall');
+                  setNewEventType('guestbook');
+                  setShowCreateModal(true);
+                }}
+                className="px-4 py-2 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] rounded-lg font-bold text-sm transition-all flex items-center gap-2 border border-[#bc13fe]/50 shadow-lg shadow-[#bc13fe]/10"
+              >
+                <Monitor className="w-4 h-4" />
+                Guestbook AI
+              </button>
+            )}
           </div>
 
           {/* Spacer to maintain layout balance on desktop */}
@@ -1365,19 +1386,45 @@ export default function VendorDashboard() {
             <div className="text-center text-gray-500 flex flex-col items-center justify-center tour-event-card py-10">
               <ImageIcon className="w-12 h-12 mb-4 opacity-20" />
               <p className="mb-6">{t.noEvents}</p>
-              <button 
-                onClick={() => setShowCreateModal(true)}
-                className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-[#bc13fe]/20"
-              >
-                <Plus className="w-4 h-4" />
-                {t.createNewEvents}
-              </button>
+              <div className="flex flex-wrap gap-4 justify-center">
+                <button 
+                  onClick={() => {
+                    setNewEventName('');
+                    setNewEventDescription('');
+                    setNewEventType('photobooth');
+                    setShowCreateModal(true);
+                  }}
+                  className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-[#bc13fe]/20"
+                >
+                  <Plus className="w-4 h-4" />
+                  {t.createNewEvents}
+                </button>
+                {vendor?.email === 'coroaiphotobooth@gmail.com' && (
+                  <button 
+                    onClick={() => {
+                      setNewEventName('Guestbook AI Event');
+                      setNewEventDescription('Live Social Wall');
+                      setNewEventType('guestbook');
+                      setShowCreateModal(true);
+                    }}
+                    className="px-6 py-3 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] rounded-xl font-bold text-sm transition-all flex items-center gap-2 border border-[#bc13fe]/50 shadow-lg shadow-[#bc13fe]/10"
+                  >
+                    <Monitor className="w-4 h-4" />
+                    Create Guestbook AI
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Create Event Card */}
               <button 
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => {
+                  setNewEventName('');
+                  setNewEventDescription('');
+                  setNewEventType('photobooth');
+                  setShowCreateModal(true);
+                }}
                 className="glass-card p-6 rounded-2xl border-2 border-dashed border-white/10 hover:border-[#bc13fe]/50 transition-all flex flex-col items-center justify-center gap-4 group min-h-[250px] bg-white/[0.01]"
               >
                 <div className="w-16 h-16 rounded-full bg-[#bc13fe]/10 flex items-center justify-center group-hover:bg-[#bc13fe]/20 transition-colors">
@@ -1390,6 +1437,29 @@ export default function VendorDashboard() {
                   </p>
                 </div>
               </button>
+
+              {/* Create Guestbook AI Card (Tester Only) */}
+              {vendor?.email === 'coroaiphotobooth@gmail.com' && (
+                <button 
+                  onClick={() => {
+                    setNewEventName('Guestbook AI Event');
+                    setNewEventDescription('Live Social Wall');
+                    setNewEventType('guestbook');
+                    setShowCreateModal(true);
+                  }}
+                  className="glass-card p-6 rounded-2xl border-2 border-dashed border-[#bc13fe]/30 hover:border-[#bc13fe] transition-all flex flex-col items-center justify-center gap-4 group min-h-[250px] bg-[#bc13fe]/[0.02]"
+                >
+                  <div className="w-16 h-16 rounded-full bg-[#bc13fe]/20 flex items-center justify-center group-hover:bg-[#bc13fe]/40 transition-colors">
+                    <Monitor className="w-8 h-8 text-[#bc13fe]" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-bold text-lg text-white">Create Guestbook AI</h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Start a new Live Social Wall
+                    </p>
+                  </div>
+                </button>
+              )}
 
               {events.map((event, index) => (
                 <div key={event.id} className={`glass-card p-6 rounded-2xl border border-white/10 flex flex-col gap-4 hover:border-[#bc13fe]/50 transition-colors group ${index === 0 ? 'tour-event-card' : ''}`}>
@@ -1404,28 +1474,43 @@ export default function VendorDashboard() {
                   <p className="text-sm text-gray-400 line-clamp-2">{event.description || 'New Photobooth Event'}</p>
                   
                   <div className="mt-auto pt-4 border-t border-white/10 flex flex-col gap-2">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button 
-                        onClick={() => navigate(`/app/${event.id}`)}
-                        className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 tour-app-page"
+                        onClick={() => {
+                          if (event.settings?.eventType === 'guestbook') {
+                            navigate(`/guestbook/${event.id}/monitor`);
+                          } else {
+                            navigate(`/app/${event.id}`);
+                          }
+                        }}
+                        className="flex-1 min-w-[45%] py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 tour-app-page"
                       >
                         <Play className="w-3 h-3" />
                         {t.launch}
                       </button>
                       <button 
                         onClick={() => navigate(`/admin/${event.id}`)}
-                        className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 min-w-[45%] py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
                       >
                         <Settings className="w-3 h-3" />
                         {t.settings}
                       </button>
                       <button 
                         onClick={() => navigate(`/app/${event.id}?page=gallery`)}
-                        className="flex-1 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 min-w-[45%] py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
                       >
                         <ImageIcon className="w-3 h-3" />
                         {t.gallery}
                       </button>
+                      {vendor?.email === 'coroaiphotobooth@gmail.com' && (
+                        <button 
+                          onClick={() => navigate(`/admin/${event.id}/guestbook`)}
+                          className="flex-1 min-w-[45%] py-2 bg-[#bc13fe]/10 hover:bg-[#bc13fe]/20 text-[#bc13fe] rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Monitor className="w-3 h-3" />
+                          Guestbook
+                        </button>
+                      )}
                     </div>
                     <div className="flex gap-2 mt-1">
                       <button 

@@ -21,6 +21,9 @@ import GuestResultPage from './pages/booths/photobooth/GuestResultPage';
 import LoginPage from './pages/auth/LoginPage';
 import VendorDashboard from './pages/dashboard/VendorDashboard';
 import SuperAdminDashboard from './pages/dashboard/SuperAdminDashboard';
+import GuestbookMonitor from './pages/GuestbookAi/GuestbookMonitor';
+import GuestbookFlow from './pages/GuestbookAi/GuestbookFlow';
+import GuestbookAdmin from './pages/GuestbookAi/GuestbookAdmin';
 import { useDialog } from './components/DialogProvider';
 import { TourProvider } from './components/TourProvider';
 
@@ -530,6 +533,9 @@ const App: React.FC = () => {
         <Route path="/result/:sessionId" element={<GuestResultPage />} />
         <Route path="/app/:eventId/*" element={<PhotoboothFlow />} />
         <Route path="/admin/:eventId/*" element={<PhotoboothFlow />} />
+        <Route path="/guestbook/:eventId/monitor" element={<GuestbookMonitor />} />
+        <Route path="/guestbook/:eventId/guest" element={<GuestbookFlow />} />
+        <Route path="/admin/:eventId/guestbook" element={<GuestbookAdmin />} />
       </Routes>
     </BrowserRouter>
   );

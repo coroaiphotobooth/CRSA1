@@ -128,6 +128,9 @@ CREATE TABLE sessions (
   video_status TEXT DEFAULT 'idle',
   video_prompt TEXT,
   original_image_url TEXT,
+  guest_name TEXT,
+  guest_message TEXT,
+  is_posted_to_wall BOOLEAN DEFAULT false,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
