@@ -1375,6 +1375,22 @@ export default function VendorDashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Create Event Card */}
+              <button 
+                onClick={() => setShowCreateModal(true)}
+                className="glass-card p-6 rounded-2xl border-2 border-dashed border-white/10 hover:border-[#bc13fe]/50 transition-all flex flex-col items-center justify-center gap-4 group min-h-[250px] bg-white/[0.01]"
+              >
+                <div className="w-16 h-16 rounded-full bg-[#bc13fe]/10 flex items-center justify-center group-hover:bg-[#bc13fe]/20 transition-colors">
+                  <Plus className="w-8 h-8 text-[#bc13fe]" />
+                </div>
+                <div className="text-center">
+                  <h3 className="font-bold text-lg text-white">{t.createNewEvents}</h3>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {language === 'id' ? 'Mulai photobooth baru' : 'Start a new photobooth'}
+                  </p>
+                </div>
+              </button>
+
               {events.map((event, index) => (
                 <div key={event.id} className={`glass-card p-6 rounded-2xl border border-white/10 flex flex-col gap-4 hover:border-[#bc13fe]/50 transition-colors group ${index === 0 ? 'tour-event-card' : ''}`}>
                   <div className="flex justify-between items-start">
