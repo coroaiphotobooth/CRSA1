@@ -140,8 +140,9 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
      // Realtime subscription for instant updates without aggressive polling
      let subscription: any;
      if (activeEventId) {
+       const channelName = `gallery_sessions_${activeEventId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
        subscription = supabase
-         .channel(`gallery_sessions_${activeEventId}`)
+         .channel(channelName)
          .on(
            'postgres_changes',
            {

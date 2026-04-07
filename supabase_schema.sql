@@ -328,3 +328,30 @@ FOR UPDATE USING (vendor_id = auth.uid() OR is_superadmin());
 -- Vendors can delete their own templates
 CREATE POLICY "Vendors can delete their own templates" ON concept_templates 
 FOR DELETE USING (vendor_id = auth.uid() OR is_superadmin());
+
+-- 10. Transactions Table (For DOKU Payment Gateway)
+CREATE TABLE transactions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('CREDIT', 'UNLIMITED')),
+  amount INTEGER NOT NULL,
+  quantity INTEGER NOT NULL,
+  status TEXT DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'FAILED')),
+  doku_invoice_id TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Enable RLS for transactions
+ALTER TABLE transactions ENABLE ROW LEVEL SECURITY;
+
+-- Vendors can view their own transactions
+CREATE POLICY "Vendors can view their own transactions" ON transactions 
+FOR SELECT USING (vendor_id = auth.uid() OR is_superadmin());
+
+-- Vendors can insert their own transactions (for initiating payment)
+CREATE POLICY "Vendors can insert their own transactions" ON transactions 
+FOR INSERT WITH CHECK (vendor_id = auth.uid());
+
+-- Only service role (backend) can update transactions (to prevent tampering with status)
+CREATE POLICY "Service role can update transactions" ON transactions 
+FOR UPDATE USING (true);

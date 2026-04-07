@@ -168,3 +168,14 @@ export interface Event {
   created_at: string;
   storage_folder?: string;
 }
+
+export interface Transaction {
+  id: string;
+  vendor_id: string;
+  type: 'CREDIT' | 'UNLIMITED';
+  amount: number;
+  quantity: number;
+  status: 'PENDING' | 'PAID' | 'FAILED';
+  doku_invoice_id?: string;
+  created_at: string;
+}

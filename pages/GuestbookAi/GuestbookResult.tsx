@@ -56,7 +56,8 @@ const GuestbookResult: React.FC<GuestbookResultProps> = ({
       
       // BROADCAST TO MONITOR
       if (eventId) {
-        await supabase.channel(`guestbook_updates_${eventId}`).send({
+        const channel = supabase.channel(`guestbook_updates_${eventId}`);
+        await channel.send({
           type: 'broadcast',
           event: 'new_guestbook_entry',
           payload: {
@@ -67,6 +68,7 @@ const GuestbookResult: React.FC<GuestbookResultProps> = ({
             created_at: new Date().toISOString()
           }
         });
+        supabase.removeChannel(channel);
       }
       
       setIsPosted(true);

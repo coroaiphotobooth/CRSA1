@@ -110,8 +110,9 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
     // Realtime subscription for instant updates
     let subscription: any;
     if (activeEventId) {
+      const channelName = `monitor_sessions_${activeEventId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       subscription = supabase
-        .channel(`monitor_sessions_${activeEventId}`)
+        .channel(channelName)
         .on(
           'postgres_changes',
           {

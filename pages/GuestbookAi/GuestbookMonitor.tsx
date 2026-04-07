@@ -135,7 +135,7 @@ const GuestbookMonitor: React.FC = React.memo(() => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [eventId, themeParam]);
+  }, [eventId]);
 
   // Slider Rotation
   useEffect(() => {

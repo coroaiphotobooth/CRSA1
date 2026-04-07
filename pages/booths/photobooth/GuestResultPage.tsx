@@ -19,6 +19,11 @@ export default function GuestResultPage() {
     eventDescription?: string;
   } | null>(null);
 
+  const sessionDataRef = React.useRef(sessionData);
+  useEffect(() => {
+    sessionDataRef.current = sessionData;
+  }, [sessionData]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -52,7 +57,8 @@ export default function GuestResultPage() {
 
     // Auto-refresh every 5 seconds if video is requested but not yet available
     const interval = setInterval(async () => {
-      if (sessionData && sessionData.isVideoRequested && !sessionData.resultVideoUrl) {
+      const currentData = sessionDataRef.current;
+      if (currentData && currentData.isVideoRequested && !currentData.resultVideoUrl) {
         try {
           const res = await fetchSessionFromCloud(sessionId);
           if (res.success && res.data) {
@@ -65,7 +71,7 @@ export default function GuestResultPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [sessionId, sessionData]);
+  }, [sessionId]);
 
   const handleDownload = async (url: string, filename: string) => {
     try {
