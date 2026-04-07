@@ -611,14 +611,14 @@ export default function SuperAdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-12">
+    <div className="min-h-screen bg-[#050505] text-white p-4 md:p-8">
+      <div className="max-w-[1600px] mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-4xl font-heading font-bold neon-text mb-2">SUPER ADMIN</h1>
-            <p className="text-gray-400">Manage all vendors and system settings</p>
+            <h1 className="text-3xl md:text-4xl font-heading font-bold neon-text mb-2">SUPER ADMIN</h1>
+            <p className="text-gray-400 text-sm md:text-base">Manage all vendors and system settings</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <button
               onClick={() => navigate('/dashboard')}
               className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-bold transition-all flex items-center gap-2"
@@ -1191,178 +1191,183 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                 </div>
               </div>
               
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/10 text-gray-400 text-sm">
-                      <th className="pb-4 font-medium">No.</th>
-                      <th className="pb-4 font-medium">Email</th>
-                      <th className="pb-4 font-medium">Confirmed</th>
-                      <th className="pb-4 font-medium">Name</th>
-                      <th className="pb-4 font-medium">Company</th>
-                      <th className="pb-4 font-medium">Country</th>
-                      <th className="pb-4 font-medium">Phone</th>
-                      <th className="pb-4 font-medium">Plan</th>
-                      <th className="pb-4 font-medium">Credits</th>
-                      <th className="pb-4 font-medium">Unlimited Time (Hours)</th>
-                      <th className="pb-4 font-medium">Unlimited Expiry</th>
-                      <th className="pb-4 font-medium">Used</th>
-                      <th className="pb-4 font-medium text-right">Actions</th>
+              <div className="overflow-x-auto custom-scrollbar -mx-6 px-6">
+                <table className="w-full text-left border-separate border-spacing-0">
+                  <thead className="sticky top-0 bg-[#1a1a1a] z-10">
+                    <tr className="text-gray-400 text-[11px] uppercase tracking-wider">
+                      <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10">No.</th>
+                      <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10">Vendor Info</th>
+                      <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10">Status</th>
+                      <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10">Company & Contact</th>
+                      <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10">Plan</th>
+                      <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 text-center">Credits</th>
+                      <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 text-center">Unlimited</th>
+                      <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 text-center">Used</th>
+                      <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="text-sm">
+                  <tbody className="text-[13px]">
                     {filteredVendors.map((v, index) => (
-                      <tr key={v.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                        <td className="py-4 text-gray-400">{index + 1}</td>
-                        <td className="py-4">{v.email || 'N/A'}</td>
-                        <td className="py-4">
-                          {v.email_confirmed ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
-                              Yes
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                              No
-                            </span>
-                          )}
+                      <tr key={v.id} className="group border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                        <td className="py-3 px-2 text-gray-500 align-top">{index + 1}</td>
+                        <td className="py-3 px-2 align-top max-w-[200px]">
+                          <div className="flex flex-col">
+                            {editingVendor?.id === v.id ? (
+                              <input 
+                                type="text" 
+                                value={editForm.name} 
+                                onChange={e => setEditForm({...editForm, name: e.target.value})}
+                                className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full mb-1"
+                                placeholder="Name"
+                              />
+                            ) : (
+                              <span className="font-bold text-white block truncate" title={v.name || 'N/A'}>{v.name || 'N/A'}</span>
+                            )}
+                            <span className="text-gray-500 text-[11px] truncate" title={v.email || 'N/A'}>{v.email || 'N/A'}</span>
+                          </div>
                         </td>
-                        <td className="py-4">
-                          {editingVendor?.id === v.id ? (
-                            <input 
-                              type="text" 
-                              value={editForm.name} 
-                              onChange={e => setEditForm({...editForm, name: e.target.value})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
-                            />
-                          ) : (v.name || 'N/A')}
+                        <td className="py-3 px-2 align-top">
+                          <div className="flex flex-col gap-1">
+                            {v.email_confirmed ? (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-500/10 text-green-400 border border-green-500/20 w-fit">
+                                CONFIRMED
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 w-fit">
+                                UNCONFIRMED
+                              </span>
+                            )}
+                            {v.is_blocked && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 w-fit">
+                                BLOCKED
+                              </span>
+                            )}
+                          </div>
                         </td>
-                        <td className="py-4 text-gray-400">
-                          {editingVendor?.id === v.id ? (
-                            <input 
-                              type="text" 
-                              value={editForm.company_name} 
-                              onChange={e => setEditForm({...editForm, company_name: e.target.value})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
-                            />
-                          ) : (v.company_name || '-')}
+                        <td className="py-3 px-2 align-top max-w-[200px]">
+                          <div className="flex flex-col gap-1">
+                            {editingVendor?.id === v.id ? (
+                              <>
+                                <input 
+                                  type="text" 
+                                  value={editForm.company_name} 
+                                  onChange={e => setEditForm({...editForm, company_name: e.target.value})}
+                                  className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full text-xs"
+                                  placeholder="Company"
+                                />
+                                <input 
+                                  type="text" 
+                                  value={editForm.phone} 
+                                  onChange={e => setEditForm({...editForm, phone: e.target.value})}
+                                  className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full text-xs"
+                                  placeholder="Phone"
+                                />
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-gray-300 block truncate" title={v.company_name || '-'}>{v.company_name || '-'}</span>
+                                <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                                  <span>{v.country || '-'}</span>
+                                  {v.phone && <span>• {v.phone}</span>}
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </td>
-                        <td className="py-4 text-gray-400">
-                          {editingVendor?.id === v.id ? (
-                            <input 
-                              type="text" 
-                              value={editForm.country} 
-                              onChange={e => setEditForm({...editForm, country: e.target.value})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
-                            />
-                          ) : (v.country || '-')}
-                        </td>
-                        <td className="py-4 text-gray-400">
-                          {editingVendor?.id === v.id ? (
-                            <input 
-                              type="text" 
-                              value={editForm.phone} 
-                              onChange={e => setEditForm({...editForm, phone: e.target.value})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-full"
-                            />
-                          ) : (v.phone || '-')}
-                        </td>
-                        <td className="py-4">
+                        <td className="py-3 px-2 align-top">
                           {editingVendor?.id === v.id ? (
                             <select 
                               value={editForm.plan} 
                               onChange={e => setEditForm({...editForm, plan: e.target.value as any})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1"
+                              className="bg-black/50 border border-white/20 rounded px-2 py-1 text-xs w-full"
                             >
                               <option value="free">FREE</option>
                               <option value="pay_as_you_go">PAY AS YOU GO</option>
                               <option value="rent">RENT</option>
+                              <option value="pro">PRO</option>
+                              <option value="enterprise">ENTERPRISE</option>
                             </select>
                           ) : (
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              v.plan === 'pay_as_you_go' ? 'bg-[#bc13fe]/20 text-[#bc13fe]' : 
-                              v.plan === 'rent' ? 'bg-blue-500/20 text-blue-400' : 
-                              'bg-gray-500/20 text-gray-400'
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              v.plan === 'pay_as_you_go' ? 'bg-[#bc13fe]/10 text-[#bc13fe] border border-[#bc13fe]/20' : 
+                              v.plan === 'rent' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 
+                              v.plan === 'pro' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
+                              v.plan === 'enterprise' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                              'bg-gray-500/10 text-gray-400 border border-gray-500/20'
                             }`}>
-                              {v.plan === 'pay_as_you_go' ? 'PAY AS YOU GO' : v.plan?.toUpperCase() || 'FREE'}
+                              {v.plan?.replace(/_/g, ' ').toUpperCase() || 'FREE'}
                             </span>
                           )}
                         </td>
-                        <td className="py-4">
+                        <td className="py-3 px-2 align-top text-center">
                           {editingVendor?.id === v.id ? (
                             <input 
                               type="number" 
                               value={editForm.credits} 
                               onChange={e => setEditForm({...editForm, credits: parseInt(e.target.value) || 0})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-20"
-                            />
-                          ) : (v.credits || 0)}
-                        </td>
-                        <td className="py-4">
-                          {editingVendor?.id === v.id ? (
-                            <input 
-                              type="number" 
-                              step="0.5"
-                              value={editForm.unlimited_seconds_left / 3600} 
-                              onChange={e => setEditForm({...editForm, unlimited_seconds_left: Math.floor(parseFloat(e.target.value || '0') * 3600)})}
-                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-20"
+                              className="bg-black/50 border border-white/20 rounded px-2 py-1 w-16 text-center text-xs"
                             />
                           ) : (
-                            <span className={v.is_timer_running ? "text-green-400 font-bold" : ""}>
-                              {(getRemainingTime(v) / 3600).toFixed(2)}h
-                            </span>
+                            <span className="font-mono">{v.credits || 0}</span>
                           )}
                         </td>
-                        <td className="py-4">
-                          {editingVendor?.id === v.id ? (
-                            <div className="flex flex-col gap-2">
-                              <input 
-                                type="datetime-local" 
-                                value={editForm.unlimited_expires_at ? new Date(new Date(editForm.unlimited_expires_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
-                                onChange={e => setEditForm({...editForm, unlimited_expires_at: e.target.value ? new Date(e.target.value).toISOString() : null})}
-                                className="bg-black/50 border border-white/20 rounded px-2 py-1 w-40 text-xs"
-                              />
-                              <div className="flex flex-wrap gap-1 text-[10px]">
-                                <button onClick={() => saveExpiryOnly(v.id, editForm.unlimited_expires_at)} className="bg-blue-600 px-2 py-1 rounded font-bold">Set Expired</button>
-                                <button onClick={() => {
-                                  const expiredDate = new Date(Date.now() - 1000).toISOString();
-                                  setEditForm({...editForm, unlimited_expires_at: expiredDate});
-                                  saveExpiryOnly(v.id, expiredDate);
-                                }} className="bg-red-600 px-2 py-1 rounded font-bold">Expire Now</button>
-                                <button onClick={() => {
-                                  setEditForm({...editForm, unlimited_expires_at: null});
-                                  saveExpiryOnly(v.id, null);
-                                }} className="bg-gray-700 px-2 py-1 rounded font-bold">Reset</button>
+                        <td className="py-3 px-2 align-top text-center min-w-[140px]">
+                          <div className="flex flex-col items-center gap-1">
+                            {editingVendor?.id === v.id ? (
+                              <div className="flex flex-col gap-1 w-full">
+                                <div className="flex items-center gap-1">
+                                  <input 
+                                    type="number" 
+                                    step="0.5"
+                                    value={editForm.unlimited_seconds_left / 3600} 
+                                    onChange={e => setEditForm({...editForm, unlimited_seconds_left: Math.floor(parseFloat(e.target.value || '0') * 3600)})}
+                                    className="bg-black/50 border border-white/20 rounded px-1 py-1 w-full text-center text-xs"
+                                  />
+                                  <span className="text-[10px] text-gray-500">h</span>
+                                </div>
+                                <input 
+                                  type="datetime-local" 
+                                  value={editForm.unlimited_expires_at ? new Date(new Date(editForm.unlimited_expires_at).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ''}
+                                  onChange={e => setEditForm({...editForm, unlimited_expires_at: e.target.value ? new Date(e.target.value).toISOString() : null})}
+                                  className="bg-black/50 border border-white/20 rounded px-1 py-1 w-full text-[10px] text-white"
+                                />
                               </div>
-                            </div>
-                          ) : (
-                            <span className={v.unlimited_expires_at && new Date(v.unlimited_expires_at).getTime() < Date.now() ? "text-red-400 font-bold" : "text-gray-400"}>
-                              {v.unlimited_expires_at ? new Date(v.unlimited_expires_at).toLocaleString() : 'Never'}
-                              {v.unlimited_expires_at && new Date(v.unlimited_expires_at).getTime() < Date.now() && " (Expired)"}
-                            </span>
-                          )}
+                            ) : (
+                              <>
+                                <span className={`font-mono ${v.is_timer_running ? "text-green-400 font-bold" : "text-gray-300"}`}>
+                                  {(getRemainingTime(v) / 3600).toFixed(1)}h
+                                </span>
+                                {v.unlimited_expires_at && (
+                                  <span className={`text-[10px] ${new Date(v.unlimited_expires_at).getTime() < Date.now() ? "text-red-500" : "text-gray-500"}`}>
+                                    Exp: {new Date(v.unlimited_expires_at).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </td>
-                        <td className="py-4 text-gray-400">
-                          {v.credits_used || 0}
+                        <td className="py-3 px-2 align-top text-center">
+                          <span className="font-mono text-gray-500">{v.credits_used || 0}</span>
                         </td>
-                        <td className="py-4 text-right">
+                        <td className="py-3 px-2 align-top text-right">
                           {editingVendor?.id === v.id ? (
-                            <div className="flex justify-end gap-2">
-                              <button onClick={saveEdit} className="p-2 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30">
+                            <div className="flex justify-end gap-1">
+                              <button onClick={saveEdit} className="p-1.5 bg-green-500/20 text-green-400 rounded hover:bg-green-500/30 transition-colors" title="Save">
                                 <Save className="w-4 h-4" />
                               </button>
-                              <button onClick={() => setEditingVendor(null)} className="p-2 bg-gray-500/20 text-gray-400 rounded hover:bg-gray-500/30">
-                                Cancel
+                              <button onClick={() => setEditingVendor(null)} className="p-1.5 bg-gray-500/20 text-gray-400 rounded hover:bg-gray-500/30 transition-colors" title="Cancel">
+                                <X className="w-4 h-4" />
                               </button>
                             </div>
                           ) : (
-                            <div className="flex justify-end gap-2 relative">
-                              <button onClick={() => startEdit(v)} className="p-2 bg-blue-500/20 text-blue-400 rounded hover:bg-blue-500/30" title="Edit Vendor">
+                            <div className="flex justify-end gap-1 relative">
+                              <button onClick={() => startEdit(v)} className="p-1.5 bg-blue-500/10 text-blue-400 rounded hover:bg-blue-500/20 transition-colors" title="Edit">
                                 <Edit className="w-4 h-4" />
                               </button>
                               <button 
                                 onClick={() => setOpenActionMenuId(openActionMenuId === v.id ? null : v.id)}
-                                className="p-2 bg-white/5 text-gray-300 rounded hover:bg-white/10"
-                                title="More Actions"
+                                className="p-1.5 bg-white/5 text-gray-400 rounded hover:bg-white/10 transition-colors"
+                                title="More"
                               >
                                 <MoreVertical className="w-4 h-4" />
                               </button>
@@ -1374,39 +1379,39 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                                     {!v.email_confirmed && (
                                       <button 
                                         onClick={() => { handleConfirmEmail(v); setOpenActionMenuId(null); }} 
-                                        className="flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors text-green-400"
+                                        className="flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5 transition-colors text-green-400"
                                       >
                                         <ShieldAlert className="w-4 h-4" />
-                                        <span className="text-sm font-medium">Confirm Email</span>
+                                        <span className="text-xs font-bold">Confirm Email</span>
                                       </button>
                                     )}
                                     <button 
                                       onClick={() => { handleMessageVendor(v.id); setOpenActionMenuId(null); }} 
-                                      className={`flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors text-blue-400 ${!v.email_confirmed ? 'border-t border-white/5' : ''}`}
+                                      className="flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5 transition-colors text-blue-400 border-t border-white/5"
                                     >
                                       <MessageSquare className="w-4 h-4" />
-                                      <span className="text-sm font-medium">Send Message</span>
+                                      <span className="text-xs font-bold">Send Message</span>
                                     </button>
                                     <button 
                                       onClick={() => { navigate(`/dashboard?vendorId=${v.id}`); setOpenActionMenuId(null); }} 
-                                      className="flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors text-purple-400 border-t border-white/5"
+                                      className="flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5 transition-colors text-purple-400 border-t border-white/5"
                                     >
                                       <ExternalLink className="w-4 h-4" />
-                                      <span className="text-sm font-medium">Enter Dashboard</span>
+                                      <span className="text-xs font-bold">Enter Dashboard</span>
                                     </button>
                                     <button 
                                       onClick={() => { handleToggleBlock(v); setOpenActionMenuId(null); }} 
-                                      className={`flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors border-t border-white/5 ${v.is_blocked ? 'text-yellow-400' : 'text-orange-400'}`}
+                                      className={`flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5 transition-colors border-t border-white/5 ${v.is_blocked ? 'text-yellow-400' : 'text-orange-400'}`}
                                     >
                                       {v.is_blocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                                      <span className="text-sm font-medium">{v.is_blocked ? "Unblock Vendor" : "Block Vendor"}</span>
+                                      <span className="text-xs font-bold">{v.is_blocked ? "Unblock Vendor" : "Block Vendor"}</span>
                                     </button>
                                     <button 
                                       onClick={() => { handleDeleteVendor(v.id); setOpenActionMenuId(null); }} 
-                                      className="flex items-center gap-3 px-4 py-3 text-left hover:bg-red-500/10 transition-colors text-red-400 border-t border-white/5"
+                                      className="flex items-center gap-3 px-4 py-2.5 text-left hover:bg-red-500/10 transition-colors text-red-400 border-t border-white/5"
                                     >
                                       <Trash2 className="w-4 h-4" />
-                                      <span className="text-sm font-medium">Remove Vendor</span>
+                                      <span className="text-xs font-bold">Remove Vendor</span>
                                     </button>
                                   </div>
                                 </>
@@ -1418,7 +1423,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                     ))}
                     {filteredVendors.length === 0 && (
                       <tr>
-                        <td colSpan={9} className="py-8 text-center text-gray-500">No vendors found</td>
+                        <td colSpan={9} className="py-12 text-center text-gray-500 italic">No vendors found matching your search</td>
                       </tr>
                     )}
                   </tbody>

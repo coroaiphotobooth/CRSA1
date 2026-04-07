@@ -106,6 +106,13 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
     }
     
     let finalPrompt = prompt;
+    let finalStyle = concept.style_preset || 'Photorealistic';
+
+    if (finalStyle === 'Photorealistic') {
+      finalStyle = '3D Render (recommended)';
+      const photorealisticSuffix = "Re-render the entire subject in one unified AI-generated style. The face, hair, skin, clothing, and body must all be fully re-illustrated as a cohesive high-end cinematic character render, not a preserved real photo face placed onto a rendered body.";
+      finalPrompt = finalPrompt ? `${finalPrompt} ${photorealisticSuffix}` : photorealisticSuffix;
+    }
 
     // Default to 'booth' mode if a reference image is provided and mode is 'wrapped' (default)
     if ((concept.refImage || concept.reference_image_split || concept.reference_image_bg) && promptMode === 'wrapped') {
@@ -322,7 +329,7 @@ CRITICAL INSTRUCTION FOR REFERENCE IMAGES:
 Redraw the people from the MAIN PHOTO.
 - If REFERENCE IMAGE 1 is provided, the man MUST wear the exact outfit shown on the LEFT side of REFERENCE IMAGE 1. The woman MUST wear the exact outfit shown on the RIGHT side. Retain the exact fabric, pattern, and design.
 - If REFERENCE IMAGE 2 is provided, place them in the exact environment shown in REFERENCE IMAGE 2.
-Style: ${concept.style_preset || 'Photorealistic'}.` });
+Style: ${finalStyle}.` });
 
       } else if (concept.refImage && concept.refImage.trim() !== '') {
          // Fallback to old refImage logic
@@ -330,9 +337,9 @@ Style: ${concept.style_preset || 'Photorealistic'}.` });
          const img = await fetchImageAsBase64(concept.refImage);
          parts.push({ inlineData: img });
          
-         parts.push({ text: executionPrompt + `\n\n[IMPORTANT]: The REFERENCE IMAGE provided is a VISUAL REFERENCE for the style, background, or clothing. Combine the person from the MAIN PHOTO with the style/aesthetics of the REFERENCE IMAGE.` });
+         parts.push({ text: executionPrompt + `\n\n[IMPORTANT]: The REFERENCE IMAGE provided is a VISUAL REFERENCE for the style, background, or clothing. Combine the person from the MAIN PHOTO with the style/aesthetics of the REFERENCE IMAGE.\nStyle: ${finalStyle}.` });
       } else {
-         parts.push({ text: executionPrompt });
+         parts.push({ text: executionPrompt + `\nStyle: ${finalStyle}.` });
       }
 
       // E. Logging Debug (Before Request)

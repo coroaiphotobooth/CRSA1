@@ -144,7 +144,7 @@ export interface Vendor {
   company_name?: string;
   country?: string;
   phone?: string;
-  plan: 'free' | 'pay_as_you_go' | 'rent';
+  plan: 'free' | 'pay_as_you_go' | 'rent' | 'pro' | 'enterprise';
   credits: number;
   credits_used?: number;
   unlimited_seconds_left?: number;

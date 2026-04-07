@@ -177,6 +177,15 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
     try {
       const dummyFaceBase64 = await resizeAndCompressImage(dummyFace);
 
+      let finalStyle = stylePreset;
+      let finalAdditionalPrompt = additionalPrompt;
+
+      if (stylePreset === 'Photorealistic') {
+        finalStyle = '3D Render (recommended)';
+        const photorealisticSuffix = "Re-render the entire subject in one unified AI-generated style. The face, hair, skin, clothing, and body must all be fully re-illustrated as a cohesive high-end cinematic character render, not a preserved real photo face placed onto a rendered body.";
+        finalAdditionalPrompt = additionalPrompt ? `${additionalPrompt} ${photorealisticSuffix}` : photorealisticSuffix;
+      }
+
       // 3. Call Gemini API
       const response = await fetch('/api/generate-image', {
         method: 'POST',
@@ -191,8 +200,8 @@ CRITICAL INSTRUCTION:
 Look at the provided reference images.
 - If a split reference image is provided (Reference Image 1), the man in the photo MUST wear the exact outfit shown on the LEFT side of Reference Image 1. The woman MUST wear the exact outfit shown on the RIGHT side of Reference Image 1. Retain the exact fabric, pattern, and design of the outfits.
 - Place them in the exact environment shown in the background reference image (Reference Image 2).
-Style: ${stylePreset}.
-Additional instructions: A ${composition} shot. ${additionalPrompt}`
+Style: ${finalStyle}.
+Additional instructions: A ${composition} shot. ${finalAdditionalPrompt}`
             },
             { inlineData: { data: dummyFaceBase64.split(',')[1], mimeType: dummyFace.type || 'image/jpeg' } },
             { inlineData: { data: stitchedBase64.split(',')[1] || stitchedBase64, mimeType: 'image/jpeg' } },
