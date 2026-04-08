@@ -208,14 +208,23 @@ export default function VendorDashboard() {
     const prompt = deferredPrompt || (window as any).deferredPrompt;
     if (!prompt) {
       console.log('No deferred prompt available');
+      alert('Fitur install tidak tersedia di browser ini atau aplikasi sudah diinstall.');
       return;
     }
-    prompt.prompt();
-    const { outcome } = await prompt.userChoice;
-    console.log(`User response to the install prompt: ${outcome}`);
-    setDeferredPrompt(null);
-    (window as any).deferredPrompt = null;
-    setIsInstallable(false);
+    
+    try {
+      prompt.prompt();
+      const { outcome } = await prompt.userChoice;
+      console.log(`User response to the install prompt: ${outcome}`);
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        (window as any).deferredPrompt = null;
+        setIsInstallable(false);
+      }
+    } catch (err) {
+      console.error('Error prompting PWA install:', err);
+      alert('Gagal menampilkan prompt install. Anda bisa menginstall aplikasi ini melalui menu browser (titik tiga di pojok kanan atas -> Install App).');
+    }
   };
 
   // Close modal if tour is skipped and modal is empty
