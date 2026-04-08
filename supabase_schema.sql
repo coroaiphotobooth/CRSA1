@@ -13,6 +13,7 @@ CREATE TABLE vendors (
   credits_used INTEGER DEFAULT 0,
   is_blocked BOOLEAN DEFAULT false,
   admin_message TEXT,
+  last_login_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
@@ -355,3 +356,24 @@ FOR INSERT WITH CHECK (vendor_id = auth.uid());
 -- Only service role (backend) can update transactions (to prevent tampering with status)
 CREATE POLICY "Service role can update transactions" ON transactions 
 FOR UPDATE USING (true);
+
+-- 10. Vendor Activities Table
+CREATE TABLE vendor_activities (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE NOT NULL,
+  action TEXT NOT NULL,
+  details JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Enable RLS for vendor_activities
+ALTER TABLE vendor_activities ENABLE ROW LEVEL SECURITY;
+
+-- Vendors can view their own activities
+CREATE POLICY "Vendors can view their own activities" ON vendor_activities 
+FOR SELECT USING (vendor_id = auth.uid() OR is_superadmin());
+
+-- Vendors can insert their own activities
+CREATE POLICY "Vendors can insert their own activities" ON vendor_activities 
+FOR INSERT WITH CHECK (vendor_id = auth.uid());
+

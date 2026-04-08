@@ -9,6 +9,7 @@ import { saveAs } from 'file-saver';
 import { robustFetch } from '../../lib/appsScript';
 import { useDialog } from '../../components/DialogProvider';
 import { DEFAULT_SETTINGS, DEFAULT_CONCEPTS, DEFAULT_GAS_URL } from '../../constants';
+import { logVendorActivity } from '../../lib/activityLogger';
 import CinematicIntro from '../../components/CinematicIntro';
 import { useTourState, setTourState } from '../../lib/tourState';
 import ConceptStudio from './ConceptStudio';
@@ -159,6 +160,37 @@ export default function VendorDashboard() {
       intervalsRef.current.forEach(clearInterval);
     };
   }, []);
+
+  // Presence Channel
+  useEffect(() => {
+    if (!vendor) return;
+    
+    // Only track presence if not impersonating
+    if (impersonatedVendorId) return;
+
+    const channel = supabase.channel('vendor_presence', {
+      config: {
+        presence: {
+          key: vendor.id,
+        },
+      },
+    });
+
+    channel.on('presence', { event: 'sync' }, () => {
+      // console.log('Presence sync', channel.presenceState());
+    }).subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await channel.track({
+          online_at: new Date().toISOString(),
+          vendor_id: vendor.id,
+        });
+      }
+    });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [vendor, impersonatedVendorId]);
 
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -636,6 +668,9 @@ export default function VendorDashboard() {
           }
         }
 
+        // Log activity
+        await logVendorActivity(vendor.id, 'create_event', { event_name: newEventName.trim(), event_id: newEvent.id });
+
         setEvents([newEvent, ...events]);
         setShowCreateModal(false);
         setNewEventName('');
@@ -693,6 +728,11 @@ export default function VendorDashboard() {
         }
 
         setEvents(events.filter(e => e.id !== eventId));
+        
+        // Log activity
+        if (vendor) {
+          await logVendorActivity(vendor.id, 'delete_event', { event_name: eventToDelete?.name, event_id: eventId });
+        }
       } catch (err: any) {
         console.error("Failed to delete event:", err);
         await showDialog('alert', 'Error', `Failed to delete event: ${err.message}`);

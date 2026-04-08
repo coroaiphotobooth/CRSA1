@@ -43,9 +43,32 @@ export default function SuperAdminDashboard() {
   const { showDialog } = useDialog();
 
   const SUPER_ADMIN_EMAIL = 'admin@coroai.app';
+  const [onlineVendors, setOnlineVendors] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchData();
+
+    // Subscribe to vendor presence
+    const channel = supabase.channel('vendor_presence');
+    
+    channel.on('presence', { event: 'sync' }, () => {
+      const state = channel.presenceState();
+      const onlineIds = new Set<string>();
+      
+      for (const id in state) {
+        // state[id] is an array of presences for that key
+        const presences = state[id] as any[];
+        if (presences && presences.length > 0) {
+          onlineIds.add(id);
+        }
+      }
+      
+      setOnlineVendors(onlineIds);
+    }).subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -1221,9 +1244,21 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;`}
                                 placeholder="Name"
                               />
                             ) : (
-                              <span className="font-bold text-white block truncate" title={v.name || 'N/A'}>{v.name || 'N/A'}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-white block truncate" title={v.name || 'N/A'}>{v.name || 'N/A'}</span>
+                                {onlineVendors.has(v.id) ? (
+                                  <span className="flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_5px_#22c55e]" title="Online"></span>
+                                ) : (
+                                  <span className="flex h-2 w-2 rounded-full bg-gray-600" title="Offline"></span>
+                                )}
+                              </div>
                             )}
                             <span className="text-gray-500 text-[11px] truncate" title={v.email || 'N/A'}>{v.email || 'N/A'}</span>
+                            {v.last_login_at && (
+                              <span className="text-gray-600 text-[10px] mt-1" title="Last Login">
+                                Last: {new Date(v.last_login_at).toLocaleString()}
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="py-3 px-2 align-top">

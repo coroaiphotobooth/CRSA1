@@ -107,6 +107,12 @@ export default function LoginPage() {
           throw error;
         }
         if (data.user) {
+          // Update last_login_at
+          await supabase
+            .from('vendors')
+            .update({ last_login_at: new Date().toISOString() })
+            .eq('id', data.user.id);
+
           if (data.user.email === 'admin@coroai.app') {
             navigate('/superadmin');
           } else {

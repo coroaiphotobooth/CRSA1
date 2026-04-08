@@ -155,6 +155,15 @@ export interface Vendor {
   is_blocked?: boolean;
   admin_message?: string;
   email_confirmed?: boolean;
+  last_login_at?: string;
+}
+
+export interface VendorActivity {
+  id: string;
+  vendor_id: string;
+  action: string;
+  details?: any;
+  created_at: string;
 }
 
 export interface Event {
