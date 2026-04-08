@@ -523,7 +523,7 @@ export default function VendorManagement({ vendors, setVendors, onlineVendors, h
                                 <span className="text-xs font-bold">Send Message</span>
                               </button>
                               <button 
-                                onClick={() => { window.open(`/?vendorId=${v.id}`, '_blank'); setOpenActionMenuId(null); }} 
+                                onClick={() => { window.open(`/dashboard?vendorId=${v.id}`, '_blank'); setOpenActionMenuId(null); }} 
                                 className="flex items-center gap-3 px-4 py-2.5 text-left hover:bg-white/5 transition-colors text-purple-400 border-t border-white/5"
                               >
                                 <ExternalLink className="w-4 h-4" />
