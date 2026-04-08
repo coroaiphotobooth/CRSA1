@@ -57,18 +57,22 @@ const GuestbookResult: React.FC<GuestbookResultProps> = ({
       // BROADCAST TO MONITOR
       if (eventId) {
         const channel = supabase.channel(`guestbook_updates_${eventId}`);
-        await channel.send({
-          type: 'broadcast',
-          event: 'new_guestbook_entry',
-          payload: {
-            id: sessionId,
-            guest_name: guestName,
-            guest_message: guestMessage,
-            result_image_url: imageUrl,
-            created_at: new Date().toISOString()
+        channel.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await channel.send({
+              type: 'broadcast',
+              event: 'new_guestbook_entry',
+              payload: {
+                id: sessionId,
+                guest_name: guestName,
+                guest_message: guestMessage,
+                result_image_url: imageUrl,
+                created_at: new Date().toISOString()
+              }
+            });
+            supabase.removeChannel(channel);
           }
         });
-        supabase.removeChannel(channel);
       }
       
       setIsPosted(true);

@@ -138,24 +138,22 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
      const pollIntv = setInterval(loadGallery, 30000); 
 
      // Realtime subscription for instant updates without aggressive polling
-     let subscription: any;
+     let channel: any;
      if (activeEventId) {
-       const channelName = `gallery_sessions_${activeEventId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-       subscription = supabase
-         .channel(channelName)
-         .on(
-           'postgres_changes',
-           {
-             event: '*',
-             schema: 'public',
-             table: 'sessions',
-             filter: `event_id=eq.${activeEventId}`
-           },
-           () => {
-             loadGallery();
-           }
-         )
-         .subscribe();
+       const channelName = `gallery_sessions_${activeEventId}`;
+       channel = supabase.channel(channelName);
+       channel.on(
+         'postgres_changes',
+         {
+           event: '*',
+           schema: 'public',
+           table: 'sessions',
+           filter: `event_id=eq.${activeEventId}`
+         },
+         () => {
+           loadGallery();
+         }
+       ).subscribe();
      }
 
      // Only poll tick if boothMode is video
@@ -170,7 +168,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
      return () => { 
         clearInterval(pollIntv); 
         if (tickIntv) clearInterval(tickIntv);
-        if (subscription) supabase.removeChannel(subscription);
+        if (channel) supabase.removeChannel(channel);
      };
   }, [activeEventId, settings?.boothMode]);
 

@@ -150,6 +150,15 @@ export default function VendorDashboard() {
   const { startTour, isActive, tourType, stepIndex, status } = useTourState();
   const prevTourTypeRef = useRef<string | null>(null);
   const prevIsActive = useRef(isActive);
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const intervalsRef = useRef<NodeJS.Timeout[]>([]);
+
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach(clearTimeout);
+      intervalsRef.current.forEach(clearInterval);
+    };
+  }, []);
 
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -451,9 +460,9 @@ export default function VendorDashboard() {
             setShowTourPrompt(true);
           } else if (!isActive) {
             setShowFinalTutorialHint(true);
-            setTimeout(() => {
+            timeoutsRef.current.push(setTimeout(() => {
               setShowFinalTutorialHint(false);
-            }, 5000);
+            }, 5000));
           }
         }
 
@@ -494,9 +503,9 @@ export default function VendorDashboard() {
       startTour('dashboard_overview');
     } else {
       setShowFinalTutorialHint(true);
-      setTimeout(() => {
+      timeoutsRef.current.push(setTimeout(() => {
         setShowFinalTutorialHint(false);
-      }, 5000);
+      }, 5000));
     }
   };
 
@@ -865,10 +874,10 @@ export default function VendorDashboard() {
         }
       }
 
-      setTimeout(async () => {
+      timeoutsRef.current.push(setTimeout(async () => {
         setBackupProgress(null);
         await showDialog('alert', 'Success', `Backup complete! Successfully backed up ${successCount} files. Failed: ${failCount} files.`);
-      }, 500);
+      }, 500));
 
     } catch (err: any) {
       console.error("Backup error:", err);
@@ -1153,7 +1162,7 @@ export default function VendorDashboard() {
                         setShowTutorialMenu(false);
                         if (events.length > 0) {
                           navigate(`/admin/${events[0].id}`);
-                          setTimeout(() => startTour('settings'), 500);
+                          timeoutsRef.current.push(setTimeout(() => startTour('settings'), 500));
                         } else {
                           startTour('create_event');
                         }
@@ -1167,7 +1176,7 @@ export default function VendorDashboard() {
                         setShowTutorialMenu(false);
                         if (events.length > 0) {
                           navigate(`/admin/${events[0].id}?tab=concept`);
-                          setTimeout(() => startTour('concept'), 500);
+                          timeoutsRef.current.push(setTimeout(() => startTour('concept'), 500));
                         } else {
                           startTour('create_event');
                         }
@@ -2186,9 +2195,9 @@ export default function VendorDashboard() {
                   onClick={() => {
                     setShowCreateEventTourPrompt(false);
                     setShowFinalTutorialHint(true);
-                    setTimeout(() => {
+                    timeoutsRef.current.push(setTimeout(() => {
                       setShowFinalTutorialHint(false);
-                    }, 5000);
+                    }, 5000));
                   }}
                   className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest text-white"
                 >
@@ -2238,7 +2247,7 @@ export default function VendorDashboard() {
                     setShowNextTutorialPrompt(false);
                     if (events.length > 0) {
                       navigate(`/admin/${events[0].id}?tab=settings`);
-                      setTimeout(() => startTour('settings'), 500);
+                      timeoutsRef.current.push(setTimeout(() => startTour('settings'), 500));
                     } else {
                       startTour('create_event');
                     }
@@ -2252,7 +2261,7 @@ export default function VendorDashboard() {
                     setShowNextTutorialPrompt(false);
                     if (events.length > 0) {
                       navigate(`/admin/${events[0].id}?tab=concept`);
-                      setTimeout(() => startTour('concept'), 500);
+                      timeoutsRef.current.push(setTimeout(() => startTour('concept'), 500));
                     } else {
                       startTour('create_event');
                     }
@@ -2265,9 +2274,9 @@ export default function VendorDashboard() {
                   onClick={() => {
                     setShowNextTutorialPrompt(false);
                     setShowFinalTutorialHint(true);
-                    setTimeout(() => {
+                    timeoutsRef.current.push(setTimeout(() => {
                       setShowFinalTutorialHint(false);
-                    }, 5000);
+                    }, 5000));
                   }}
                   className="px-6 py-3 border border-white/20 hover:bg-white/10 rounded-lg text-sm font-bold transition-colors uppercase tracking-widest text-white mt-2"
                 >

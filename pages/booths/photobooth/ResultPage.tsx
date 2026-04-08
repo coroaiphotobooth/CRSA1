@@ -46,8 +46,17 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   }, [isProcessing]);
   const [isVideoRequested, setIsVideoRequested] = useState(false);
   const [videoRedirectTimer, setVideoRedirectTimer] = useState<number | null>(null);
+  const videoRedirectIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [videoStatusText, setVideoStatusText] = useState("PREPARING REQUEST...");
   const { showDialog } = useDialog();
+
+  useEffect(() => {
+    return () => {
+      if (videoRedirectIntervalRef.current) {
+        clearInterval(videoRedirectIntervalRef.current);
+      }
+    };
+  }, []);
 
   let targetWidth = 1080;
   let targetHeight = 1920;
@@ -246,11 +255,11 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
     let countdown = 3;
     setVideoRedirectTimer(countdown);
     
-    const intv = setInterval(() => {
+    videoRedirectIntervalRef.current = setInterval(() => {
        countdown--;
        setVideoRedirectTimer(countdown);
        if (countdown <= 0) {
-          clearInterval(intv);
+          if (videoRedirectIntervalRef.current) clearInterval(videoRedirectIntervalRef.current);
           onDone(); 
        }
     }, 1000);

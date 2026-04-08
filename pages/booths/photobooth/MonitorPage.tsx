@@ -108,32 +108,30 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
     const interval = setInterval(loadData, 30000); 
 
     // Realtime subscription for instant updates
-    let subscription: any;
+    let channel: any;
     if (activeEventId) {
-      const channelName = `monitor_sessions_${activeEventId}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      subscription = supabase
-        .channel(channelName)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'sessions',
-            filter: `event_id=eq.${activeEventId}`
-          },
-          (payload) => {
-            console.log('Realtime update received in monitor:', payload);
-            // When a new session is inserted or updated (e.g., result_image_url is added), reload data
-            loadData();
-          }
-        )
-        .subscribe();
+      const channelName = `monitor_sessions_${activeEventId}`;
+      channel = supabase.channel(channelName);
+      channel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sessions',
+          filter: `event_id=eq.${activeEventId}`
+        },
+        (payload: any) => {
+          console.log('Realtime update received in monitor:', payload);
+          // When a new session is inserted or updated (e.g., result_image_url is added), reload data
+          loadData();
+        }
+      ).subscribe();
     }
 
     return () => {
       clearInterval(interval);
-      if (subscription) {
-        supabase.removeChannel(subscription);
+      if (channel) {
+        supabase.removeChannel(channel);
       }
     };
   }, [activeEventId, theme]); // Added sliderActiveItem to deps if needed, but handled via ref logic
