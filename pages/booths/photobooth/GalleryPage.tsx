@@ -137,37 +137,22 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
      // Fallback polling reduced from 5s to 30s to save DB load
      const pollIntv = setInterval(loadGallery, 30000); 
 
-     // Realtime subscription for instant updates without aggressive polling
+     // Realtime subscription for instant updates using broadcast
      let channel: any;
      if (activeEventId) {
-       const channelName = `gallery_sessions_${activeEventId}`;
+       const channelName = `gallery_updates_${activeEventId}`;
        channel = supabase.channel(channelName);
        channel.on(
-         'postgres_changes',
-         {
-           event: '*',
-           schema: 'public',
-           table: 'sessions',
-           filter: `event_id=eq.${activeEventId}`
-         },
+         'broadcast',
+         { event: 'new_gallery_item' },
          () => {
            loadGallery();
          }
        ).subscribe();
      }
 
-     // Only poll tick if boothMode is video
-     let tickIntv: ReturnType<typeof setInterval> | null = null;
-     if (settings?.boothMode === 'video') {
-         fetch('/api/video/tick').catch(err => console.error("Initial Tick failed", err));
-         tickIntv = setInterval(() => {
-             fetch('/api/video/tick').catch(err => console.error("Tick failed", err));
-         }, 5000);
-     }
-
      return () => { 
         clearInterval(pollIntv); 
-        if (tickIntv) clearInterval(tickIntv);
         if (channel) supabase.removeChannel(channel);
      };
   }, [activeEventId, settings?.boothMode]);

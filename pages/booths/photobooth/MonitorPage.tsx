@@ -107,22 +107,16 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
     // Fallback polling just in case
     const interval = setInterval(loadData, 30000); 
 
-    // Realtime subscription for instant updates
+    // Realtime subscription for instant updates using broadcast
     let channel: any;
     if (activeEventId) {
-      const channelName = `monitor_sessions_${activeEventId}`;
+      const channelName = `gallery_updates_${activeEventId}`;
       channel = supabase.channel(channelName);
       channel.on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sessions',
-          filter: `event_id=eq.${activeEventId}`
-        },
+        'broadcast',
+        { event: 'new_gallery_item' },
         (payload: any) => {
-          console.log('Realtime update received in monitor:', payload);
-          // When a new session is inserted or updated (e.g., result_image_url is added), reload data
+          console.log('Broadcast update received in monitor:', payload);
           loadData();
         }
       ).subscribe();

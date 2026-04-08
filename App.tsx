@@ -18,6 +18,7 @@ import AdminPage from './pages/booths/photobooth/admin/AdminPage';
 import MonitorPage from './pages/booths/photobooth/MonitorPage';
 import FastThanksPage from './pages/booths/photobooth/FastThanksPage';
 import GuestResultPage from './pages/booths/photobooth/GuestResultPage';
+import { usePresence } from './hooks/usePresence';
 import LoginPage from './pages/auth/LoginPage';
 import VendorDashboard from './pages/dashboard/VendorDashboard';
 import SuperAdminDashboard from './pages/dashboard/SuperAdminDashboard';
@@ -67,6 +68,8 @@ const PhotoboothFlow: React.FC = () => {
   // Gallery Cache State (New)
   const [galleryCache, setGalleryCache] = useState<GalleryItem[]>([]);
 
+  usePresence(settings.vendor_id, 'event_photobooth');
+
   // --- OVERLAY PRELOADER ---
   useEffect(() => {
      if (settings.overlayImage) {
@@ -89,7 +92,7 @@ const PhotoboothFlow: React.FC = () => {
              return;
          }
 
-         let nextInterval = 15000; 
+         let nextInterval = 60000; // Default idle interval: 60s
 
          try {
              const res = await fetch('/api/video/tick');
@@ -99,12 +102,12 @@ const PhotoboothFlow: React.FC = () => {
                  const data = await res.json();
                  
                  if (data.activeCount > 0 || (data.report && (data.report.processed > 0 || data.report.started > 0))) {
-                     nextInterval = 5000; 
+                     nextInterval = 5000; // Active interval: 5s
                      console.log(`[POLL] Tick Active. Next: 5s. Pending: ${data.activeCount}`);
                  }
              }
          } catch (err) {
-             nextInterval = 20000; 
+             nextInterval = 60000; 
          }
 
          if (isRunning) {
@@ -182,7 +185,8 @@ const PhotoboothFlow: React.FC = () => {
               eventName: eventData.name,
               eventDescription: eventData.description,
               activeEventId: eventData.id,
-              storage_folder: eventData.storage_folder
+              storage_folder: eventData.storage_folder,
+              vendor_id: eventData.vendor_id
             }));
             
             // Also fetch concepts from Supabase if we have a concepts table

@@ -99,6 +99,20 @@ export const saveSessionToCloud = async (sessionData: any): Promise<{success: bo
         }, { onConflict: 'id' });
         
       if (error) throw error;
+
+      // Send broadcast for real-time updates without postgres_changes
+      const channel = supabase.channel(`gallery_updates_${sessionData.eventId}`);
+      channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.send({
+            type: 'broadcast',
+            event: 'new_gallery_item',
+            payload: { sessionId: sessionData.sessionId }
+          });
+          supabase.removeChannel(channel);
+        }
+      });
+
       return { success: true };
     } catch (e) {
       console.error("Supabase Save Session Failed:", e);

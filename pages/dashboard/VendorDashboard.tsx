@@ -13,6 +13,7 @@ import { logVendorActivity } from '../../lib/activityLogger';
 import CinematicIntro from '../../components/CinematicIntro';
 import { useTourState, setTourState } from '../../lib/tourState';
 import ConceptStudio from './ConceptStudio';
+import { usePresence } from '../../hooks/usePresence';
 
 export default function VendorDashboard() {
   const [activeTab, setActiveTab] = useState<'events' | 'concept_studio'>('events');
@@ -162,35 +163,7 @@ export default function VendorDashboard() {
   }, []);
 
   // Presence Channel
-  useEffect(() => {
-    if (!vendor) return;
-    
-    // Only track presence if not impersonating
-    if (impersonatedVendorId) return;
-
-    const channel = supabase.channel('vendor_presence', {
-      config: {
-        presence: {
-          key: vendor.id,
-        },
-      },
-    });
-
-    channel.on('presence', { event: 'sync' }, () => {
-      // console.log('Presence sync', channel.presenceState());
-    }).subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await channel.track({
-          online_at: new Date().toISOString(),
-          vendor_id: vendor.id,
-        });
-      }
-    });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [vendor, impersonatedVendorId]);
+  usePresence(impersonatedVendorId ? undefined : vendor?.id, 'dashboard');
 
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);

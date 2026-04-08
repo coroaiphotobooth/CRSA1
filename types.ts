@@ -49,6 +49,7 @@ export type MonitorTheme = 'physics' | 'grid' | 'hero' | 'slider';
 export interface PhotoboothSettings {
   eventName: string;
   eventDescription: string;
+  vendor_id?: string;
   folderId: string;
   originalFolderId?: string; 
   storage_folder?: string;
