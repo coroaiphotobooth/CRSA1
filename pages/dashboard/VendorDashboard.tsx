@@ -834,17 +834,34 @@ export default function VendorDashboard() {
       let failCount = 0;
       let currentCount = 0;
 
+      const fetchBase64WithFallback = async (url: string): Promise<string> => {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const blob = await response.blob();
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          console.warn("Direct fetch failed, trying proxy...", e);
+          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+          const response = await fetch(proxyUrl);
+          if (!response.ok) throw new Error(`Proxy HTTP ${response.status}`);
+          const blob = await response.blob();
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        }
+      };
+
       for (const session of sessions) {
         if (session.result_image_url) {
           try {
-            const response = await fetch(session.result_image_url);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            const base64Promise = new Promise<string>((resolve) => {
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.readAsDataURL(blob);
-            });
-            const base64Data = await base64Promise;
+            const base64Data = await fetchBase64WithFallback(session.result_image_url);
 
             const res = await robustFetch(gasUrl, {
               method: 'POST',
@@ -855,8 +872,12 @@ export default function VendorDashboard() {
                 skipGallery: true
               })
             });
-            if (res.ok) successCount++;
-            else failCount++;
+            if (res.ok) {
+              successCount++;
+            } else {
+              console.error("GAS Upload Failed for image:", res);
+              failCount++;
+            }
           } catch (e) {
             console.error("Backup failed for an image:", e);
             failCount++;
@@ -867,14 +888,7 @@ export default function VendorDashboard() {
 
         if (session.result_video_url) {
           try {
-            const response = await fetch(session.result_video_url);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            const base64Promise = new Promise<string>((resolve) => {
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.readAsDataURL(blob);
-            });
-            const base64Data = await base64Promise;
+            const base64Data = await fetchBase64WithFallback(session.result_video_url);
 
             const res = await robustFetch(gasUrl, {
               method: 'POST',
@@ -885,8 +899,12 @@ export default function VendorDashboard() {
                 skipGallery: true
               })
             });
-            if (res.ok) successCount++;
-            else failCount++;
+            if (res.ok) {
+              successCount++;
+            } else {
+              console.error("GAS Upload Failed for video:", res);
+              failCount++;
+            }
           } catch (e) {
             console.error("Backup failed for a video:", e);
             failCount++;
