@@ -4,6 +4,7 @@ import { Upload, Image as ImageIcon, Play, Save, Loader2, Trash2, Edit2 } from '
 import { supabase } from '../../lib/supabase';
 import { useDialog } from '../../components/DialogProvider';
 import { ConceptTemplate } from '../../types';
+import { getEnhancedPrompt } from '../../lib/promptEnhancer';
 
 interface ConceptStudioProps {
   vendorId: string;
@@ -177,14 +178,7 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
     try {
       const dummyFaceBase64 = await resizeAndCompressImage(dummyFace);
 
-      let finalStyle = stylePreset;
-      let finalAdditionalPrompt = additionalPrompt;
-
-      if (stylePreset === 'Photorealistic') {
-        finalStyle = '3D Render (recommended)';
-        const photorealisticSuffix = "Render only the person or people present in the uploaded test photo. Any human figure appearing in the male outfit reference, female outfit reference, or background reference is for style and clothing guidance only, and must not appear as an additional subject in the final image. Style: ultra realistic premium portrait, natural skin texture, professional editorial finish, soft cinematic light, lifelike hair detail, elegant and polished commercial-quality rendering.";
-        finalAdditionalPrompt = additionalPrompt ? `${additionalPrompt} ${photorealisticSuffix}` : photorealisticSuffix;
-      }
+      const { enhancedStyle, enhancedPrompt } = getEnhancedPrompt(additionalPrompt, stylePreset, composition);
 
       // 3. Call Gemini API
       const response = await fetch('/api/generate-image', {
@@ -203,8 +197,8 @@ CRITICAL INSTRUCTION:
 4. For EVERY male in the main photo, dress them in the exact outfit shown on the LEFT side of Reference Image 1.
 5. For EVERY female in the main photo, dress them in the exact outfit shown on the RIGHT side of Reference Image 1.
 6. Place them in the exact environment shown in the background reference image (Reference Image 2).
-Style: ${finalStyle}.
-Additional instructions: A ${composition} shot. ${finalAdditionalPrompt}`
+Style: ${enhancedStyle}.
+Additional instructions: A ${composition} shot. ${enhancedPrompt}`
             },
             { inlineData: { data: dummyFaceBase64.split(',')[1], mimeType: dummyFace.type || 'image/jpeg' } },
             { inlineData: { data: stitchedBase64.split(',')[1] || stitchedBase64, mimeType: 'image/jpeg' } },
@@ -334,11 +328,8 @@ Additional instructions: A ${composition} shot. ${finalAdditionalPrompt}`
 
       if (!thumbUrl) thumbUrl = url1;
 
-      let finalPrompt = `A ${composition} shot. ${additionalPrompt}`;
-      if (stylePreset === 'Photorealistic') {
-        const photorealisticSuffix = "Render only the person or people present in the uploaded test photo. Any human figure appearing in the male outfit reference, female outfit reference, or background reference is for style and clothing guidance only, and must not appear as an additional subject in the final image. Style: ultra realistic premium portrait, natural skin texture, professional editorial finish, soft cinematic light, lifelike hair detail, elegant and polished commercial-quality rendering.";
-        finalPrompt = `${finalPrompt} ${photorealisticSuffix}`;
-      }
+      const { enhancedPrompt } = getEnhancedPrompt(additionalPrompt, stylePreset, composition);
+      const finalPrompt = `A ${composition} shot. ${enhancedPrompt}`;
 
       const templateData = {
         vendor_id: vendorId,
@@ -548,8 +539,8 @@ Additional instructions: A ${composition} shot. ${finalAdditionalPrompt}`
                   <option value="3D Render (recommended)">3D Render (recommended)</option>
                   <option value="Photorealistic">Photorealistic</option>
                   <option value="Anime">Anime</option>
-                  <option value="Oil Painting">Oil Painting</option>
-                  <option value="Cyberpunk">Cyberpunk</option>
+                  <option value="Cartoon Look">Cartoon Look</option>
+                  <option value="Sketch Art">Sketch Art</option>
                 </select>
               </div>
               <div className="space-y-2">
