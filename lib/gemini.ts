@@ -328,9 +328,12 @@ Instruction: ${finalPrompt}`;
         parts.push({ text: `${executionPrompt}
 
 CRITICAL INSTRUCTION FOR REFERENCE IMAGES:
-Redraw the people from the MAIN PHOTO.
-- If REFERENCE IMAGE 1 is provided, the man MUST wear the exact outfit shown on the LEFT side of REFERENCE IMAGE 1. The woman MUST wear the exact outfit shown on the RIGHT side. Retain the exact fabric, pattern, and design.
-- If REFERENCE IMAGE 2 is provided, place them in the exact environment shown in REFERENCE IMAGE 2.
+1. Analyze the people in the MAIN PHOTO. Count them and identify their genders.
+2. YOU MUST ONLY draw the exact number of people present in the MAIN PHOTO. Do not add any extra people.
+3. If REFERENCE IMAGE 1 is provided, it is a split image showing a male outfit on the LEFT and a female outfit on the RIGHT.
+4. For EVERY male in the MAIN PHOTO, dress them in the exact outfit shown on the LEFT side of REFERENCE IMAGE 1.
+5. For EVERY female in the MAIN PHOTO, dress them in the exact outfit shown on the RIGHT side of REFERENCE IMAGE 1.
+6. If REFERENCE IMAGE 2 is provided, place them in the exact environment shown in REFERENCE IMAGE 2.
 Style: ${finalStyle}.` });
 
       } else if (concept.refImage && concept.refImage.trim() !== '') {

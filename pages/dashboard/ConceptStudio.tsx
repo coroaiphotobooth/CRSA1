@@ -197,9 +197,12 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
             {
               text: `Redraw the people in the main photo.
 CRITICAL INSTRUCTION:
-Look at the provided reference images.
-- If a split reference image is provided (Reference Image 1), the man in the photo MUST wear the exact outfit shown on the LEFT side of Reference Image 1. The woman MUST wear the exact outfit shown on the RIGHT side of Reference Image 1. Retain the exact fabric, pattern, and design of the outfits.
-- Place them in the exact environment shown in the background reference image (Reference Image 2).
+1. Analyze the people in the main photo. Count them and identify their genders.
+2. YOU MUST ONLY draw the exact number of people present in the main photo. Do not add any extra people.
+3. Look at the provided reference images. Reference Image 1 is a split image showing a male outfit on the LEFT and a female outfit on the RIGHT.
+4. For EVERY male in the main photo, dress them in the exact outfit shown on the LEFT side of Reference Image 1.
+5. For EVERY female in the main photo, dress them in the exact outfit shown on the RIGHT side of Reference Image 1.
+6. Place them in the exact environment shown in the background reference image (Reference Image 2).
 Style: ${finalStyle}.
 Additional instructions: A ${composition} shot. ${finalAdditionalPrompt}`
             },
