@@ -182,7 +182,7 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
 
       if (stylePreset === 'Photorealistic') {
         finalStyle = '3D Render (recommended)';
-        const photorealisticSuffix = "Re-render the entire subject in one unified AI-generated style. The face, hair, skin, clothing, and body must all be fully re-illustrated as a cohesive high-end cinematic character render, not a preserved real photo face placed onto a rendered body.";
+        const photorealisticSuffix = "Render only the person or people present in the uploaded test photo. Any human figure appearing in the male outfit reference, female outfit reference, or background reference is for style and clothing guidance only, and must not appear as an additional subject in the final image. Style: ultra realistic premium portrait, natural skin texture, professional editorial finish, soft cinematic light, lifelike hair detail, elegant and polished commercial-quality rendering.";
         finalAdditionalPrompt = additionalPrompt ? `${additionalPrompt} ${photorealisticSuffix}` : photorealisticSuffix;
       }
 
@@ -331,10 +331,16 @@ Additional instructions: A ${composition} shot. ${finalAdditionalPrompt}`
 
       if (!thumbUrl) thumbUrl = url1;
 
+      let finalPrompt = `A ${composition} shot. ${additionalPrompt}`;
+      if (stylePreset === 'Photorealistic') {
+        const photorealisticSuffix = "Render only the person or people present in the uploaded test photo. Any human figure appearing in the male outfit reference, female outfit reference, or background reference is for style and clothing guidance only, and must not appear as an additional subject in the final image. Style: ultra realistic premium portrait, natural skin texture, professional editorial finish, soft cinematic light, lifelike hair detail, elegant and polished commercial-quality rendering.";
+        finalPrompt = `${finalPrompt} ${photorealisticSuffix}`;
+      }
+
       const templateData = {
         vendor_id: vendorId,
         name: templateName,
-        prompt: `A ${composition} shot. ${additionalPrompt}`,
+        prompt: finalPrompt,
         thumbnail: thumbUrl,
         reference_image_split: url1,
         reference_image_bg: url2,

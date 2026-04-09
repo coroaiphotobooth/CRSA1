@@ -110,8 +110,10 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
 
     if (finalStyle === 'Photorealistic') {
       finalStyle = '3D Render (recommended)';
-      const photorealisticSuffix = "Re-render the entire subject in one unified AI-generated style. The face, hair, skin, clothing, and body must all be fully re-illustrated as a cohesive high-end cinematic character render, not a preserved real photo face placed onto a rendered body.";
-      finalPrompt = finalPrompt ? `${finalPrompt} ${photorealisticSuffix}` : photorealisticSuffix;
+      const photorealisticSuffix = "Render only the person or people present in the uploaded test photo. Any human figure appearing in the male outfit reference, female outfit reference, or background reference is for style and clothing guidance only, and must not appear as an additional subject in the final image. Style: ultra realistic premium portrait, natural skin texture, professional editorial finish, soft cinematic light, lifelike hair detail, elegant and polished commercial-quality rendering.";
+      if (!finalPrompt?.includes("Render only the person or people present in the uploaded test photo")) {
+        finalPrompt = finalPrompt ? `${finalPrompt} ${photorealisticSuffix}` : photorealisticSuffix;
+      }
     }
 
     // Default to 'booth' mode if a reference image is provided and mode is 'wrapped' (default)
