@@ -75,6 +75,7 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
       if (merged.promptMode === undefined) merged.promptMode = 'wrapped';
       if (merged.enableModelShortcut === undefined) merged.enableModelShortcut = false;
       if (merged.enablePrint === undefined) merged.enablePrint = false;
+      if (merged.printMethod === undefined) merged.printMethod = 'direct';
       return merged;
     });
   }, [settings]);
@@ -246,19 +247,53 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
              </div>
 
              {/* Print Feature Toggle (NEW) */}
-             <div className="flex items-center justify-between bg-white/5 p-4 rounded border border-white/10">
-                <div className="flex flex-col">
-                    <label className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">Enable Direct Printing</label>
-                    <span className="text-[8px] text-gray-500">Show Print button in Result and Gallery screens</span>
-                </div>
-                <div className="flex items-center">
-                 <input 
-                   type="checkbox" 
-                   className="w-5 h-5 accent-cyan-600 cursor-pointer"
-                   checked={localSettings.enablePrint ?? false}
-                   onChange={e => setLocalSettings({...localSettings, enablePrint: e.target.checked})}
-                 />
+             <div className="flex flex-col gap-4 bg-white/5 p-4 rounded border border-white/10">
+               <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                      <label className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">Enable Printing</label>
+                      <span className="text-[8px] text-gray-500">Show Print button in Result and Gallery screens</span>
+                  </div>
+                  <div className="flex items-center">
+                   <input 
+                     type="checkbox" 
+                     className="w-5 h-5 accent-cyan-600 cursor-pointer"
+                     checked={localSettings.enablePrint ?? false}
+                     onChange={e => setLocalSettings({...localSettings, enablePrint: e.target.checked})}
+                   />
+                 </div>
                </div>
+
+               {localSettings.enablePrint && (
+                 <div className="flex flex-col gap-3 mt-2 pt-4 border-t border-white/5">
+                   <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Print Method</label>
+                   <div className="grid grid-cols-2 gap-3">
+                     <button
+                       onClick={() => setLocalSettings({...localSettings, printMethod: 'direct'})}
+                       className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.printMethod === 'direct' ? 'bg-cyan-600 text-white shadow-lg border-cyan-500' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                     >
+                       <span>Direct Print</span>
+                       <span className="text-[8px] opacity-70 normal-case">Print from this device</span>
+                     </button>
+                     <button
+                       onClick={() => setLocalSettings({...localSettings, printMethod: 'server'})}
+                       className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.printMethod === 'server' ? 'bg-cyan-600 text-white shadow-lg border-cyan-500' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                     >
+                       <span>Print Server</span>
+                       <span className="text-[8px] opacity-70 normal-case">Send to another laptop</span>
+                     </button>
+                   </div>
+                   {localSettings.printMethod === 'server' && (
+                     <div className="mt-2 text-[10px] text-gray-400 bg-black/30 p-3 rounded border border-white/5">
+                       <p>To use Print Server:</p>
+                       <ol className="list-decimal pl-4 mt-1 space-y-1">
+                         <li>Open this app on the laptop connected to the printer.</li>
+                         <li>Go to Admin Settings and click "Open Print Server".</li>
+                         <li>Leave the Print Server page open on that laptop.</li>
+                       </ol>
+                     </div>
+                   )}
+                 </div>
+               )}
              </div>
           </div>
 

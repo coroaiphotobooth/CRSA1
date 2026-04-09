@@ -32,5 +32,6 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   mirrorCamera: true, // Default to mirrored preview
   promptMode: 'wrapped', // Default: Wrapped (Safe/Strict)
   enableModelShortcut: false, // Default off
-  enablePrint: false // Default off
+  enablePrint: false, // Default off
+  printMethod: 'direct' // Default direct
 };

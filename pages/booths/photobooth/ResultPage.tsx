@@ -6,7 +6,7 @@ import { uploadToDrive, createSessionFolder, queueVideoTask, saveSessionToCloud 
 import { applyOverlay, getGoogleDriveDirectLink } from '../../../lib/imageUtils';
 import { OverlayCache } from '../../../lib/overlayCache'; 
 import { printImage } from '../../../lib/printUtils';
-import { decrementCredits } from '../../../lib/supabase';
+import { decrementCredits, supabase } from '../../../lib/supabase';
 import { useDialog } from '../../../components/DialogProvider';
 
 interface ResultPageProps {
@@ -278,8 +278,26 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
     }
   };
 
-  const handlePrint = () => {
-      if (resultImage) printImage(resultImage);
+  const handlePrint = async () => {
+      if (!resultImage) return;
+      
+      if (settings.printMethod === 'server') {
+        // Send broadcast to print server
+        const channel = supabase.channel(`print_server_${settings.activeEventId}`);
+        await channel.send({
+          type: 'broadcast',
+          event: 'print_job',
+          payload: { imageUrl: resultImage }
+        });
+        showDialog({
+          title: 'Print Job Sent',
+          content: 'Your photo has been sent to the print server.',
+          type: 'success'
+        });
+      } else {
+        // Direct print
+        printImage(resultImage);
+      }
   };
 
   if (isProcessing) {

@@ -25,6 +25,7 @@ import SuperAdminDashboard from './pages/dashboard/SuperAdminDashboard';
 import GuestbookMonitor from './pages/GuestbookAi/GuestbookMonitor';
 import GuestbookFlow from './pages/GuestbookAi/GuestbookFlow';
 import GuestbookAdmin from './pages/GuestbookAi/GuestbookAdmin';
+import PrintServerPage from './pages/booths/photobooth/PrintServerPage';
 import { useDialog } from './components/DialogProvider';
 import { TourProvider } from './components/TourProvider';
 
@@ -454,7 +455,7 @@ const PhotoboothFlow: React.FC = () => {
             />
         );
       case AppState.ADMIN:
-        return <AdminPage settings={settings} concepts={concepts} onSaveSettings={handleUpdateSettings} onSaveConcepts={handleUpdateConcepts} onBack={() => setCurrentPage(AppState.LANDING)} onLaunchMonitor={() => setCurrentPage(AppState.MONITOR)} initialTab={adminTab} />;
+        return <AdminPage settings={settings} concepts={concepts} onSaveSettings={handleUpdateSettings} onSaveConcepts={handleUpdateConcepts} onBack={() => setCurrentPage(AppState.LANDING)} onLaunchMonitor={() => setCurrentPage(AppState.MONITOR)} onLaunchPrintServer={() => window.open(`/print-server/${eventId}`, '_blank')} initialTab={adminTab} />;
       case AppState.MONITOR:
         return <MonitorPage onBack={() => setCurrentPage(AppState.ADMIN)} activeEventId={settings.activeEventId} eventName={settings.eventName} monitorSize={settings.monitorImageSize} theme={settings.monitorTheme} />;
       default:
@@ -537,6 +538,7 @@ const App: React.FC = () => {
         <Route path="/result/:sessionId" element={<GuestResultPage />} />
         <Route path="/app/:eventId/*" element={<PhotoboothFlow />} />
         <Route path="/admin/:eventId/*" element={<PhotoboothFlow />} />
+        <Route path="/print-server/:eventId" element={<PrintServerPage />} />
         <Route path="/guestbook/:eventId/monitor" element={<GuestbookMonitor />} />
         <Route path="/guestbook/:eventId/guest" element={<GuestbookFlow />} />
         <Route path="/admin/:eventId/guestbook" element={<GuestbookAdmin />} />

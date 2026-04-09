@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GalleryItem, Concept, PhotoboothSettings, ProcessNotification } from '../../../types';
 import { fetchGallery, fetchImageBase64, deletePhotoFromGas, deleteAllPhotosFromGas, queueVideoTask } from '../../../lib/appsScript';
-import { supabase } from '../../../lib/supabase';
+import { supabase, decrementCredits } from '../../../lib/supabase';
 import { printImage } from '../../../lib/printUtils'; // Import Print Utils
-import { decrementCredits } from '../../../lib/supabase';
 import { useDialog } from '../../../components/DialogProvider';
 
 interface GalleryPageProps {
@@ -364,10 +363,24 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
       setShowConceptSelector(true);
   };
 
-  const handlePrint = () => {
-      if (selectedItem) {
-          // Print High Res Version
-          printImage(getHighResUrl(selectedItem));
+  const handlePrint = async () => {
+      if (!selectedItem) return;
+      const highResUrl = getHighResUrl(selectedItem);
+      
+      if (settings?.printMethod === 'server') {
+        const channel = supabase.channel(`print_server_${settings.activeEventId}`);
+        await channel.send({
+          type: 'broadcast',
+          event: 'print_job',
+          payload: { imageUrl: highResUrl }
+        });
+        showDialog({
+          title: 'Print Job Sent',
+          content: 'Your photo has been sent to the print server.',
+          type: 'success'
+        });
+      } else {
+        printImage(highResUrl);
       }
   };
 
