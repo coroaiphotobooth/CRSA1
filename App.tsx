@@ -455,7 +455,7 @@ const PhotoboothFlow: React.FC = () => {
             />
         );
       case AppState.ADMIN:
-        return <AdminPage settings={settings} concepts={concepts} onSaveSettings={handleUpdateSettings} onSaveConcepts={handleUpdateConcepts} onBack={() => setCurrentPage(AppState.LANDING)} onLaunchMonitor={() => setCurrentPage(AppState.MONITOR)} onLaunchPrintServer={() => window.open(`/print-server/${eventId}`, '_blank')} initialTab={adminTab} />;
+        return <AdminPage settings={settings} concepts={concepts} onSaveSettings={handleUpdateSettings} onSaveConcepts={handleUpdateConcepts} onBack={() => setCurrentPage(AppState.LANDING)} onLaunchMonitor={() => setCurrentPage(AppState.MONITOR)} initialTab={adminTab} />;
       case AppState.MONITOR:
         return <MonitorPage onBack={() => setCurrentPage(AppState.ADMIN)} activeEventId={settings.activeEventId} eventName={settings.eventName} monitorSize={settings.monitorImageSize} theme={settings.monitorTheme} />;
       default:

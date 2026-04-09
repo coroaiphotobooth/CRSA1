@@ -16,11 +16,10 @@ interface AdminPageProps {
   onSaveConcepts: (concepts: Concept[]) => void;
   onBack: () => void;
   onLaunchMonitor?: () => void;
-  onLaunchPrintServer?: () => void;
   initialTab?: 'settings' | 'concepts';
 }
 
-const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSettings, onSaveConcepts, onBack, onLaunchMonitor, onLaunchPrintServer, initialTab: propInitialTab }) => {
+const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSettings, onSaveConcepts, onBack, onLaunchMonitor, initialTab: propInitialTab }) => {
   const [gasUrl, setGasUrl] = useState('');
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -77,8 +76,6 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
         {/* Launch Monitor Button Area */}
         <AdminMonitorTab 
           onLaunchMonitor={onLaunchMonitor} 
-          onLaunchPrintServer={onLaunchPrintServer}
-          showPrintServer={settings.enablePrint && settings.printMethod === 'server'}
         />
 
         {activeTab === 'settings' && (

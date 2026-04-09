@@ -285,11 +285,18 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                    {localSettings.printMethod === 'server' && (
                      <div className="mt-2 text-[10px] text-gray-400 bg-black/30 p-3 rounded border border-white/5">
                        <p>To use Print Server:</p>
-                       <ol className="list-decimal pl-4 mt-1 space-y-1">
+                       <ol className="list-decimal pl-4 mt-1 space-y-1 mb-3">
                          <li>Open this app on the laptop connected to the printer.</li>
-                         <li>Go to Admin Settings and click "Open Print Server".</li>
+                         <li>Go to Admin Settings and click "Open Print Server" below.</li>
                          <li>Leave the Print Server page open on that laptop.</li>
                        </ol>
+                       <button 
+                         onClick={() => window.open(`/print-server/${eventId}`, '_blank')}
+                         className="w-full py-2 bg-cyan-900/50 hover:bg-cyan-800/50 text-cyan-300 border border-cyan-500/30 rounded uppercase tracking-widest font-bold transition-colors flex items-center justify-center gap-2"
+                       >
+                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                         Open Print Server
+                       </button>
                      </div>
                    )}
                  </div>
