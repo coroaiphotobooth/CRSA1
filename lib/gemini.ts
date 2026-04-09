@@ -275,12 +275,6 @@ Rules:
 Instruction: ${finalPrompt}`;
       }
 
-      // 2. Add Text Prompt (First)
-      parts.push({ text: "MAIN PHOTO (People to redraw):" });
-
-      // 3. Add Person Image (Image 1)
-      parts.push({ inlineData: { data: cleanBase64, mimeType: mimeType } });
-
       // Helper to fetch and convert image to base64
       const fetchImageAsBase64 = async (urlOrBase64: string): Promise<{ data: string, mimeType: string }> => {
         if (urlOrBase64.startsWith('http')) {
@@ -311,40 +305,47 @@ Instruction: ${finalPrompt}`;
         }
       };
 
-      // 4. Add Concept Studio References (Split & BG)
-      if (concept.reference_image_split || concept.reference_image_bg) {
+      if (promptMode === 'booth' && (concept.reference_image_split || concept.reference_image_bg)) {
+        // MATCH CONCEPT STUDIO EXACTLY
+        const textPrompt = `Redraw the people in the main photo.
+CRITICAL INSTRUCTION:
+1. Analyze the people in the main photo. Count them and identify their genders.
+2. YOU MUST ONLY draw the exact number of people present in the main photo. Do not add any extra people.
+3. Look at the provided reference images. Reference Image 1 is a split image showing a male outfit on the LEFT and a female outfit on the RIGHT.
+4. For EVERY male in the main photo, dress them in the exact outfit shown on the LEFT side of Reference Image 1.
+5. For EVERY female in the main photo, dress them in the exact outfit shown on the RIGHT side of Reference Image 1.
+6. Place them in the exact environment shown in the background reference image (Reference Image 2).
+Style: ${finalStyle}.
+Additional instructions: ${finalPrompt}`;
+
+        parts.push({ text: textPrompt });
+        parts.push({ inlineData: { data: cleanBase64, mimeType: mimeType } });
+
         if (concept.reference_image_split) {
-          parts.push({ text: "REFERENCE IMAGE 1 (Clothing/Outfits):" });
           const img = await fetchImageAsBase64(concept.reference_image_split);
           parts.push({ inlineData: img });
         }
         if (concept.reference_image_bg) {
-          parts.push({ text: "REFERENCE IMAGE 2 (Background/Environment):" });
           const img = await fetchImageAsBase64(concept.reference_image_bg);
           parts.push({ inlineData: img });
         }
-
-        // Update prompt to instruct Gemini on how to use these new references
-        parts.push({ text: `${executionPrompt}
-
-CRITICAL INSTRUCTION FOR REFERENCE IMAGES:
-1. Analyze the people in the MAIN PHOTO. Count them and identify their genders.
-2. YOU MUST ONLY draw the exact number of people present in the MAIN PHOTO. Do not add any extra people.
-3. If REFERENCE IMAGE 1 is provided, it is a split image showing a male outfit on the LEFT and a female outfit on the RIGHT.
-4. For EVERY male in the MAIN PHOTO, dress them in the exact outfit shown on the LEFT side of REFERENCE IMAGE 1.
-5. For EVERY female in the MAIN PHOTO, dress them in the exact outfit shown on the RIGHT side of REFERENCE IMAGE 1.
-6. If REFERENCE IMAGE 2 is provided, place them in the exact environment shown in REFERENCE IMAGE 2.
-Style: ${finalStyle}.` });
-
-      } else if (concept.refImage && concept.refImage.trim() !== '') {
-         // Fallback to old refImage logic
-         parts.push({ text: "REFERENCE IMAGE (Style/Background/Clothing):" });
-         const img = await fetchImageAsBase64(concept.refImage);
-         parts.push({ inlineData: img });
-         
-         parts.push({ text: executionPrompt + `\n\n[IMPORTANT]: The REFERENCE IMAGE provided is a VISUAL REFERENCE for the style, background, or clothing. Combine the person from the MAIN PHOTO with the style/aesthetics of the REFERENCE IMAGE.\nStyle: ${finalStyle}.` });
       } else {
-         parts.push({ text: executionPrompt + `\nStyle: ${finalStyle}.` });
+        // OLD LOGIC FOR OTHER MODES
+        // 2. Add Text Prompt (First)
+        parts.push({ text: "MAIN PHOTO (People to redraw):" });
+
+        // 3. Add Person Image (Image 1)
+        parts.push({ inlineData: { data: cleanBase64, mimeType: mimeType } });
+
+        if (concept.refImage && concept.refImage.trim() !== '') {
+           parts.push({ text: "REFERENCE IMAGE (Style/Background/Clothing):" });
+           const img = await fetchImageAsBase64(concept.refImage);
+           parts.push({ inlineData: img });
+           
+           parts.push({ text: executionPrompt + `\n\n[IMPORTANT]: The REFERENCE IMAGE provided is a VISUAL REFERENCE for the style, background, or clothing. Combine the person from the MAIN PHOTO with the style/aesthetics of the REFERENCE IMAGE.\nStyle: ${finalStyle}.` });
+        } else {
+           parts.push({ text: executionPrompt + `\nStyle: ${finalStyle}.` });
+        }
       }
 
       // E. Logging Debug (Before Request)
