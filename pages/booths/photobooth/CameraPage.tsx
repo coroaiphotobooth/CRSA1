@@ -71,7 +71,10 @@ const CameraPage: React.FC<CameraPageProps> = ({
       
       const constraints: MediaStreamConstraints = { 
         audio: false,
-        video: { 
+        video: settings.selectedCameraId ? {
+          deviceId: { exact: settings.selectedCameraId },
+          ...(isPortrait ? { height: { ideal: 1920 } } : { width: { ideal: 1920 } })
+        } : { 
           facingMode: 'user',
           ...(isPortrait ? { height: { ideal: 1920 } } : { width: { ideal: 1920 } })
         } 
@@ -99,7 +102,11 @@ const CameraPage: React.FC<CameraPageProps> = ({
       // Fallback: Try basic constraints if HD fails
       try {
           console.log("Retrying with basic constraints...");
-          const basicStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          const fallbackConstraints: MediaStreamConstraints = {
+            audio: false,
+            video: settings.selectedCameraId ? { deviceId: { exact: settings.selectedCameraId } } : true
+          };
+          const basicStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
           streamRef.current = basicStream;
           if (videoRef.current) {
              videoRef.current.srcObject = basicStream;

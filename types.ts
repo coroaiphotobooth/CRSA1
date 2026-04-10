@@ -66,6 +66,7 @@ export interface PhotoboothSettings {
   videoResolution?: '480p' | '720p'; 
   videoModel?: string; // New Setting for Seedance Model ID
   boothMode?: 'photo' | 'video';
+  selectedCameraId?: string;
   monitorImageSize?: 'small' | 'medium' | 'large'; 
   monitorTheme?: MonitorTheme; 
   processingMode?: 'normal' | 'fast'; 

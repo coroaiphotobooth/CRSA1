@@ -26,11 +26,32 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
   const [isUploadingOverlay, setIsUploadingOverlay] = useState(false);
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
   const [isUploadingBackgroundVideo, setIsUploadingBackgroundVideo] = useState(false);
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [isScanningCameras, setIsScanningCameras] = useState(false);
   const { showDialog } = useDialog();
 
   const overlayInputRef = useRef<HTMLInputElement>(null);
   const backgroundInputRef = useRef<HTMLInputElement>(null);
   const backgroundVideoInputRef = useRef<HTMLInputElement>(null);
+
+  const scanCameras = async () => {
+    setIsScanningCameras(true);
+    try {
+      // Request permission first to get real device labels
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      setAvailableCameras(videoDevices);
+      
+      // Stop the stream immediately so camera light turns off
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err) {
+      console.error("Error scanning cameras:", err);
+      showDialog('alert', 'Camera Error', 'Failed to scan cameras. Please ensure camera permissions are granted.');
+    } finally {
+      setIsScanningCameras(false);
+    }
+  };
 
   useImperativeHandle(ref, () => ({
     saveSettings: async () => {
@@ -587,6 +608,33 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
           {/* Camera Config */}
           <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit backdrop-blur-md bg-black/60 rounded-xl tour-camera-config">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Camera Configuration</h3>
+            
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Camera Source</label>
+                <button 
+                  onClick={scanCameras} 
+                  disabled={isScanningCameras}
+                  className="text-[10px] px-3 py-1 bg-[#bc13fe]/20 text-[#bc13fe] rounded hover:bg-[#bc13fe]/40 transition-colors uppercase font-bold"
+                >
+                  {isScanningCameras ? 'Scanning...' : 'Scan Cameras'}
+                </button>
+              </div>
+              <select
+                value={localSettings.selectedCameraId || ''}
+                onChange={(e) => setLocalSettings({...localSettings, selectedCameraId: e.target.value})}
+                className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] text-sm"
+              >
+                <option value="">Default Camera</option>
+                {availableCameras.map(cam => (
+                  <option key={cam.deviceId} value={cam.deviceId}>
+                    {cam.label || `Camera ${cam.deviceId.substring(0, 5)}...`}
+                  </option>
+                ))}
+              </select>
+              <span className="text-[8px] text-gray-500">Click "Scan Cameras" to detect external mirrorless cameras or webcams.</span>
+            </div>
+
             <div className="flex flex-col gap-3">
               <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Webcam Rotation</label>
               <div className="grid grid-cols-4 gap-3">

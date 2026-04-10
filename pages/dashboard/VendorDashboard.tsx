@@ -1525,10 +1525,19 @@ export default function VendorDashboard() {
                   <div className="mt-auto pt-4 border-t border-white/10 flex flex-col gap-2">
                     <div className="flex flex-wrap gap-2">
                       <button 
-                        onClick={() => {
+                        onClick={async () => {
                           if (event.settings?.eventType === 'guestbook') {
                             navigate(`/guestbook/${event.id}/monitor`);
                           } else {
+                            try {
+                              // Request camera and mic permissions upfront
+                              const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                              // Stop tracks immediately so the camera light doesn't stay on
+                              stream.getTracks().forEach(track => track.stop());
+                            } catch (err) {
+                              console.warn("Camera/Mic permission denied or error:", err);
+                              // We still navigate even if denied, the camera page will show its own error
+                            }
                             navigate(`/app/${event.id}`);
                           }
                         }}
