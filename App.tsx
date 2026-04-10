@@ -526,23 +526,49 @@ const PhotoboothFlow: React.FC = () => {
   );
 };
 
+const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isChecking, setIsChecking] = useState(true);
+  const location = useLocation();
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsChecking(false);
+    };
+    checkSession();
+  }, []);
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center">
+        <div className="w-12 h-12 border-4 border-white/20 border-t-[#bc13fe] rounded-full animate-spin mb-4"></div>
+        <p className="text-white/50 text-sm font-mono tracking-widest uppercase">Verifying Session...</p>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+};
+
 const App: React.FC = () => {
   return (
     <BrowserRouter>
       <TourProvider />
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/superadmin" element={<SuperAdminDashboard />} />
-        <Route path="/dashboard" element={<VendorDashboard />} />
-        <Route path="/result/:sessionId" element={<GuestResultPage />} />
-        <Route path="/app/:eventId/*" element={<PhotoboothFlow />} />
-        <Route path="/admin/:eventId/*" element={<PhotoboothFlow />} />
-        <Route path="/print-server/:eventId" element={<PrintServerPage />} />
-        <Route path="/guestbook/:eventId/monitor" element={<GuestbookMonitor />} />
-        <Route path="/guestbook/:eventId/guest" element={<GuestbookFlow />} />
-        <Route path="/admin/:eventId/guestbook" element={<GuestbookAdmin />} />
-      </Routes>
+      <AuthGuard>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/superadmin" element={<SuperAdminDashboard />} />
+          <Route path="/dashboard" element={<VendorDashboard />} />
+          <Route path="/result/:sessionId" element={<GuestResultPage />} />
+          <Route path="/app/:eventId/*" element={<PhotoboothFlow />} />
+          <Route path="/admin/:eventId/*" element={<PhotoboothFlow />} />
+          <Route path="/print-server/:eventId" element={<PrintServerPage />} />
+          <Route path="/guestbook/:eventId/monitor" element={<GuestbookMonitor />} />
+          <Route path="/guestbook/:eventId/guest" element={<GuestbookFlow />} />
+          <Route path="/admin/:eventId/guestbook" element={<GuestbookAdmin />} />
+        </Routes>
+      </AuthGuard>
     </BrowserRouter>
   );
 };

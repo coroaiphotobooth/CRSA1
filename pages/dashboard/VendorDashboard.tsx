@@ -493,7 +493,26 @@ export default function VendorDashboard() {
 
   const handleLogout = async () => {
     setTourState({ isActive: false, tourType: null, stepIndex: 0 });
+    
+    // 1. Sign out from Supabase
     await supabase.auth.signOut();
+    
+    // 2. Clear all non-auth localStorage data to prevent stale data for next user
+    localStorage.clear();
+    
+    // 3. Clear Service Worker Caches (PWA)
+    if ('caches' in window) {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+        console.log('Service Worker caches cleared.');
+      } catch (err) {
+        console.error('Failed to clear caches:', err);
+      }
+    }
+    
     navigate('/login');
   };
 
