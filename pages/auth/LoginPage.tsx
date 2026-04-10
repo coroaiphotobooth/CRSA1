@@ -21,17 +21,36 @@ export default function LoginPage() {
   const { showDialog } = useDialog();
 
   useEffect(() => {
+    // Check if already logged in
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        if (session.user.email === 'admin@coroai.app') {
+          navigate('/superadmin');
+        } else {
+          navigate('/dashboard');
+        }
+      }
+    };
+    checkSession();
+
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setIsRecovery(true);
         setIsSignUp(false);
+      } else if (event === 'SIGNED_IN' && session) {
+        if (session.user.email === 'admin@coroai.app') {
+          navigate('/superadmin');
+        } else {
+          navigate('/dashboard');
+        }
       }
     });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const COUNTRIES = [
     "Indonesia", "Malaysia", "Singapore", "Thailand", "Vietnam", "Philippines",
