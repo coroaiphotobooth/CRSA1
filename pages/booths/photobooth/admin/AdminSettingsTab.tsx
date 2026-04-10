@@ -9,6 +9,7 @@ import {
 import { getGoogleDriveDirectLink } from '../../../../lib/imageUtils';
 import { supabase } from '../../../../lib/supabase';
 import { useDialog } from '../../../../components/DialogProvider';
+import { useWebViewCamera } from '../../../../hooks/useWebViewCamera';
 
 export interface AdminSettingsTabRef {
   saveSettings: () => Promise<void>;
@@ -33,6 +34,40 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
   const overlayInputRef = useRef<HTMLInputElement>(null);
   const backgroundInputRef = useRef<HTMLInputElement>(null);
   const backgroundVideoInputRef = useRef<HTMLInputElement>(null);
+
+  const { 
+    isWrapper, 
+    cameras: dslrCameras, 
+    isConnected: isDslrConnected, 
+    listCameras: listDslrCameras, 
+    connectCamera: connectDslrCamera,
+    disconnectCamera: disconnectDslrCamera
+  } = useWebViewCamera();
+
+  const [isScanningDslr, setIsScanningDslr] = useState(false);
+  const [dslrError, setDslrError] = useState<string | null>(null);
+
+  const handleScanDslr = async () => {
+    setIsScanningDslr(true);
+    setDslrError(null);
+    try {
+      await listDslrCameras();
+    } catch (err: any) {
+      setDslrError(err.message || 'Failed to scan DSLR cameras');
+    } finally {
+      setIsScanningDslr(false);
+    }
+  };
+
+  const handleConnectDslr = async () => {
+    if (!localSettings.dslrCameraId) return;
+    setDslrError(null);
+    try {
+      await connectDslrCamera('canon', localSettings.dslrCameraId);
+    } catch (err: any) {
+      setDslrError(err.message || 'Failed to connect DSLR');
+    }
+  };
 
   const scanCameras = async () => {
     setIsScanningCameras(true);
@@ -609,6 +644,71 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
           <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit backdrop-blur-md bg-black/60 rounded-xl tour-camera-config">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Camera Configuration</h3>
             
+            {isWrapper && (
+              <div className="flex flex-col gap-4 p-4 border border-[#bc13fe]/30 bg-[#bc13fe]/5 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-sm text-white uppercase tracking-widest">Pro DSLR Camera (Windows App)</h4>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer"
+                      checked={localSettings.useDslr || false}
+                      onChange={(e) => setLocalSettings({...localSettings, useDslr: e.target.checked})}
+                    />
+                    <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#bc13fe]"></div>
+                  </label>
+                </div>
+                
+                {localSettings.useDslr && (
+                  <>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">DSLR Source</label>
+                        <button 
+                          onClick={handleScanDslr} 
+                          disabled={isScanningDslr}
+                          className="text-[10px] px-3 py-1 bg-[#bc13fe]/20 text-[#bc13fe] rounded hover:bg-[#bc13fe]/40 transition-colors uppercase font-bold"
+                        >
+                          {isScanningDslr ? 'Scanning...' : 'Scan DSLR'}
+                        </button>
+                      </div>
+                      <select
+                        value={localSettings.dslrCameraId || ''}
+                        onChange={(e) => setLocalSettings({...localSettings, dslrCameraId: e.target.value})}
+                        className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] text-sm"
+                      >
+                        <option value="">Select DSLR Camera</option>
+                        {dslrCameras.map(cam => (
+                          <option key={cam.id} value={cam.id}>
+                            {cam.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={handleConnectDslr}
+                        disabled={!localSettings.dslrCameraId || isDslrConnected}
+                        className={`flex-1 py-2 rounded font-bold uppercase tracking-widest text-xs transition-colors ${isDslrConnected ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'bg-[#bc13fe] text-white hover:bg-[#bc13fe]/80'}`}
+                      >
+                        {isDslrConnected ? 'Connected' : 'Connect'}
+                      </button>
+                      {isDslrConnected && (
+                        <button 
+                          onClick={disconnectDslrCamera}
+                          className="flex-1 py-2 bg-red-500/20 text-red-400 border border-red-500/50 rounded font-bold uppercase tracking-widest text-xs hover:bg-red-500/30 transition-colors"
+                        >
+                          Disconnect
+                        </button>
+                      )}
+                    </div>
+                    {dslrError && <p className="text-red-400 text-xs">{dslrError}</p>}
+                  </>
+                )}
+              </div>
+            )}
+
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Camera Source</label>

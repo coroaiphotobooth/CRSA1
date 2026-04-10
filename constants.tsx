@@ -22,6 +22,8 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   videoModel: 'seedance-1-0-pro-fast-251015', // Default Model
   boothMode: 'video', // Default mode
   selectedCameraId: '', // Default empty
+  useDslr: false,
+  dslrCameraId: '',
   monitorImageSize: 'medium',
   monitorTheme: 'physics', // Default theme
   processingMode: 'normal', // Default mode

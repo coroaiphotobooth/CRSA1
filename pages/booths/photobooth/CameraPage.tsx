@@ -1,6 +1,7 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { AspectRatio, PhotoboothSettings } from '../../../types';
+import { useWebViewCamera } from '../../../hooks/useWebViewCamera';
 
 interface CameraPageProps {
   onCapture: (image: string) => void;
@@ -35,6 +36,16 @@ const CameraPage: React.FC<CameraPageProps> = ({
   const [videoRatio, setVideoRatio] = useState<number>(16/9);
   const [isStreaming, setIsStreaming] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [fallbackToWebcam, setFallbackToWebcam] = useState(false);
+
+  const {
+    isWrapper,
+    isConnected: isDslrConnected,
+    liveViewFrame,
+    connectCamera: connectDslrCamera,
+    capturePhoto: captureDslrPhoto,
+    disconnectCamera: disconnectDslrCamera
+  } = useWebViewCamera();
 
   // --- CAMERA CONTROL FUNCTIONS ---
 
@@ -61,6 +72,21 @@ const CameraPage: React.FC<CameraPageProps> = ({
     setCameraError(null);
     setIsVideoReady(false);
 
+    if (settings?.useDslr && isWrapper && !fallbackToWebcam) {
+      try {
+        if (!isDslrConnected && settings.dslrCameraId) {
+          await connectDslrCamera('canon', settings.dslrCameraId);
+        }
+        setIsVideoReady(true);
+        setIsStreaming(true);
+        return;
+      } catch (err: any) {
+        console.error("DSLR init failed, falling back", err);
+        setFallbackToWebcam(true);
+        // Will continue to webcam logic below
+      }
+    }
+
     try {
       console.log("Starting Camera...");
       // Relaxed constraints for better compatibility and to prevent native sensor cropping
@@ -71,7 +97,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
       
       const constraints: MediaStreamConstraints = { 
         audio: false,
-        video: settings.selectedCameraId ? {
+        video: settings?.selectedCameraId ? {
           deviceId: { exact: settings.selectedCameraId },
           ...(isPortrait ? { height: { ideal: 1920 } } : { width: { ideal: 1920 } })
         } : { 
@@ -104,7 +130,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
           console.log("Retrying with basic constraints...");
           const fallbackConstraints: MediaStreamConstraints = {
             audio: false,
-            video: settings.selectedCameraId ? { deviceId: { exact: settings.selectedCameraId } } : true
+            video: settings?.selectedCameraId ? { deviceId: { exact: settings.selectedCameraId } } : true
           };
           const basicStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
           streamRef.current = basicStream;
@@ -124,7 +150,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
           setCameraError(msg);
       }
     }
-  }, [stopCamera]);
+  }, [stopCamera, settings?.useDslr, isWrapper, fallbackToWebcam, isDslrConnected, settings?.dslrCameraId, connectDslrCamera, settings?.selectedCameraId]);
 
   // --- LIFECYCLE MANAGEMENT ---
 
@@ -146,9 +172,12 @@ const CameraPage: React.FC<CameraPageProps> = ({
     // 3. Cleanup on Unmount
     return () => {
       stopCamera();
+      if (settings?.useDslr && isWrapper && isDslrConnected) {
+        disconnectDslrCamera();
+      }
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [startCamera, stopCamera, capturedImage]);
+  }, [startCamera, stopCamera, capturedImage, settings?.useDslr, isWrapper, isDslrConnected, disconnectDslrCamera]);
 
   // --- CAPTURE LOGIC ---
 
@@ -159,7 +188,25 @@ const CameraPage: React.FC<CameraPageProps> = ({
   };
   const targetRatioValue = getAspectRatioValue(aspectRatio);
 
-  const capture = useCallback(() => {
+  const capture = useCallback(async () => {
+    if (settings?.useDslr && isWrapper && !fallbackToWebcam) {
+      try {
+        const base64Photo = await captureDslrPhoto();
+        if (base64Photo) {
+          // Ensure it's a data URL
+          const dataUrl = base64Photo.startsWith('data:') ? base64Photo : `data:image/jpeg;base64,${base64Photo}`;
+          onCapture(dataUrl);
+          onGenerate();
+        }
+      } catch (err) {
+        console.error("DSLR capture failed", err);
+        setCameraError("DSLR Error, switching to Backup Camera...");
+        setFallbackToWebcam(true);
+        startCamera(); // Restart with webcam
+      }
+      return;
+    }
+
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -236,7 +283,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
          onGenerate();
       }
     }
-  }, [onCapture, onGenerate, cameraRotation, targetRatioValue, stopCamera, settings?.mirrorCamera]);
+  }, [onCapture, onGenerate, cameraRotation, targetRatioValue, stopCamera, settings?.mirrorCamera, settings?.useDslr, isWrapper, fallbackToWebcam, captureDslrPhoto, startCamera]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -387,14 +434,30 @@ const CameraPage: React.FC<CameraPageProps> = ({
                        transform: `rotate(${cameraRotation}deg)`,
                     }}
                   >
-                    <video 
-                      ref={videoRef} 
-                      autoPlay 
-                      playsInline 
-                      muted
-                      className="w-full h-full object-contain"
-                      style={{ transform: settings?.mirrorCamera !== false ? 'scaleX(-1)' : 'none' }}
-                    />
+                    {settings?.useDslr && isWrapper && !fallbackToWebcam ? (
+                      liveViewFrame ? (
+                        <img 
+                          src={liveViewFrame} 
+                          className="w-full h-full object-contain" 
+                          alt="DSLR Live View" 
+                          style={{ transform: settings?.mirrorCamera !== false ? 'scaleX(-1)' : 'none' }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-black text-white/50">
+                          <div className="w-8 h-8 border-2 border-white/20 border-t-[#bc13fe] rounded-full animate-spin mb-2"></div>
+                          <span className="text-xs uppercase tracking-widest">Connecting DSLR...</span>
+                        </div>
+                      )
+                    ) : (
+                      <video 
+                        ref={videoRef} 
+                        autoPlay 
+                        playsInline 
+                        muted
+                        className="w-full h-full object-contain"
+                        style={{ transform: settings?.mirrorCamera !== false ? 'scaleX(-1)' : 'none' }}
+                      />
+                    )}
                   </div>
                   
                   {/* Corner Markers */}

@@ -67,6 +67,8 @@ export interface PhotoboothSettings {
   videoModel?: string; // New Setting for Seedance Model ID
   boothMode?: 'photo' | 'video';
   selectedCameraId?: string;
+  useDslr?: boolean; // New Setting: Enable DSLR via Wrapper
+  dslrCameraId?: string; // New Setting: Selected DSLR Camera ID
   monitorImageSize?: 'small' | 'medium' | 'large'; 
   monitorTheme?: MonitorTheme; 
   processingMode?: 'normal' | 'fast'; 
