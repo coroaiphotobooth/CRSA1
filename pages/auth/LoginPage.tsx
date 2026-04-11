@@ -39,6 +39,12 @@ export default function LoginPage() {
         setIsRecovery(true);
         setIsSignUp(false);
       } else if (event === 'SIGNED_IN' && session) {
+        // Update last_login_at
+        await supabase
+          .from('vendors')
+          .update({ last_login_at: new Date().toISOString() })
+          .eq('id', session.user.id);
+
         if (session.user.email === 'admin@coroai.app') {
           navigate('/superadmin');
         } else {

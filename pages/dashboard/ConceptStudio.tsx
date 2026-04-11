@@ -216,7 +216,7 @@ Additional instructions: A ${composition} shot. ${enhancedPrompt}`
       setRenderResult(`data:image/png;base64,${data.imageBase64}`);
       
       // Deduct credit
-      const { data: vendorData } = await supabase.from('vendors').select('credits, is_timer_running, timer_last_started_at, unlimited_seconds_left, unlimited_expires_at').eq('id', vendorId).single();
+      const { data: vendorData } = await supabase.from('vendors').select('credits, credits_used, is_timer_running, timer_last_started_at, unlimited_seconds_left, unlimited_expires_at').eq('id', vendorId).single();
       if (vendorData) {
         let isUnlimitedActive = false;
         
@@ -250,7 +250,10 @@ Additional instructions: A ${composition} shot. ${enhancedPrompt}`
         }
         
         if (!isUnlimitedActive) {
-          await supabase.from('vendors').update({ credits: Math.max(0, vendorData.credits - 1) }).eq('id', vendorId);
+          await supabase.from('vendors').update({ 
+            credits: Math.max(0, vendorData.credits - 1),
+            credits_used: (vendorData.credits_used || 0) + 1
+          }).eq('id', vendorId);
         }
       }
 
