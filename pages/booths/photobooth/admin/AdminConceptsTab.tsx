@@ -11,6 +11,7 @@ import { useTourState, setTourState } from '../../../../lib/tourState';
 
 export interface AdminConceptsTabRef {
   saveConcepts: () => Promise<void>;
+  hasUnsavedChanges: () => boolean;
 }
 
 interface AdminConceptsTabProps {
@@ -34,11 +35,17 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
   const [createFromImageFile, setCreateFromImageFile] = useState<File | null>(null);
   const [createFromImagePreview, setCreateFromImagePreview] = useState<string | null>(null);
   const [isCreatingFromImage, setIsCreatingFromImage] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+
+  useEffect(() => {
+    setIsDirty(JSON.stringify(localConcepts) !== JSON.stringify(concepts));
+  }, [localConcepts, concepts]);
 
   useImperativeHandle(ref, () => ({
     saveConcepts: async () => {
       await handleSyncConcepts();
-    }
+    },
+    hasUnsavedChanges: () => isDirty
   }));
 
   // Template Concept State

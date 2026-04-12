@@ -13,6 +13,7 @@ import { useWebViewCamera } from '../../../../hooks/useWebViewCamera';
 
 export interface AdminSettingsTabRef {
   saveSettings: () => Promise<void>;
+  hasUnsavedChanges: () => boolean;
 }
 
 interface AdminSettingsTabProps {
@@ -46,6 +47,11 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
 
   const [isScanningDslr, setIsScanningDslr] = useState(false);
   const [dslrError, setDslrError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+
+  useEffect(() => {
+    setIsDirty(JSON.stringify(localSettings) !== JSON.stringify(settings));
+  }, [localSettings, settings]);
 
   const handleScanDslr = async () => {
     setIsScanningDslr(true);
@@ -91,7 +97,8 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
   useImperativeHandle(ref, () => ({
     saveSettings: async () => {
       await handleSaveSettings();
-    }
+    },
+    hasUnsavedChanges: () => isDirty
   }));
 
   const PREDEFINED_VIDEOS = [
