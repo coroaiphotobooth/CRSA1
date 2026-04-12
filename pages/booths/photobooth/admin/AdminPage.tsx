@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Concept, PhotoboothSettings } from '../../../../types';
 import { DEFAULT_GAS_URL } from '../../../../constants';
+import { X } from 'lucide-react';
 
 import AdminSettingsTab, { AdminSettingsTabRef } from './AdminSettingsTab';
 import AdminConceptsTab, { AdminConceptsTabRef } from './AdminConceptsTab';
@@ -26,6 +27,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
   const urlTab = queryParams.get('tab') === 'concept' ? 'concepts' : 'settings';
   const initialTab = propInitialTab || urlTab;
   const [activeTab, setActiveTab] = useState<'settings' | 'concepts'>(initialTab);
+  const [unsavedModal, setUnsavedModal] = useState<{ isOpen: boolean; action?: () => void }>({ isOpen: false });
   const { showDialog } = useDialog();
   const adminSettingsRef = useRef<AdminSettingsTabRef>(null);
   const adminConceptsRef = useRef<AdminConceptsTabRef>(null);
@@ -43,14 +45,10 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
     const conceptsDirty = activeTab === 'concepts' && (adminConceptsRef.current?.hasUnsavedChanges?.() || false);
 
     if (settingsDirty || conceptsDirty) {
-      const confirm = await showDialog(
-        'confirm', 
-        'Unsaved Changes', 
-        'Anda memiliki perubahan yang belum disimpan di tab ini. Apakah Anda yakin ingin pindah tab tanpa menyimpan?'
-      );
-      if (confirm) {
-        setActiveTab(newTab);
-      }
+      setUnsavedModal({
+        isOpen: true,
+        action: () => setActiveTab(newTab)
+      });
     } else {
       setActiveTab(newTab);
     }
@@ -61,14 +59,10 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
     const conceptsDirty = adminConceptsRef.current?.hasUnsavedChanges?.() || false;
 
     if (settingsDirty || conceptsDirty) {
-      const confirm = await showDialog(
-        'confirm', 
-        'Unsaved Changes', 
-        'Anda memiliki perubahan yang belum disimpan. Apakah Anda yakin ingin meninggalkan halaman ini tanpa menyimpan?'
-      );
-      if (confirm) {
-        onBack();
-      }
+      setUnsavedModal({
+        isOpen: true,
+        action: () => onBack()
+      });
     } else {
       onBack();
     }
@@ -136,6 +130,48 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
           />
         )}
       </div>
+
+      {/* Unsaved Changes Modal */}
+      {unsavedModal.isOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
+          <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-md relative">
+            <button 
+              onClick={() => setUnsavedModal({ isOpen: false })}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-white">Unsaved Changes</h2>
+            <p className="text-gray-300 mb-6 text-sm">You have unsaved changes. Would you like to save them before leaving?</p>
+            
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setUnsavedModal({ isOpen: false });
+                  if (unsavedModal.action) unsavedModal.action();
+                }}
+                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-bold transition-colors"
+              >
+                BACK
+              </button>
+              <button
+                onClick={async () => {
+                  if (activeTab === 'settings') {
+                    await adminSettingsRef.current?.saveSettings();
+                  } else if (activeTab === 'concepts') {
+                    await adminConceptsRef.current?.saveConcepts();
+                  }
+                  setUnsavedModal({ isOpen: false });
+                  if (unsavedModal.action) unsavedModal.action();
+                }}
+                className="px-4 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold transition-colors"
+              >
+                SAVE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
