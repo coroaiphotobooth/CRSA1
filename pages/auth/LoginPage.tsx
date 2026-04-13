@@ -23,6 +23,13 @@ export default function LoginPage() {
   useEffect(() => {
     // Check if already logged in
     const checkSession = async () => {
+      // Check if this is a password recovery redirect
+      if (window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery')) {
+        setIsRecovery(true);
+        setIsSignUp(false);
+        return; // Do not redirect, let the user update their password
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         if (session.user.email === 'admin@coroai.app') {
@@ -81,10 +88,20 @@ export default function LoginPage() {
 
       if (error) throw error;
 
-      await showDialog('alert', 'Success', 'Password updated successfully. You can now log in with your new password.');
+      await showDialog('alert', 'Success', 'Password updated successfully. You will now be redirected to your dashboard.');
       setIsRecovery(false);
       setPassword('');
       setConfirmPassword('');
+      
+      // Redirect to dashboard after successful password update
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        if (session.user.email === 'admin@coroai.app') {
+          navigate('/superadmin');
+        } else {
+          navigate('/dashboard');
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to update password');
     } finally {
