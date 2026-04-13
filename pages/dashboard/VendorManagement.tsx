@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, Trash2, Edit, Save, ShieldAlert, Lock, Unlock, ExternalLink, Search, MessageSquare, MoreVertical, Plus, X, Settings, Activity } from 'lucide-react';
+import { Loader2, Trash2, Edit, Save, ShieldAlert, Lock, Unlock, ExternalLink, Search, MessageSquare, MoreVertical, Plus, X, Settings, Activity, RefreshCw } from 'lucide-react';
 import { Vendor } from '../../types';
 import { useDialog } from '../../components/DialogProvider';
 
@@ -131,6 +131,23 @@ export default function VendorManagement({ vendors, setVendors, onlineVendors, h
       await showDialog('alert', 'Error', `Failed to add vendor: ${err.message}`);
     } finally {
       setAddingVendor(false);
+    }
+  };
+
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncUsers = async () => {
+    try {
+      setIsSyncing(true);
+      const { error } = await supabase.rpc('sync_missing_vendors');
+      if (error) throw error;
+      
+      await showDialog('alert', 'Success', 'Missing users have been synced to the vendor list. Please refresh the page to see them.');
+      window.location.reload();
+    } catch (err: any) {
+      await showDialog('alert', 'Error', `Failed to sync users: ${err.message}\n\nNote: You may need to run the SQL command in the yellow warning box at the top of the page to enable this feature.`);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -284,6 +301,14 @@ export default function VendorManagement({ vendors, setVendors, onlineVendors, h
                 className="w-full bg-black/50 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-white focus:border-[#bc13fe] outline-none transition-colors"
               />
             </div>
+            <button
+              onClick={handleSyncUsers}
+              disabled={isSyncing}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors whitespace-nowrap disabled:opacity-50"
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+              Sync Users
+            </button>
             <button
               onClick={() => setIsAddVendorOpen(true)}
               className="flex items-center gap-2 px-4 py-2 bg-[#bc13fe] hover:bg-[#bc13fe]/80 text-white rounded-lg transition-colors whitespace-nowrap"

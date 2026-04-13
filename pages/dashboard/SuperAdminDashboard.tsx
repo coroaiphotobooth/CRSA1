@@ -651,6 +651,26 @@ BEGIN
   UPDATE auth.users SET email_confirmed_at = NOW() WHERE id = vendor_id;
   UPDATE public.vendors SET email_confirmed = true WHERE id = vendor_id;
 END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to sync missing vendors from auth.users
+CREATE OR REPLACE FUNCTION sync_missing_vendors()
+RETURNS void AS $$
+BEGIN
+  IF auth.jwt() ->> 'email' != 'admin@coroai.app' THEN
+    RAISE EXCEPTION 'Not authorized';
+  END IF;
+
+  INSERT INTO public.vendors (id, email, name, credits)
+  SELECT 
+    au.id, 
+    au.email, 
+    COALESCE(au.raw_user_meta_data->>'full_name', 'Vendor'), 
+    COALESCE((SELECT default_free_credits FROM public.global_settings LIMIT 1), 10)
+  FROM auth.users au
+  LEFT JOIN public.vendors v ON au.id = v.id
+  WHERE v.id IS NULL;
+END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;`}
               </pre>
               <button 
