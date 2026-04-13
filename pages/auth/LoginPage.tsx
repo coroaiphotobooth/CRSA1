@@ -46,6 +46,11 @@ export default function LoginPage() {
         setIsRecovery(true);
         setIsSignUp(false);
       } else if (event === 'SIGNED_IN' && session) {
+        // Prevent redirect if we are in the middle of a password recovery
+        if (window.location.hash.includes('type=recovery') || window.location.search.includes('type=recovery')) {
+          return;
+        }
+
         // Update last_login_at
         await supabase
           .from('vendors')
