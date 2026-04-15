@@ -36,5 +36,6 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   promptMode: 'wrapped', // Default: Wrapped (Safe/Strict)
   enableModelShortcut: false, // Default off
   enablePrint: false, // Default off
-  printMethod: 'direct' // Default direct
+  printMethod: 'direct', // Default direct
+  enableDoublePrint: false // Default off
 };

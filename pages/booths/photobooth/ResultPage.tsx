@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Concept, PhotoboothSettings, AspectRatio } from '../../../types';
 import { generateAIImage } from '../../../lib/gemini';
 import { uploadToDrive, createSessionFolder, queueVideoTask, saveSessionToCloud } from '../../../lib/appsScript';
-import { applyOverlay, getGoogleDriveDirectLink } from '../../../lib/imageUtils';
+import { applyOverlay, getGoogleDriveDirectLink, createDoublePrintLayout } from '../../../lib/imageUtils';
 import { OverlayCache } from '../../../lib/overlayCache'; 
 import { printImage } from '../../../lib/printUtils';
 import { decrementCredits, supabase } from '../../../lib/supabase';
@@ -129,7 +129,12 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
 
       setProgress("APPLYING FINAL TOUCHES...");
       await overlayPreloadTask;
-      const finalImage = await applyOverlay(aiOutput, settings.overlayImage, targetWidth, targetHeight);
+      let finalImage = await applyOverlay(aiOutput, settings.overlayImage, targetWidth, targetHeight);
+      
+      if (settings.enableDoublePrint) {
+        setProgress("CREATING DOUBLE PRINT LAYOUT...");
+        finalImage = await createDoublePrintLayout(finalImage, targetWidth, targetHeight);
+      }
       
       setResultImage(finalImage);
       setIsProcessing(false);
@@ -289,11 +294,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
           event: 'print_job',
           payload: { imageUrl: resultImage }
         });
-        showDialog({
-          title: 'Print Job Sent',
-          content: 'Your photo has been sent to the print server.',
-          type: 'success'
-        });
+        showDialog('alert', 'Print Job Sent', 'Your photo has been sent to the print server.');
       } else {
         // Direct print
         printImage(resultImage);

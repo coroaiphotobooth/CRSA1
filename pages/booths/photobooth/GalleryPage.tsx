@@ -374,11 +374,7 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
           event: 'print_job',
           payload: { imageUrl: highResUrl }
         });
-        showDialog({
-          title: 'Print Job Sent',
-          content: 'Your photo has been sent to the print server.',
-          type: 'success'
-        });
+        showDialog('alert', 'Print Job Sent', 'Your photo has been sent to the print server.');
       } else {
         printImage(highResUrl);
       }

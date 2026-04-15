@@ -83,6 +83,7 @@ export interface PhotoboothSettings {
   enableModelShortcut?: boolean; // New Setting: Show Quick Model Toggle on Camera
   enablePrint?: boolean; // New Setting: Enable Direct Printing Feature
   printMethod?: 'direct' | 'server'; // New Setting: Print Method
+  enableDoublePrint?: boolean; // New Setting: Double Print Layout
   
   // Guestbook specific settings
   guestbookPhotoSize?: number; // Scale factor or width

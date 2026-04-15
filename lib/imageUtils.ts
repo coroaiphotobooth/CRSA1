@@ -129,3 +129,49 @@ export const applyOverlay = async (
       return base64AI;
     }
   };
+
+export const createDoublePrintLayout = async (
+  base64Image: string,
+  originalWidth: number,
+  originalHeight: number
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const isPortrait = originalHeight > originalWidth;
+      
+      const canvas = document.createElement('canvas');
+      if (isPortrait) {
+        // Side-by-side
+        canvas.width = originalWidth * 2;
+        canvas.height = originalHeight;
+      } else {
+        // Top-and-bottom
+        canvas.width = originalWidth;
+        canvas.height = originalHeight * 2;
+      }
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error("Canvas context unavailable"));
+        return;
+      }
+
+      // Fill white background just in case
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      if (isPortrait) {
+        ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
+        ctx.drawImage(img, originalWidth, 0, originalWidth, originalHeight);
+      } else {
+        ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
+        ctx.drawImage(img, 0, originalHeight, originalWidth, originalHeight);
+      }
+
+      resolve(canvas.toDataURL('image/jpeg', 0.95));
+    };
+    img.onerror = () => reject(new Error("Image load error for double print"));
+    img.src = base64Image;
+  });
+};

@@ -139,6 +139,7 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
       if (merged.enableModelShortcut === undefined) merged.enableModelShortcut = false;
       if (merged.enablePrint === undefined) merged.enablePrint = false;
       if (merged.printMethod === undefined) merged.printMethod = 'direct';
+      if (merged.enableDoublePrint === undefined) merged.enableDoublePrint = false;
       return merged;
     });
   }, [settings]);
@@ -365,6 +366,25 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                  </div>
                )}
              </div>
+
+             {/* Double Print Layout Toggle (NEW) */}
+             <div className="flex flex-col gap-4 bg-white/5 p-4 rounded border border-white/10">
+               <div className="flex items-center justify-between">
+                 <div className="flex flex-col">
+                     <label className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">Double Print Layout</label>
+                     <span className="text-[8px] text-gray-500">Duplicate photo side-by-side for 4x6 print</span>
+                 </div>
+                 <div className="flex items-center">
+                   <input 
+                     type="checkbox" 
+                     className="w-5 h-5 accent-cyan-600 cursor-pointer"
+                     checked={localSettings.enableDoublePrint ?? false}
+                     onChange={e => setLocalSettings({...localSettings, enableDoublePrint: e.target.checked})}
+                   />
+                 </div>
+               </div>
+             </div>
+
           </div>
 
           {/* Video Settings */}
