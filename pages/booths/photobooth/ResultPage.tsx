@@ -25,6 +25,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   const [isProcessing, setIsProcessing] = useState(true);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [resultImage, setResultImage] = useState<string | null>(null);
+  const [printLayoutImage, setPrintLayoutImage] = useState<string | null>(null);
   const [sessionFolder, setSessionFolder] = useState<{id: string, url: string, originalId?: string} | null>(existingSession || null);
   const [photoId, setPhotoId] = useState<string | null>(null); 
   const [viewMode, setViewMode] = useState<'result' | 'original'>('result');
@@ -131,12 +132,16 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
       await overlayPreloadTask;
       let finalImage = await applyOverlay(aiOutput, settings.overlayImage, targetWidth, targetHeight);
       
+      let doublePrintImage = null;
       if (settings.enableDoublePrint) {
         setProgress("CREATING DOUBLE PRINT LAYOUT...");
-        finalImage = await createDoublePrintLayout(finalImage, targetWidth, targetHeight);
+        doublePrintImage = await createDoublePrintLayout(finalImage, targetWidth, targetHeight);
       }
       
       setResultImage(finalImage);
+      if (doublePrintImage) {
+        setPrintLayoutImage(doublePrintImage);
+      }
       setIsProcessing(false);
 
       const sessionRes = await sessionTask;
@@ -284,7 +289,8 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   };
 
   const handlePrint = async () => {
-      if (!resultImage) return;
+      const imageToPrint = printLayoutImage || resultImage;
+      if (!imageToPrint) return;
       
       if (settings.printMethod === 'server') {
         // Send broadcast to print server
@@ -292,12 +298,12 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
         await channel.send({
           type: 'broadcast',
           event: 'print_job',
-          payload: { imageUrl: resultImage }
+          payload: { imageUrl: imageToPrint }
         });
         showDialog('alert', 'Print Job Sent', 'Your photo has been sent to the print server.');
       } else {
         // Direct print
-        printImage(resultImage);
+        printImage(imageToPrint);
       }
   };
 

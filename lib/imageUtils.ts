@@ -135,43 +135,41 @@ export const createDoublePrintLayout = async (
   originalWidth: number,
   originalHeight: number
 ): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const isPortrait = originalHeight > originalWidth;
-      
-      const canvas = document.createElement('canvas');
-      if (isPortrait) {
-        // Side-by-side
-        canvas.width = originalWidth * 2;
-        canvas.height = originalHeight;
-      } else {
-        // Top-and-bottom
-        canvas.width = originalWidth;
-        canvas.height = originalHeight * 2;
-      }
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        reject(new Error("Canvas context unavailable"));
-        return;
-      }
+  try {
+    const img = await preloadImage(base64Image, true);
+    const isPortrait = originalHeight > originalWidth;
+    
+    const canvas = document.createElement('canvas');
+    if (isPortrait) {
+      // Side-by-side
+      canvas.width = originalWidth * 2;
+      canvas.height = originalHeight;
+    } else {
+      // Top-and-bottom
+      canvas.width = originalWidth;
+      canvas.height = originalHeight * 2;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error("Canvas context unavailable");
+    }
 
-      // Fill white background just in case
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Fill white background just in case
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      if (isPortrait) {
-        ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
-        ctx.drawImage(img, originalWidth, 0, originalWidth, originalHeight);
-      } else {
-        ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
-        ctx.drawImage(img, 0, originalHeight, originalWidth, originalHeight);
-      }
+    if (isPortrait) {
+      ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
+      ctx.drawImage(img, originalWidth, 0, originalWidth, originalHeight);
+    } else {
+      ctx.drawImage(img, 0, 0, originalWidth, originalHeight);
+      ctx.drawImage(img, 0, originalHeight, originalWidth, originalHeight);
+    }
 
-      resolve(canvas.toDataURL('image/jpeg', 0.95));
-    };
-    img.onerror = () => reject(new Error("Image load error for double print"));
-    img.src = base64Image;
-  });
+    return canvas.toDataURL('image/jpeg', 0.95);
+  } catch (err) {
+    console.error("Image load error for double print:", err);
+    return base64Image; // Fallback to original
+  }
 };
