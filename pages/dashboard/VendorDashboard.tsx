@@ -1850,11 +1850,10 @@ export default function VendorDashboard() {
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
 
-                        if (data.payment_url && (window as any).loadJokulCheckout) {
-                          setShowBuyCreditsModal(false);
-                          (window as any).loadJokulCheckout(data.payment_url);
-                        } else {
-                          window.open(data.payment_url, '_blank');
+                        // Redirect user fully to DOKU so they get the beautiful Web responsive view
+                        // instead of the narrow mobile-like popup overlay hook
+                        if (data.payment_url) {
+                          window.location.href = data.payment_url;
                         }
                       } catch (err: any) {
                         console.error("Payment Error:", err);
@@ -2051,11 +2050,9 @@ export default function VendorDashboard() {
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
 
-                        if (data.payment_url && (window as any).loadJokulCheckout) {
-                          setShowBuyUnlimitedModal(false);
-                          (window as any).loadJokulCheckout(data.payment_url);
-                        } else {
-                          window.open(data.payment_url, '_blank');
+                        // Redirect user fully to DOKU so they get the beautiful Web responsive view
+                        if (data.payment_url) {
+                          window.location.href = data.payment_url;
                         }
                       } catch (err: any) {
                         console.error("Payment Error:", err);
