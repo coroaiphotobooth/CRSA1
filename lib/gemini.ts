@@ -456,3 +456,107 @@ Additional instructions: ${finalPrompt}`;
     if (forceUltraQuality) isGeneratingGlobal = false;
   }
 };
+
+export type ConceptChatMessage = {
+  role: 'user' | 'model';
+  text: string;
+  images?: string[]; // array of base64 strings
+};
+
+export const chatWithConceptDesigner = async (
+  messages: ConceptChatMessage[]
+): Promise<string> => {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+      console.error("CRITICAL: No API Key found");
+      throw new Error("API Key not configured");
+  }
+  const ai = new GoogleGenAI({ apiKey });
+
+  const SYSTEM_INSTRUCTION = `Kamu adalah AI Concept Designer ahli untuk Photobooth CoroAI. Tugasmu adalah mengubah permintaan kasar pengguna menjadi struktur prompt gambar profesional yang presisi.
+
+KAMU HARUS SELALU merespons dengan format standar ini secara utuh:
+AUTO-DETECT SUBJECT
+[Teks di sini]
+
+IDENTITY PRESERVATION
+[Teks di sini]
+
+CORE CONCEPT
+[Teks di sini]
+
+OUTFIT
+[Teks di sini]
+
+BACKGROUND
+[Teks di sini]
+
+LIGHTING
+[Teks di sini]
+
+POSE
+[Teks di sini]
+
+COMPOSITION
+[Teks di sini]
+
+NEGATIVE PROMPT
+[Teks di sini]
+
+ATURAN PENTING:
+1. Jika user meminta perubahan spesifik (misal: ganti latar), KAMU HANYA BOLEH MENGUBAH bagian yang sesuai (misal: BACKGROUND). Biarkan bagian lain SAMA PERSIS seperti sebelumnya.
+2. Namun, kamu HARUS SELALU membalas dengan KESELURUHAN STRUKTUR (semua 9 kategori) agar user bisa melihat hasil akhirnya secara utuh. Jangan pernah hanya membalas bagian yang diubah.
+3. Setelah mencetak struktur prompt secara utuh, berikan 2-4 bullet point berupa "Sugesti Tambahan" (ide/variasi menarik) untuk vendor.
+4. Jika user mengupload gambar, analisis gambar tersebut (misal pakaian adat, wajah, atau latar belakang kota/alam) dan langsung Deskripsikan sedetail mungkin sebagai teks visual yang kuat ke dalam kategori yang tepat (misal OUTFIT atau BACKGROUND).
+
+CONTOH DEFAULT UNTUK BAGIAN TETAP (Selalu gunakan ini kecuali user meminta lain):
+AUTO-DETECT SUBJECT:
+Detect all real human subjects in the uploaded photo automatically. Preserve the exact number of people exactly as in the original image. Apply the transformation consistently to all detected subjects.
+
+IDENTITY PRESERVATION:
+Preserve the exact identity of every subject very strongly. Keep the original facial structure, skin tone, hairstyle, age appearance, and body proportions. Do not change the person's identity.
+
+NEGATIVE PROMPT:
+Do not change the subject's identity, face, skin tone, or age. Do not make the outfit look like generic costume cosplay. Avoid extra people, extra limbs, duplicate body parts, blurred face, distorted body.`;
+
+  const contents = messages.map(msg => {
+    const parts: any[] = [];
+    if (msg.images && msg.images.length > 0) {
+      msg.images.forEach(img => {
+        parts.push({
+          inlineData: {
+            mimeType: img.startsWith('data:image/png') ? 'image/png' : 'image/jpeg',
+            data: img.split(',')[1]
+          }
+        });
+      });
+    }
+    parts.push({ text: msg.text });
+    return {
+      role: msg.role === 'model' ? 'model' : 'user',
+      parts
+    };
+  });
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents,
+      config: { 
+        systemInstruction: SYSTEM_INSTRUCTION,
+        temperature: 0.7 
+      }
+    });
+
+    if (response.candidates && response.candidates.length > 0) {
+      const candidate = response.candidates[0];
+      if (candidate.content && candidate.content.parts) {
+          return candidate.content.parts.map((p: any) => p.text).join('').trim();
+      }
+    }
+    throw new Error("Empty response from AI Concept Designer.");
+  } catch (error) {
+    console.error("AI Concept Designer Error:", error);
+    throw error;
+  }
+};

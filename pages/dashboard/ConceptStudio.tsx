@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Upload, Image as ImageIcon, Play, Save, Loader2, Trash2, Edit2 } from 'lucide-react';
+import { Upload, Image as ImageIcon, Play, Save, Loader2, Trash2, Edit2, MessageSquare, ArrowLeft, Send, Paperclip, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useDialog } from '../../components/DialogProvider';
 import { ConceptTemplate } from '../../types';
 import { getEnhancedPrompt } from '../../lib/promptEnhancer';
+import { chatWithConceptDesigner, ConceptChatMessage } from '../../lib/gemini';
 
 interface ConceptStudioProps {
   vendorId: string;
@@ -12,6 +13,7 @@ interface ConceptStudioProps {
 }
 
 export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps) {
+  const [creationMode, setCreationMode] = useState<'selection' | 'chat' | 'manual'>('selection');
   const [manOutfit, setManOutfit] = useState<File | null>(null);
   const [womanOutfit, setWomanOutfit] = useState<File | null>(null);
   const [background, setBackground] = useState<File | null>(null);
@@ -27,6 +29,20 @@ export default function ConceptStudio({ vendorId, onClose }: ConceptStudioProps)
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [editingTemplate, setEditingTemplate] = useState<ConceptTemplate | null>(null);
   const { showDialog } = useDialog();
+
+  const [chatMessages, setChatMessages] = useState<ConceptChatMessage[]>([
+    { role: 'model', text: 'Halo! Saya AI Concept Designer dari CoroAI. Ceritakan konsep photobooth seperti apa yang ingin Anda buat, atau upload gambar referensinya!' }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatImages, setChatImages] = useState<File[]>([]);
+  const [isChatting, setIsChatting] = useState(false);
+  const chatScrollRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages, isChatting]);
 
   useEffect(() => {
     fetchTemplates();
@@ -379,6 +395,7 @@ Additional instructions: A ${composition} shot. ${enhancedPrompt}`
   };
 
   const handleEditTemplate = (template: ConceptTemplate) => {
+    setCreationMode('manual');
     setEditingTemplate(template);
     setTemplateName(template.name);
     setStylePreset(template.style_preset || '3D Render (recommended)');
@@ -402,6 +419,72 @@ Additional instructions: A ${composition} shot. ${enhancedPrompt}`
     setRenderResult(null);
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSendChat = async () => {
+    if (!chatInput.trim() && chatImages.length === 0) return;
+
+    setIsChatting(true);
+    const base64Images: string[] = [];
+    try {
+      for (const file of chatImages) {
+          const b64 = await resizeAndCompressImage(file);
+          base64Images.push(b64);
+      }
+      
+      const newUserMsg: ConceptChatMessage = { 
+          role: 'user', 
+          text: chatInput,
+          images: base64Images.length > 0 ? base64Images : undefined
+      };
+
+      const newHistory = [...chatMessages, newUserMsg];
+      setChatMessages(newHistory);
+      setChatInput('');
+      setChatImages([]);
+
+      const responseText = await chatWithConceptDesigner(newHistory);
+      setChatMessages(prev => [...prev, { role: 'model', text: responseText }]);
+    } catch (err: any) {
+      console.error(err);
+      await showDialog('alert', 'Chat Error', `Gagal mengirim pesan: ${err.message}`);
+    } finally {
+      setIsChatting(false);
+    }
+  };
+
+  const handleSaveFromChat = async () => {
+    if (!templateName.trim()) {
+        await showDialog('alert', 'Missing Name', 'Tolong ketik nama template sebelum menyimpannya.');
+        return;
+    }
+    const modelMessages = chatMessages.filter(m => m.role === 'model' && m.text.includes('AUTO-DETECT SUBJECT'));
+    if (modelMessages.length === 0) {
+        await showDialog('alert', 'Concept NotFound', 'Silakan ngobrol dulu dengan AI Concept Designer untuk generate struktur promtnya, sebelum menyimpan.');
+        return;
+    }
+    const lastPrompt = modelMessages[modelMessages.length - 1].text;
+    
+    setIsSaving(true);
+    try {
+        const templateData = {
+          vendor_id: vendorId,
+          name: templateName,
+          prompt: lastPrompt,
+          style_preset: '3D Render (recommended)',
+        };
+        const { error } = await supabase.from('concept_templates').insert([templateData]);
+        if (error) throw error;
+        await showDialog('alert', 'Success', 'Template Concept AI berhasil disimpan!');
+        fetchTemplates();
+        setTemplateName('');
+        setCreationMode('selection');
+    } catch(err: any) {
+        console.error(err);
+        await showDialog('alert', 'Error', `Failed to save template: ${err.message}`);
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   const handleDeleteTemplate = async (id: string) => {
@@ -429,29 +512,77 @@ Additional instructions: A ${composition} shot. ${enhancedPrompt}`
           <h2 className="text-2xl font-heading font-bold">Concept Studio</h2>
           <p className="text-gray-400">Create and test your visual concepts</p>
         </div>
-        <button 
-          onClick={onClose}
-          className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-        >
-          Back to Dashboard
-        </button>
+        <div className="flex gap-3">
+          {creationMode !== 'selection' && (
+            <button 
+              onClick={() => { setCreationMode('selection'); handleReset(); }}
+              className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors border border-white/10"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Modes
+            </button>
+          )}
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg transition-colors"
+          >
+            Close Studio
+          </button>
+        </div>
       </div>
 
-      {editingTemplate && (
-        <div className="bg-blue-900/30 border border-blue-500/50 rounded-xl p-4 flex justify-between items-center">
-          <div>
-            <h3 className="font-bold text-blue-400">Editing Template: {editingTemplate.name}</h3>
-            <p className="text-sm text-blue-200/70">You can update the settings below. To change the images, please upload new ones.</p>
+      {creationMode === 'selection' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mt-12 mb-16">
+          <div 
+            onClick={() => setCreationMode('chat')}
+            className="glass-card p-10 rounded-3xl border border-[#bc13fe]/30 hover:border-[#bc13fe] cursor-pointer transition-all hover:-translate-y-2 hover:shadow-[0_0_40px_rgba(188,19,254,0.2)] group text-center relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <MessageSquare className="w-32 h-32" />
+            </div>
+            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-[#bc13fe]/40 to-purple-900/40 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform relative z-10 border border-[#bc13fe]/50">
+              <MessageSquare className="w-10 h-10 text-white" />
+            </div>
+            <h3 className="text-2xl font-heading font-bold mb-4 text-white relative z-10">Create with Chat Agent</h3>
+            <p className="text-gray-400 relative z-10">Describe your ideas and let our AI Concept Designer formulate the perfect structured prompt for you.</p>
+            <div className="mt-6 flex justify-center relative z-10">
+              <span className="text-xs font-bold bg-[#bc13fe] text-white px-3 py-1 rounded-full uppercase tracking-wider">Recommended</span>
+            </div>
           </div>
-          <button onClick={handleReset} className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-sm transition-colors">
-            Cancel Edit
-          </button>
+
+          <div 
+            onClick={() => setCreationMode('manual')}
+            className="glass-card p-10 rounded-3xl border border-white/10 hover:border-white/30 cursor-pointer transition-all hover:-translate-y-2 group text-center relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-4 opacity-5">
+              <ImageIcon className="w-32 h-32" />
+            </div>
+            <div className="w-20 h-20 mx-auto bg-white/5 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform relative z-10 border border-white/10">
+              <ImageIcon className="w-10 h-10 text-gray-300" />
+            </div>
+            <h3 className="text-2xl font-heading font-bold mb-4 text-white relative z-10">Create with Reference Image</h3>
+            <p className="text-gray-400 relative z-10">Manually upload reference images for outfits and backgrounds, and set up your prompt manually.</p>
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Inputs */}
-        <div className="lg:col-span-2 space-y-6">
+      {creationMode === 'manual' && (
+        <div className="animate-[fadeIn_0.3s_ease-out]">
+          {editingTemplate && (
+            <div className="bg-blue-900/30 border border-blue-500/50 rounded-xl p-4 flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-bold text-blue-400">Editing Template: {editingTemplate.name}</h3>
+                <p className="text-sm text-blue-200/70">You can update the settings below. To change the images, please upload new ones.</p>
+              </div>
+              <button onClick={handleReset} className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-sm transition-colors">
+                Cancel Edit
+              </button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column: Inputs */}
+            <div className="lg:col-span-2 space-y-6">
           <div className="glass-card p-6 rounded-2xl border border-white/10">
             <h3 className="text-lg font-bold mb-4">1. Reference Images</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -637,12 +768,141 @@ Additional instructions: A ${composition} shot. ${enhancedPrompt}`
             </div>
           </div>
         </div>
-      </div>
+        </div>
+        </div>
+      )}
 
-      {/* My Templates Section */}
-      <div className="mt-12">
-        <h3 className="text-xl font-heading font-bold mb-6 border-b border-white/10 pb-4">My Templates</h3>
-        {isLoadingTemplates ? (
+      {creationMode === 'chat' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-[fadeIn_0.3s_ease-out]">
+          <div className="lg:col-span-2 flex flex-col h-[700px] glass-card rounded-2xl border border-white/10 overflow-hidden">
+            <div className="p-4 border-b border-white/10 bg-black/40 flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#bc13fe]/20 rounded-full flex items-center justify-center border border-[#bc13fe]/50">
+                <MessageSquare className="w-5 h-5 text-[#bc13fe]" />
+              </div>
+              <div>
+                <h3 className="font-bold">AI Concept Designer</h3>
+                <p className="text-xs text-gray-400">CoroAI Assistant</p>
+              </div>
+            </div>
+            
+            <div 
+              ref={chatScrollRef}
+              className="flex-1 p-6 overflow-y-auto space-y-6"
+            >
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] rounded-2xl p-4 ${msg.role === 'user' ? 'bg-[#bc13fe] text-white rounded-br-none' : 'bg-white/10 text-gray-100 rounded-bl-none border border-white/5 whitespace-pre-wrap'}`}>
+                    {msg.images && msg.images.length > 0 && (
+                      <div className="flex gap-2 flex-wrap mb-3">
+                        {msg.images.map((img, idx) => (
+                           <img key={idx} src={img} alt="Uploaded ref" className="w-24 h-24 object-cover rounded-lg border border-white/20" />
+                        ))}
+                      </div>
+                    )}
+                    <span className="leading-relaxed text-sm md:text-base">{msg.text}</span>
+                  </div>
+                </div>
+              ))}
+              {isChatting && (
+                <div className="flex justify-start">
+                  <div className="bg-white/10 text-gray-100 rounded-2xl rounded-bl-none p-4 flex gap-2 items-center">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-sm">AI is thinking...</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-white/10 bg-black/40">
+              {chatImages.length > 0 && (
+                <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
+                  {chatImages.map((file, idx) => (
+                    <div key={idx} className="relative shrink-0">
+                      <img src={URL.createObjectURL(file)} alt="preview" className="w-16 h-16 object-cover rounded-md border border-white/20" />
+                      <button 
+                        onClick={() => setChatImages(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1 border border-black hover:scale-110 transition-transform"
+                      >
+                        <X className="w-3 h-3 text-white" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2 items-end">
+                <label className="shrink-0 p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl cursor-pointer transition-colors group">
+                  <Paperclip className="w-5 h-5 text-gray-400 group-hover:text-white" />
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    multiple
+                    className="hidden" 
+                    onChange={e => {
+                      if (e.target.files) {
+                        setChatImages(prev => [...prev, ...Array.from(e.target.files || [])]);
+                        e.target.value = '';
+                      }
+                    }} 
+                  />
+                </label>
+                <textarea 
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendChat();
+                    }
+                  }}
+                  placeholder="Deskripsikan konsep atau tekan paperclip untuk upload referensi..."
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] resize-none h-[50px] min-h-[50px] max-h-[120px]"
+                />
+                <button 
+                  onClick={handleSendChat}
+                  disabled={isChatting || (!chatInput.trim() && chatImages.length === 0)}
+                  className="shrink-0 p-3 bg-[#bc13fe] hover:bg-[#a010d8] disabled:bg-gray-600 disabled:opacity-50 text-white rounded-xl transition-colors"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="glass-card p-6 rounded-2xl border border-white/10 sticky top-6">
+              <h3 className="text-lg font-bold mb-4">Save Template</h3>
+              <p className="text-sm text-gray-400 mb-6">Minta AI membuat struktur concept prompt sampai Anda puas, lalu simpan dengan nama di bawah ini.</p>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-400">Template Name</label>
+                  <input 
+                    type="text" 
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    placeholder="e.g., Cyberpunk Jakarta"
+                    className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-[#bc13fe]"
+                  />
+                </div>
+                <button 
+                  onClick={handleSaveFromChat}
+                  disabled={isSaving}
+                  className="w-full py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                  {isSaving ? 'Menyimpan...' : 'Save AI Concept'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* My Templates Section (Visible in Selection Mode or Manual Mode) */}
+      {(creationMode === 'selection' || creationMode === 'manual') && (
+        <div className="mt-12">
+          <h3 className="text-xl font-heading font-bold mb-6 border-b border-white/10 pb-4">My Templates</h3>
+          {isLoadingTemplates ? (
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
           </div>
@@ -688,7 +948,8 @@ Additional instructions: A ${composition} shot. ${enhancedPrompt}`
             ))}
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
