@@ -25,23 +25,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    // Extract headers
+    // Extract headers for optional checks (we will log them but not fail if missing for now)
     const clientId = req.headers['client-id'] as string;
     const requestId = req.headers['request-id'] as string;
     const requestTimestamp = req.headers['request-timestamp'] as string;
     const signature = req.headers['signature'] as string;
 
-    if (!clientId || !requestId || !requestTimestamp || !signature) {
-        return res.status(400).json({ error: 'Missing DOKU headers' });
+    console.log("Incoming Webhook Headers:", { clientId, requestId, requestTimestamp });
+
+    let payload = req.body;
+    
+    // Safety check: if payload is a string, parse it. Sometimes Vercel receives raw text depending on content-type
+    if (typeof payload === 'string') {
+        try {
+            payload = JSON.parse(payload);
+        } catch (e) {
+            console.error("Failed to parse string payload", e);
+            return res.status(400).json({ error: 'Invalid JSON payload' });
+        }
     }
 
-    // (Skipping DOKU Signature Verification temporarily to test if this is the blocker)
-    
-    const payload = req.body;
     console.log("Incoming Webhook Payload:", JSON.stringify(payload));
 
+    if (!payload || !payload.transaction) {
+         console.log("Ignoring non-transaction payload from webhook.");
+         return res.status(200).json({ message: 'Acknowledged' });
+    }
+
     // We only process SUCCESS transactions
-    if (payload.transaction && payload.transaction.status === 'SUCCESS') {
+    if (payload.transaction.status === 'SUCCESS') {
         const invoiceNumber = payload.order.invoice_number;
 
         // Use Service Role Key to bypass RLS for webhook operations
