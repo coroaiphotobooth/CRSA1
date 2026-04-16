@@ -1146,7 +1146,7 @@ export default function VendorDashboard() {
       } else if (buyModalTab === 'event') {
         packageName = isUSD ? 'Buy per Event - Unlimited Generate photo & video' : 'Beli per Event - Unlimited Generate photo & video';
         packageDetail = `${eventDuration} ${isUSD ? 'hours' : 'jam'}`;
-        totalPriceStr = formatPrice(eventPrices[eventDuration]);
+        totalPriceStr = formatPrice(eventPrices[eventDuration], eventPrices[eventDuration] / 15000);
       } else {
         packageName = isUSD ? 'Rent Duration' : 'Durasi Sewa';
         packageDetail = isUSD ? `per ${rentDuration === 'minggu' ? 'week' : 'month'}` : `per ${rentDuration}`;
@@ -1855,7 +1855,7 @@ export default function VendorDashboard() {
                         }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
-                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
+                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'IDR' ? 'hidden' : ''}`}
                   >
                     <span className="flex items-center gap-3">
                       <span className="text-xl">💳</span> 
@@ -1899,7 +1899,7 @@ export default function VendorDashboard() {
                         }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
-                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
+                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
                   >
                     <span className="flex items-center gap-3"><span className="text-xl">🏦</span> Bank Transfer</span>
                     <span className="text-[#bc13fe]">{formatPrice(
@@ -1927,7 +1927,7 @@ export default function VendorDashboard() {
                         }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
-                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
+                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
                   >
                     <span className="flex items-center gap-3">
                       <span className="text-xl">📱</span>
@@ -2038,7 +2038,7 @@ export default function VendorDashboard() {
                   
                   <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
                     <span className="text-gray-400 text-sm">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
-                    <span className="text-2xl font-bold text-[#bc13fe]">{formatPrice(eventPrices[eventDuration])}</span>
+                    <span className="text-2xl font-bold text-[#bc13fe]">{formatPrice(eventPrices[eventDuration], eventPrices[eventDuration] / 15000)}</span>
                   </div>
                 </div>
               )}
@@ -2116,7 +2116,7 @@ export default function VendorDashboard() {
                         }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
-                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
+                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'IDR' ? 'hidden' : ''}`}
                   >
                     <span className="flex items-center gap-3">
                       <span className="text-xl">💳</span> 
@@ -2137,7 +2137,7 @@ export default function VendorDashboard() {
                     </span>
                     <span className="text-[#bc13fe]">{formatPrice(
                       Math.ceil(getBaseAmountForDoku('unlimited') * 1.028 + 2000),
-                      (eventPrices[eventDuration] / usdToIdrRate) * 1.028 + (2000 / usdToIdrRate)
+                      (eventPrices[eventDuration] / 15000) * 1.028 + (2000 / usdToIdrRate)
                     )}</span>
                   </button>
 
@@ -2160,12 +2160,12 @@ export default function VendorDashboard() {
                         }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
-                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
+                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
                   >
                     <span className="flex items-center gap-3"><span className="text-xl">🏦</span> Bank Transfer</span>
                     <span className="text-[#bc13fe]">{formatPrice(
                       getBaseAmountForDoku('unlimited') + 4000,
-                      (eventPrices[eventDuration] / usdToIdrRate) + (4000 / usdToIdrRate)
+                      (eventPrices[eventDuration] / 15000) + (4000 / usdToIdrRate)
                     )}</span>
                   </button>
 
@@ -2188,7 +2188,7 @@ export default function VendorDashboard() {
                         }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
-                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
+                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
                   >
                     <span className="flex items-center gap-3">
                       <span className="text-xl">📱</span>
@@ -2201,7 +2201,7 @@ export default function VendorDashboard() {
                     </span>
                     <span className="text-[#bc13fe]">{formatPrice(
                       Math.ceil(getBaseAmountForDoku('unlimited') * 1.007),
-                      (eventPrices[eventDuration] / usdToIdrRate) * 1.007
+                      (eventPrices[eventDuration] / 15000) * 1.007
                     )}</span>
                   </button>
 
@@ -2209,7 +2209,7 @@ export default function VendorDashboard() {
                     onClick={() => {
                       const baseAmount = getBaseAmountForDoku('unlimited');
                       const finalWaPrice = Math.ceil(baseAmount * 1.03);
-                      const finalWaPriceUSD = (eventPrices[eventDuration] / usdToIdrRate) * 1.03;
+                      const finalWaPriceUSD = (eventPrices[eventDuration] / 15000) * 1.03;
                       let text = buyCurrency === 'USD' 
                         ? `Hi I want to buy Buy per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nSelected package: ${eventDuration} hours\nTotal price: ${formatPrice(finalWaPrice, finalWaPriceUSD)}`
                         : `Hi saya ingin membeli Beli per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${eventDuration} jam\nTotal harga: ${formatPrice(finalWaPrice)}`;
@@ -2221,7 +2221,7 @@ export default function VendorDashboard() {
                     <span className="flex items-center gap-3"><span className="text-xl">💬</span> Pay via WhatsApp</span>
                     <span className="text-[#25D366]">{formatPrice(
                       Math.ceil(getBaseAmountForDoku('unlimited') * 1.03),
-                      (eventPrices[eventDuration] / usdToIdrRate) * 1.03
+                      (eventPrices[eventDuration] / 15000) * 1.03
                     )}</span>
                   </button>
                 </div>
