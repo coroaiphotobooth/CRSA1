@@ -2106,7 +2106,7 @@ export default function VendorDashboard() {
                         const res = await fetch('/api/payment/create', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'CREDIT_CARD' })
+                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'EVENT', amount, quantity: eventDuration, payment_method: 'CREDIT_CARD' })
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
@@ -2150,7 +2150,7 @@ export default function VendorDashboard() {
                         const res = await fetch('/api/payment/create', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'BANK_TRANSFER' })
+                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'EVENT', amount, quantity: eventDuration, payment_method: 'BANK_TRANSFER' })
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
@@ -2178,7 +2178,7 @@ export default function VendorDashboard() {
                         const res = await fetch('/api/payment/create', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'QRIS' })
+                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'EVENT', amount, quantity: eventDuration, payment_method: 'QRIS' })
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');

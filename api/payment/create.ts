@@ -97,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         const invoiceNumber = `INV-${transaction.id.substring(0, 8).toUpperCase()}-${Date.now()}`;
 
-        const itemName = type === 'CREDIT' ? `Credit ${quantity}` : `Unlimited ${quantity} Hour(s)`;
+        const itemName = type === 'CREDIT' ? `Credit ${quantity}` : `Unlimited ${quantity} Hours`;
         const lineItems = [
             {
                 name: itemName,
