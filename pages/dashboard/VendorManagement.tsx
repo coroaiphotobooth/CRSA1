@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, Trash2, Edit, Save, ShieldAlert, Lock, Unlock, ExternalLink, Search, MessageSquare, MoreVertical, Plus, X, Settings, Activity, RefreshCw } from 'lucide-react';
+import { Loader2, Trash2, Edit, Save, ShieldAlert, Lock, Unlock, ExternalLink, Search, MessageSquare, MoreVertical, Plus, X, Settings, Activity, RefreshCw, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Vendor } from '../../types';
 import { useDialog } from '../../components/DialogProvider';
 
@@ -12,8 +12,13 @@ interface VendorManagementProps {
   fetchData: () => Promise<void>;
 }
 
+type SortField = 'vendor_info' | 'status' | 'company' | 'plan' | 'credits' | 'unlimited' | 'used' | 'last_activity';
+type SortDirection = 'asc' | 'desc';
+
 export default function VendorManagement({ vendors, setVendors, onlineVendors, handleMessageVendor, fetchData }: VendorManagementProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState<SortField>('last_activity');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null);
   const [openActionMenuId, setOpenActionMenuId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', company_name: '', country: '', phone: '', plan: 'free', credits: 0, unlimited_seconds_left: 0, _original_unlimited_seconds_left: 0, unlimited_expires_at: null as string | null });
@@ -282,6 +287,66 @@ export default function VendorManagement({ vendors, setVendors, onlineVendors, h
     (v.company_name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedVendors = [...filteredVendors].sort((a, b) => {
+    let valA: any = '';
+    let valB: any = '';
+
+    switch (sortField) {
+      case 'vendor_info':
+        valA = (a.name || a.email || '').toLowerCase();
+        valB = (b.name || b.email || '').toLowerCase();
+        break;
+      case 'status':
+        valA = a.is_blocked ? 0 : (a.email_confirmed ? 2 : 1);
+        valB = b.is_blocked ? 0 : (b.email_confirmed ? 2 : 1);
+        break;
+      case 'company':
+        valA = (a.company_name || '').toLowerCase();
+        valB = (b.company_name || '').toLowerCase();
+        break;
+      case 'plan':
+        valA = (a.plan || '').toLowerCase();
+        valB = (b.plan || '').toLowerCase();
+        break;
+      case 'credits':
+        valA = a.credits || 0;
+        valB = b.credits || 0;
+        break;
+      case 'unlimited':
+        valA = getRemainingTime(a);
+        valB = getRemainingTime(b);
+        break;
+      case 'used':
+        valA = a.credits_used || 0;
+        valB = b.credits_used || 0;
+        break;
+      case 'last_activity':
+        const timeA = latestActivities[a.id]?.created_at ? new Date(latestActivities[a.id].created_at).getTime() : (a.last_login_at ? new Date(a.last_login_at).getTime() : 0);
+        const timeB = latestActivities[b.id]?.created_at ? new Date(latestActivities[b.id].created_at).getTime() : (b.last_login_at ? new Date(b.last_login_at).getTime() : 0);
+        valA = timeA;
+        valB = timeB;
+        break;
+    }
+
+    if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+    if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 text-gray-600 inline-block ml-1" />;
+    return sortDirection === 'asc' ? <ArrowUp className="w-3 h-3 text-[#bc13fe] inline-block ml-1" /> : <ArrowDown className="w-3 h-3 text-[#bc13fe] inline-block ml-1" />;
+  };
+
   return (
     <div className="space-y-6">
       <div className="glass-card p-6 rounded-2xl border border-white/10">
@@ -324,19 +389,19 @@ export default function VendorManagement({ vendors, setVendors, onlineVendors, h
             <thead className="sticky top-0 bg-[#1a1a1a] z-10">
               <tr className="text-gray-400 text-[11px] uppercase tracking-wider">
                 <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10">No.</th>
-                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10">Vendor Info</th>
-                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10">Status</th>
-                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10">Company & Contact</th>
-                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10">Plan</th>
-                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 text-center">Credits</th>
-                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 text-center">Unlimited</th>
-                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 text-center">Used</th>
-                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10">Last Activity</th>
+                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('vendor_info')}>Vendor Info <SortIcon field="vendor_info" /></th>
+                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('status')}>Status <SortIcon field="status" /></th>
+                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('company')}>Company & Contact <SortIcon field="company" /></th>
+                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('plan')}>Plan <SortIcon field="plan" /></th>
+                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 text-center cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('credits')}>Credits <SortIcon field="credits" /></th>
+                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 text-center cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('unlimited')}>Unlimited <SortIcon field="unlimited" /></th>
+                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 text-center cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('used')}>Used <SortIcon field="used" /></th>
+                <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('last_activity')}>Last Activity <SortIcon field="last_activity" /></th>
                 <th className="pb-3 pt-2 px-2 font-bold border-b border-white/10 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="text-[13px]">
-              {filteredVendors.map((v, index) => (
+              {sortedVendors.map((v, index) => (
                 <tr key={v.id} className="group border-b border-white/5 hover:bg-white/[0.03] transition-colors">
                   <td className="py-3 px-2 text-gray-500 align-top">{index + 1}</td>
                   <td className="py-3 px-2 align-top max-w-[200px]">
