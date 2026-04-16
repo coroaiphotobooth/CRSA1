@@ -32,8 +32,30 @@ export default function VendorDashboard() {
   const [buyCurrency, setBuyCurrency] = useState<'IDR' | 'USD'>('IDR');
   const [creditAmount, setCreditAmount] = useState<number>(10);
   const [eventDuration, setEventDuration] = useState<number>(2);
+  const [usdToIdrRate, setUsdToIdrRate] = useState<number>(16000);
 
-  // Timer State
+  useEffect(() => {
+    fetch('https://open.er-api.com/v6/latest/USD')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.rates && data.rates.IDR) {
+          setUsdToIdrRate(data.rates.IDR);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const getBaseAmountForDoku = (tab: 'credit' | 'unlimited') => {
+    if (tab === 'credit') {
+      return buyCurrency === 'USD' 
+        ? Math.round(getCreditPriceUSD(creditAmount) * usdToIdrRate)
+        : getCreditPriceIDR(creditAmount);
+    } else {
+      return buyCurrency === 'USD'
+        ? Math.round((eventPrices[eventDuration] / 15000) * usdToIdrRate)
+        : eventPrices[eventDuration];
+    }
+  };
   const [timeLeft, setTimeLeft] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
@@ -1095,13 +1117,11 @@ export default function VendorDashboard() {
     12: 6000000,
   };
 
-  const EXCHANGE_RATE = 15000;
-
   const formatPrice = (priceIDR: number, priceUSDOverride?: number) => {
     if (buyCurrency === 'IDR') {
       return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(priceIDR);
     } else {
-      const usdVal = priceUSDOverride !== undefined ? priceUSDOverride : (priceIDR / EXCHANGE_RATE);
+      const usdVal = priceUSDOverride !== undefined ? priceUSDOverride : (priceIDR / usdToIdrRate);
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(usdVal);
     }
   };
@@ -1821,7 +1841,7 @@ export default function VendorDashboard() {
                       try {
                         const { data: { session } } = await supabase.auth.getSession();
                         if (!session) throw new Error("Not authenticated");
-                        const amount = getCreditPriceIDR(creditAmount);
+                        const amount = getBaseAmountForDoku('credit');
                         const res = await fetch('/api/payment/create', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
@@ -1855,8 +1875,8 @@ export default function VendorDashboard() {
                       </span>
                     </span>
                     <span className="text-[#bc13fe]">{formatPrice(
-                      Math.ceil(getCreditPriceIDR(creditAmount) * 1.028 + 2000), 
-                      getCreditPriceUSD(creditAmount) * 1.028 + (2000 / EXCHANGE_RATE)
+                      Math.ceil(getBaseAmountForDoku('credit') * 1.028 + 2000), 
+                      getCreditPriceUSD(creditAmount) * 1.028 + (2000 / usdToIdrRate)
                     )}</span>
                   </button>
 
@@ -1865,7 +1885,7 @@ export default function VendorDashboard() {
                       try {
                         const { data: { session } } = await supabase.auth.getSession();
                         if (!session) throw new Error("Not authenticated");
-                        const amount = getCreditPriceIDR(creditAmount);
+                        const amount = getBaseAmountForDoku('credit');
                         const res = await fetch('/api/payment/create', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
@@ -1883,8 +1903,8 @@ export default function VendorDashboard() {
                   >
                     <span className="flex items-center gap-3"><span className="text-xl">🏦</span> Bank Transfer</span>
                     <span className="text-[#bc13fe]">{formatPrice(
-                      getCreditPriceIDR(creditAmount) + 4000,
-                      getCreditPriceUSD(creditAmount) + (4000 / EXCHANGE_RATE)
+                      getBaseAmountForDoku('credit') + 4000,
+                      getCreditPriceUSD(creditAmount) + (4000 / usdToIdrRate)
                     )}</span>
                   </button>
 
@@ -1893,7 +1913,7 @@ export default function VendorDashboard() {
                       try {
                         const { data: { session } } = await supabase.auth.getSession();
                         if (!session) throw new Error("Not authenticated");
-                        const amount = getCreditPriceIDR(creditAmount);
+                        const amount = getBaseAmountForDoku('credit');
                         const res = await fetch('/api/payment/create', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
@@ -1919,14 +1939,14 @@ export default function VendorDashboard() {
                       </span>
                     </span>
                     <span className="text-[#bc13fe]">{formatPrice(
-                      Math.ceil(getCreditPriceIDR(creditAmount) * 1.007),
+                      Math.ceil(getBaseAmountForDoku('credit') * 1.007),
                       getCreditPriceUSD(creditAmount) * 1.007
                     )}</span>
                   </button>
 
                     <button
                     onClick={() => {
-                      const baseAmount = getCreditPriceIDR(creditAmount);
+                      const baseAmount = getBaseAmountForDoku('credit');
                       const finalWaPrice = Math.ceil(baseAmount * 1.03);
                       const finalWaPriceUSD = getCreditPriceUSD(creditAmount) * 1.03;
                       let text = buyCurrency === 'USD' 
@@ -2082,7 +2102,7 @@ export default function VendorDashboard() {
                       try {
                         const { data: { session } } = await supabase.auth.getSession();
                         if (!session) throw new Error("Not authenticated");
-                        const amount = eventPrices[eventDuration];
+                        const amount = getBaseAmountForDoku('unlimited');
                         const res = await fetch('/api/payment/create', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
@@ -2115,7 +2135,10 @@ export default function VendorDashboard() {
                         </div>
                       </span>
                     </span>
-                    <span className="text-[#bc13fe]">{formatPrice(Math.ceil(eventPrices[eventDuration] * 1.028 + 2000))}</span>
+                    <span className="text-[#bc13fe]">{formatPrice(
+                      Math.ceil(getBaseAmountForDoku('unlimited') * 1.028 + 2000),
+                      (eventPrices[eventDuration] / usdToIdrRate) * 1.028 + (2000 / usdToIdrRate)
+                    )}</span>
                   </button>
 
                   <button
@@ -2123,7 +2146,7 @@ export default function VendorDashboard() {
                       try {
                         const { data: { session } } = await supabase.auth.getSession();
                         if (!session) throw new Error("Not authenticated");
-                        const amount = eventPrices[eventDuration];
+                        const amount = getBaseAmountForDoku('unlimited');
                         const res = await fetch('/api/payment/create', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
@@ -2140,7 +2163,10 @@ export default function VendorDashboard() {
                     className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
                   >
                     <span className="flex items-center gap-3"><span className="text-xl">🏦</span> Bank Transfer</span>
-                    <span className="text-[#bc13fe]">{formatPrice(eventPrices[eventDuration] + 4000)}</span>
+                    <span className="text-[#bc13fe]">{formatPrice(
+                      getBaseAmountForDoku('unlimited') + 4000,
+                      (eventPrices[eventDuration] / usdToIdrRate) + (4000 / usdToIdrRate)
+                    )}</span>
                   </button>
 
                   <button
@@ -2148,7 +2174,7 @@ export default function VendorDashboard() {
                       try {
                         const { data: { session } } = await supabase.auth.getSession();
                         if (!session) throw new Error("Not authenticated");
-                        const amount = eventPrices[eventDuration];
+                        const amount = getBaseAmountForDoku('unlimited');
                         const res = await fetch('/api/payment/create', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
@@ -2173,15 +2199,19 @@ export default function VendorDashboard() {
                         </div>
                       </span>
                     </span>
-                    <span className="text-[#bc13fe]">{formatPrice(Math.ceil(eventPrices[eventDuration] * 1.007))}</span>
+                    <span className="text-[#bc13fe]">{formatPrice(
+                      Math.ceil(getBaseAmountForDoku('unlimited') * 1.007),
+                      (eventPrices[eventDuration] / usdToIdrRate) * 1.007
+                    )}</span>
                   </button>
 
-                  <button
+                    <button
                     onClick={() => {
-                      const baseAmount = eventPrices[eventDuration];
+                      const baseAmount = getBaseAmountForDoku('unlimited');
                       const finalWaPrice = Math.ceil(baseAmount * 1.03);
+                      const finalWaPriceUSD = (eventPrices[eventDuration] / usdToIdrRate) * 1.03;
                       let text = buyCurrency === 'USD' 
-                        ? `Hi I want to buy Buy per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nSelected package: ${eventDuration} hours\nTotal price: ${formatPrice(finalWaPrice)}`
+                        ? `Hi I want to buy Buy per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nSelected package: ${eventDuration} hours\nTotal price: ${formatPrice(finalWaPrice, finalWaPriceUSD)}`
                         : `Hi saya ingin membeli Beli per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${eventDuration} jam\nTotal harga: ${formatPrice(finalWaPrice)}`;
                       const encodedText = encodeURIComponent(text);
                       window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
@@ -2189,7 +2219,10 @@ export default function VendorDashboard() {
                     className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
                   >
                     <span className="flex items-center gap-3"><span className="text-xl">💬</span> Pay via WhatsApp</span>
-                    <span className="text-[#25D366]">{formatPrice(Math.ceil(eventPrices[eventDuration] * 1.03))}</span>
+                    <span className="text-[#25D366]">{formatPrice(
+                      Math.ceil(getBaseAmountForDoku('unlimited') * 1.03),
+                      (eventPrices[eventDuration] / usdToIdrRate) * 1.03
+                    )}</span>
                   </button>
                 </div>
               )}
