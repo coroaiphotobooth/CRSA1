@@ -1,152 +1,139 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import crypto from 'crypto';
-
-function verifyDokuSignature(clientId: string, secretKey: string, requestId: string, requestTimestamp: string, requestTarget: string, body: any, signatureToVerify: string) {
-    const digest = crypto.createHash('sha256').update(JSON.stringify(body)).digest('base64');
-    const signatureComponent = `Client-Id:${clientId}\nRequest-Id:${requestId}\nRequest-Timestamp:${requestTimestamp}\nRequest-Target:${requestTarget}\nDigest:${digest}`;
-    const hmac = crypto.createHmac('sha256', secretKey).update(signatureComponent).digest('base64');
-    const expectedSignature = `HMACSHA256=${hmac}`;
-    return expectedSignature === signatureToVerify;
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    // Basic CORS handler
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Client-Id, Request-Id, Request-Timestamp, Signature');
+    // 1. Catat semua request mentah di Log Vercel (Paling Krusial)
+    console.log('WEBHOOK HIT', {
+        method: req.method,
+        url: req.url,
+        headers: req.headers,
+        body: req.body,
+    });
 
+    // 2. CORS Preflight
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    
     if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+        return res.status(200).end();
     }
 
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const dokuClientId = process.env.DOKU_CLIENT_ID;
-    const dokuSecretKey = process.env.DOKU_SECRET_KEY;
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    // Gunakan Try-Catch yang diakhiri dengan status 200 agar DOKU tidak "Ngangbek"/gagal
+    try {
+        const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 
-    if (!dokuClientId || !dokuSecretKey || !supabaseUrl || !supabaseServiceKey) {
-        console.error("Webhook Error: Missing environment variables");
-        return res.status(500).json({ error: 'Server configuration error' });
-    }
-
-    // Extract headers for optional checks (we will log them but not fail if missing for now)
-    const clientId = req.headers['client-id'] as string;
-    const requestId = req.headers['request-id'] as string;
-    const requestTimestamp = req.headers['request-timestamp'] as string;
-    const signature = req.headers['signature'] as string;
-
-    console.log("Incoming Webhook Headers:", { clientId, requestId, requestTimestamp });
-
-    let payload = req.body;
-    
-    // Safety check: if payload is a string, parse it. Sometimes Vercel receives raw text depending on content-type
-    if (typeof payload === 'string') {
-        try {
-            payload = JSON.parse(payload);
-        } catch (e) {
-            console.error("Failed to parse string payload", e);
-            return res.status(400).json({ error: 'Invalid JSON payload' });
+        if (!payload?.transaction || payload.transaction.status !== 'SUCCESS') {
+            console.log('Ignoring webhook (not SUCCESS or no transaction object):', payload);
+            return res.status(200).json({ message: 'Acknowledged non-success' });
         }
-    }
 
-    console.log("Incoming Webhook Payload:", JSON.stringify(payload));
+        const supabaseUrl = process.env.VITE_SUPABASE_URL; 
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!payload || !payload.transaction) {
-         console.log("Ignoring non-transaction payload from webhook.");
-         return res.status(200).json({ message: 'Acknowledged' });
-    }
+        if (!supabaseUrl || !supabaseServiceKey) {
+            console.error('Missing Supabase env');
+            // Tetap berikan 200 agar DOKU berhenti retry
+            return res.status(200).json({ message: 'Acknowledged with config error' });
+        }
 
-    // We only process SUCCESS transactions
-    if (payload.transaction.status === 'SUCCESS') {
-        const invoiceNumber = payload.order.invoice_number;
-
-        // Use Service Role Key to bypass RLS for webhook operations
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        const invoiceNumber = payload?.order?.invoice_number;
 
-        try {
-            // 1. Find the transaction
-            const { data: transaction, error: fetchError } = await supabase
-                .from('transactions')
-                .select('*')
-                .eq('doku_invoice_id', invoiceNumber)
-                .single();
-
-            if (fetchError || !transaction) {
-                console.error("Webhook Error: Transaction not found", invoiceNumber);
-                return res.status(404).json({ error: 'Transaction not found' });
-            }
-
-            // If already paid, just return 200 to acknowledge
-            if (transaction.status === 'PAID') {
-                return res.status(200).json({ message: 'Already processed' });
-            }
-
-            // 2. Update transaction status to PAID
-            const { error: updateTxError } = await supabase
-                .from('transactions')
-                .update({ status: 'PAID' })
-                .eq('id', transaction.id);
-
-            if (updateTxError) {
-                throw updateTxError;
-            }
-
-            // 3. Fulfill the order (Add Credits or Unlimited Time)
-            const { data: vendor, error: vendorFetchError } = await supabase
-                .from('vendors')
-                .select('*')
-                .eq('id', transaction.vendor_id)
-                .single();
-
-            if (vendorFetchError || !vendor) {
-                throw new Error('Vendor not found');
-            }
-
-            if (transaction.type === 'CREDIT') {
-                const newCredits = (vendor.credits || 0) + transaction.quantity;
-                await supabase
-                    .from('vendors')
-                    .update({ credits: newCredits })
-                    .eq('id', vendor.id);
-            } else if (transaction.type === 'UNLIMITED') {
-                // quantity is in hours
-                const hoursToAdd = transaction.quantity;
-                const now = new Date();
-                
-                let currentExpiry = vendor.unlimited_expires_at ? new Date(vendor.unlimited_expires_at) : now;
-                
-                // If expired, start from now. If still active, add to existing expiry.
-                if (currentExpiry.getTime() < now.getTime()) {
-                    currentExpiry = now;
-                }
-                
-                currentExpiry.setHours(currentExpiry.getHours() + hoursToAdd);
-                
-                await supabase
-                    .from('vendors')
-                    .update({ 
-                        unlimited_expires_at: currentExpiry.toISOString(),
-                        unlimited_seconds_left: Math.floor((currentExpiry.getTime() - now.getTime()) / 1000)
-                    })
-                    .eq('id', vendor.id);
-            }
-
-            console.log(`Successfully processed payment for invoice ${invoiceNumber}`);
-            return res.status(200).json({ message: 'Success' });
-
-        } catch (error: any) {
-            console.error("Webhook Processing Error:", error);
-            return res.status(500).json({ error: 'Internal Server Error' });
+        if (!invoiceNumber) {
+            console.error('No invoice number in payload');
+            return res.status(200).json({ message: 'Acknowledged without invoice' });
         }
-    }
 
-    // Acknowledge other statuses without processing
-    return res.status(200).json({ message: 'Acknowledged' });
+        const { data: transaction, error: txError } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('doku_invoice_id', invoiceNumber)
+            .maybeSingle();
+
+        if (txError) {
+            console.error('Transaction query error:', txError);
+            return res.status(200).json({ message: 'Acknowledged with query error' });
+        }
+
+        if (!transaction) {
+            console.error('Transaction not found for invoice:', invoiceNumber);
+            return res.status(200).json({ message: 'Acknowledged but transaction missing' });
+        }
+
+        if (transaction.status === 'PAID') {
+            console.log('Already processed:', invoiceNumber);
+            return res.status(200).json({ message: 'Already processed' });
+        }
+
+        const { error: updateTxError } = await supabase
+            .from('transactions')
+            .update({ status: 'PAID' })
+            .eq('id', transaction.id);
+
+        if (updateTxError) {
+            console.error('Update transaction error:', updateTxError);
+            return res.status(200).json({ message: 'Acknowledged with update error' });
+        }
+
+        const { data: vendor, error: vendorError } = await supabase
+            .from('vendors')
+            .select('*')
+            .eq('id', transaction.vendor_id)
+            .single();
+
+        if (vendorError || !vendor) {
+            console.error('Vendor fetch error:', vendorError);
+            return res.status(200).json({ message: 'Acknowledged with vendor fetch error' });
+        }
+
+        if (transaction.type === 'CREDIT') {
+            const newCredits = (vendor.credits || 0) + transaction.quantity;
+
+            const { error: creditError } = await supabase
+                .from('vendors')
+                .update({ credits: newCredits })
+                .eq('id', vendor.id);
+
+            if (creditError) {
+                console.error('Credit update error:', creditError);
+                return res.status(200).json({ message: 'Acknowledged with credit update error' });
+            }
+        } else if (transaction.type === 'UNLIMITED') {
+            const hoursToAdd = transaction.quantity;
+            const now = new Date();
+            let currentExpiry = vendor.unlimited_expires_at ? new Date(vendor.unlimited_expires_at) : now;
+            
+            if (currentExpiry.getTime() < now.getTime()) {
+                currentExpiry = now;
+            }
+            
+            currentExpiry.setHours(currentExpiry.getHours() + hoursToAdd);
+            
+            const { error: unlimitedError } = await supabase
+                .from('vendors')
+                .update({ 
+                    unlimited_expires_at: currentExpiry.toISOString(),
+                    unlimited_seconds_left: Math.floor((currentExpiry.getTime() - now.getTime()) / 1000)
+                })
+                .eq('id', vendor.id);
+
+            if (unlimitedError) {
+                console.error('Unlimited update error:', unlimitedError);
+                return res.status(200).json({ message: 'Acknowledged with unlimited update error' });
+            }
+        }
+
+        console.log('Webhook processed successfully:', invoiceNumber);
+        return res.status(200).json({ message: 'Success' });
+        
+    } catch (err) {
+        console.error('Webhook async processing error:', err);
+        // Selalu balas 200 OK ke DOKU dalam kondisi apapun agar tidak nyangkut FAILED
+        return res.status(200).json({ message: 'Acknowledged with internal error' });
+    }
 }
