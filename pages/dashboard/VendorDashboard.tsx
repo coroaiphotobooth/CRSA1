@@ -1060,12 +1060,47 @@ export default function VendorDashboard() {
     }
   };
 
+  const creditPricingTable = [
+    { credits: 10, idr: 100000, usd: 6.49 },
+    { credits: 50, idr: 475000, usd: 30.99 },
+    { credits: 100, idr: 900000, usd: 57.99 },
+    { credits: 200, idr: 1700000, usd: 109 },
+    { credits: 300, idr: 2500000, usd: 159 },
+    { credits: 400, idr: 3200000, usd: 205 },
+    { credits: 500, idr: 3900000, usd: 249 },
+    { credits: 600, idr: 4500000, usd: 289 },
+    { credits: 700, idr: 5100000, usd: 326 },
+    { credits: 800, idr: 5600000, usd: 359 },
+    { credits: 900, idr: 6300000, usd: 404 },
+    { credits: 1000, idr: 7000000, usd: 449 }
+  ];
+
   const getCreditPriceIDR = (amount: number) => {
-    if (amount < 10) return 100000;
-    if (amount <= 1000) {
-      return 100000 + Math.round(((amount - 10) * 6900000) / 990);
+    if (amount <= 10) return creditPricingTable[0].idr;
+    for (let i = 0; i < creditPricingTable.length - 1; i++) {
+        const lower = creditPricingTable[i];
+        const upper = creditPricingTable[i+1];
+        if (amount === lower.credits) return lower.idr;
+        if (amount > lower.credits && amount < upper.credits) {
+            const ratio = (amount - lower.credits) / (upper.credits - lower.credits);
+            return Math.round(lower.idr + ratio * (upper.idr - lower.idr));
+        }
     }
     return amount * 7000;
+  };
+
+  const getCreditPriceUSD = (amount: number) => {
+    if (amount <= 10) return creditPricingTable[0].usd;
+    for (let i = 0; i < creditPricingTable.length - 1; i++) {
+        const lower = creditPricingTable[i];
+        const upper = creditPricingTable[i+1];
+        if (amount === lower.credits) return lower.usd;
+        if (amount > lower.credits && amount < upper.credits) {
+            const ratio = (amount - lower.credits) / (upper.credits - lower.credits);
+            return lower.usd + ratio * (upper.usd - lower.usd);
+        }
+    }
+    return amount * 0.449;
   };
 
   const eventPrices: Record<number, number> = {
@@ -1084,11 +1119,12 @@ export default function VendorDashboard() {
 
   const EXCHANGE_RATE = 15000;
 
-  const formatPrice = (priceIDR: number) => {
+  const formatPrice = (priceIDR: number, priceUSDOverride?: number) => {
     if (buyCurrency === 'IDR') {
       return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(priceIDR);
     } else {
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(priceIDR / EXCHANGE_RATE);
+      const usdVal = priceUSDOverride !== undefined ? priceUSDOverride : (priceIDR / EXCHANGE_RATE);
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(usdVal);
     }
   };
 
@@ -1108,7 +1144,7 @@ export default function VendorDashboard() {
       if (buyModalTab === 'credit') {
         packageName = isUSD ? 'Buy Credit' : 'Beli Kredit';
         packageDetail = `${creditAmount} credit`;
-        totalPriceStr = formatPrice(getCreditPriceIDR(creditAmount));
+        totalPriceStr = formatPrice(getCreditPriceIDR(creditAmount), getCreditPriceUSD(creditAmount));
       } else if (buyModalTab === 'event') {
         packageName = isUSD ? 'Buy per Event - Unlimited Generate photo & video' : 'Beli per Event - Unlimited Generate photo & video';
         packageDetail = `${eventDuration} ${isUSD ? 'hours' : 'jam'}`;
@@ -1671,15 +1707,6 @@ export default function VendorDashboard() {
               <h2 className="text-xl font-bold text-white">{buyCurrency === 'USD' ? 'Buy Package' : 'Beli Paket'}</h2>
             </div>
 
-            {/* Info Message */}
-            <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl mb-6">
-              <p className="text-blue-200 text-xs leading-relaxed">
-                {buyCurrency === 'USD' 
-                  ? 'We apologize, currently purchases are made via WhatsApp. We are working on automatic payments, Qris, Visa, Mastercard, bank transfers, virtual accounts, and other payment methods.' 
-                  : 'Mohon maaf saat ini pembelian dilakukan melalui whatsapp. Kami sedang memproses pembelian secara otomatis, Qris, Visa, Mastercard, transfer bank, virtual account, dan metode pembayaran lainya.'}
-              </p>
-            </div>
-
             {/* Currency Toggle */}
             <div className="flex justify-center mb-6">
               <div className="flex items-center bg-black/50 rounded-xl p-1.5 border border-white/10 w-full max-w-sm">
@@ -1739,6 +1766,7 @@ export default function VendorDashboard() {
                       type="range" 
                       min="10" 
                       max="1000" 
+                      step="10"
                       value={creditAmount}
                       onChange={(e) => setCreditAmount(parseInt(e.target.value))}
                       className="w-full accent-[#bc13fe]"
@@ -1751,7 +1779,7 @@ export default function VendorDashboard() {
                   
                   <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
                     <span className="text-gray-400 text-sm">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
-                    <span className="text-2xl font-bold text-[#bc13fe]">{formatPrice(getCreditPriceIDR(creditAmount))}</span>
+                    <span className="text-2xl font-bold text-[#bc13fe]">{formatPrice(getCreditPriceIDR(creditAmount), getCreditPriceUSD(creditAmount))}</span>
                   </div>
                 </div>
               )}
@@ -1809,60 +1837,124 @@ export default function VendorDashboard() {
                   {buyCurrency === 'USD' ? 'CLAIM NOW' : 'KLAIM SEKARANG'}
                 </button>
               ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      let text = buyCurrency === 'USD' 
-                        ? `Hi I want to buy Credit\n${vendor?.email || 'Vendor Email'}\nSelected package: ${creditAmount} Credits\nTotal price: ${formatPrice(getCreditPriceIDR(creditAmount))}`
-                        : `Hi saya ingin membeli Kredit\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${creditAmount} Kredit\nTotal harga: ${formatPrice(getCreditPriceIDR(creditAmount))}`;
-                      const encodedText = encodeURIComponent(text);
-                      window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
-                    }}
-                    className="px-4 py-2 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                    </svg>
-                    WhatsApp
-                  </button>
+                <div className="flex flex-col gap-2 w-full mt-2">
                   <button
                     onClick={async () => {
                       try {
                         const { data: { session } } = await supabase.auth.getSession();
                         if (!session) throw new Error("Not authenticated");
-
                         const amount = getCreditPriceIDR(creditAmount);
-                        
                         const res = await fetch('/api/payment/create', {
                           method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`
-                          },
-                          body: JSON.stringify({
-                            vendor_id: vendor?.id,
-                            type: 'CREDIT',
-                            amount: amount,
-                            quantity: creditAmount
-                          })
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'CREDIT', amount, quantity: creditAmount, payment_method: 'CREDIT_CARD' })
                         });
-
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-
-                        // Redirect user fully to DOKU so they get the beautiful Web responsive view
-                        // instead of the narrow mobile-like popup overlay hook
-                        if (data.payment_url) {
-                          window.location.href = data.payment_url;
-                        }
-                      } catch (err: any) {
-                        console.error("Payment Error:", err);
-                        alert("Failed to initiate payment: " + err.message);
-                      }
+                        if (data.payment_url) window.location.href = data.payment_url;
+                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
-                    className="px-6 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold transition-colors shadow-[0_0_15px_rgba(188,19,254,0.4)]"
+                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
                   >
-                    {buyCurrency === 'USD' ? 'DIRECT PAY' : 'BAYAR LANGSUNG'}
+                    <span className="flex items-center gap-3">
+                      <span className="text-xl">💳</span> 
+                      <span className="flex items-center gap-2">
+                        Pay with Card
+                        <div className="flex items-center gap-1 opacity-90 ml-1">
+                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Visa_Inc._logo_%282005%E2%80%932014%29.png" alt="Visa" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                          </div>
+                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                          </div>
+                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/40/JCB_logo.svg" alt="JCB" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                          </div>
+                        </div>
+                      </span>
+                    </span>
+                    <span className="text-[#bc13fe]">{formatPrice(
+                      Math.ceil(getCreditPriceIDR(creditAmount) * 1.028 + 2000), 
+                      getCreditPriceUSD(creditAmount) * 1.028 + (2000 / EXCHANGE_RATE)
+                    )}</span>
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) throw new Error("Not authenticated");
+                        const amount = getCreditPriceIDR(creditAmount);
+                        const res = await fetch('/api/payment/create', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'CREDIT', amount, quantity: creditAmount, payment_method: 'BANK_TRANSFER' })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Failed to create payment');
+                        if (data.payment_url) window.location.href = data.payment_url;
+                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
+                    }}
+                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
+                  >
+                    <span className="flex items-center gap-3"><span className="text-xl">🏦</span> Bank Transfer</span>
+                    <span className="text-[#bc13fe]">{formatPrice(
+                      getCreditPriceIDR(creditAmount) + 4000,
+                      getCreditPriceUSD(creditAmount) + (4000 / EXCHANGE_RATE)
+                    )}</span>
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) throw new Error("Not authenticated");
+                        const amount = getCreditPriceIDR(creditAmount);
+                        const res = await fetch('/api/payment/create', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'CREDIT', amount, quantity: creditAmount, payment_method: 'QRIS' })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Failed to create payment');
+                        if (data.payment_url) window.location.href = data.payment_url;
+                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
+                    }}
+                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span className="text-xl">📱</span>
+                      <span className="flex items-center gap-2">
+                        Pay with QRIS
+                        <div className="h-4 w-9 bg-white rounded-sm flex items-center justify-center p-0.5 opacity-90 ml-1">
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg" alt="QRIS" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                        </div>
+                      </span>
+                    </span>
+                    <span className="text-[#bc13fe]">{formatPrice(
+                      Math.ceil(getCreditPriceIDR(creditAmount) * 1.007),
+                      getCreditPriceUSD(creditAmount) * 1.007
+                    )}</span>
+                  </button>
+
+                    <button
+                    onClick={() => {
+                      const baseAmount = getCreditPriceIDR(creditAmount);
+                      const finalWaPrice = Math.ceil(baseAmount * 1.03);
+                      const finalWaPriceUSD = getCreditPriceUSD(creditAmount) * 1.03;
+                      let text = buyCurrency === 'USD' 
+                        ? `Hi I want to buy Credit\n${vendor?.email || 'Vendor Email'}\nSelected package: ${creditAmount} Credits\nTotal price: ${formatPrice(finalWaPrice, finalWaPriceUSD)}`
+                        : `Hi saya ingin membeli Kredit\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${creditAmount} Kredit\nTotal harga: ${formatPrice(finalWaPrice)}`;
+                      const encodedText = encodeURIComponent(text);
+                      window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
+                    }}
+                    className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
+                  >
+                    <span className="flex items-center gap-3"><span className="text-xl">💬</span> Pay via WhatsApp</span>
+                    <span className="text-[#25D366]">{formatPrice(
+                      Math.ceil(getCreditPriceIDR(creditAmount) * 1.03),
+                      getCreditPriceUSD(creditAmount) * 1.03
+                    )}</span>
                   </button>
                 </div>
               )}
@@ -1884,15 +1976,6 @@ export default function VendorDashboard() {
             
             <div className="flex items-center justify-between mb-4 pr-8">
               <h2 className="text-xl font-bold text-white">{buyCurrency === 'USD' ? 'Buy Package' : 'Beli Paket'}</h2>
-            </div>
-
-            {/* Info Message */}
-            <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl mb-6">
-              <p className="text-blue-200 text-xs leading-relaxed">
-                {buyCurrency === 'USD' 
-                  ? 'We apologize, currently purchases are made via WhatsApp. We are working on automatic payments, Qris, Visa, Mastercard, bank transfers, virtual accounts, and other payment methods.' 
-                  : 'Mohon maaf saat ini pembelian dilakukan melalui whatsapp. Kami sedang memproses pembelian secara otomatis, Qris, Visa, Mastercard, transfer bank, virtual account, dan metode pembayaran lainya.'}
-              </p>
             </div>
 
             {/* Currency Toggle */}
@@ -1983,24 +2066,6 @@ export default function VendorDashboard() {
                 {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
               </button>
 
-              {buyUnlimitedModalTab === 'event' && (
-                <button
-                  onClick={() => {
-                    let text = buyCurrency === 'USD' 
-                      ? `Hi I want to buy Buy per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nSelected package: ${eventDuration} hours\nTotal price: ${formatPrice(eventPrices[eventDuration])}`
-                      : `Hi saya ingin membeli Beli per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${eventDuration} jam\nTotal harga: ${formatPrice(eventPrices[eventDuration])}`;
-                    const encodedText = encodeURIComponent(text);
-                    window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
-                  }}
-                  className="px-4 py-2 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                  </svg>
-                  WhatsApp
-                </button>
-              )}
-
               {buyUnlimitedModalTab === 'rent' ? (
                 <button
                   onClick={() => {
@@ -2024,44 +2089,111 @@ export default function VendorDashboard() {
                   {buyCurrency === 'USD' ? 'BUY VIA WHATSAPP' : 'BELI VIA WHATSAPP'}
                 </button>
               ) : (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-2 w-full mt-2">
                   <button
                     onClick={async () => {
                       try {
                         const { data: { session } } = await supabase.auth.getSession();
                         if (!session) throw new Error("Not authenticated");
-
                         const amount = eventPrices[eventDuration];
-                        
                         const res = await fetch('/api/payment/create', {
                           method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${session.access_token}`
-                          },
-                          body: JSON.stringify({
-                            vendor_id: vendor?.id,
-                            type: 'UNLIMITED',
-                            amount: amount,
-                            quantity: eventDuration
-                          })
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'CREDIT_CARD' })
                         });
-
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-
-                        // Redirect user fully to DOKU so they get the beautiful Web responsive view
-                        if (data.payment_url) {
-                          window.location.href = data.payment_url;
-                        }
-                      } catch (err: any) {
-                        console.error("Payment Error:", err);
-                        alert("Failed to initiate payment: " + err.message);
-                      }
+                        if (data.payment_url) window.location.href = data.payment_url;
+                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
-                    className="px-6 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold transition-colors shadow-[0_0_15px_rgba(188,19,254,0.4)]"
+                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
                   >
-                    {buyCurrency === 'USD' ? 'DIRECT PAY' : 'BAYAR LANGSUNG'}
+                    <span className="flex items-center gap-3">
+                      <span className="text-xl">💳</span> 
+                      <span className="flex items-center gap-2">
+                        Pay with Card
+                        <div className="flex items-center gap-1 opacity-90 ml-1">
+                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Visa_Inc._logo_%282005%E2%80%932014%29.png" alt="Visa" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                          </div>
+                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                          </div>
+                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/40/JCB_logo.svg" alt="JCB" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                          </div>
+                        </div>
+                      </span>
+                    </span>
+                    <span className="text-[#bc13fe]">{formatPrice(Math.ceil(eventPrices[eventDuration] * 1.028 + 2000))}</span>
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) throw new Error("Not authenticated");
+                        const amount = eventPrices[eventDuration];
+                        const res = await fetch('/api/payment/create', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'BANK_TRANSFER' })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Failed to create payment');
+                        if (data.payment_url) window.location.href = data.payment_url;
+                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
+                    }}
+                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
+                  >
+                    <span className="flex items-center gap-3"><span className="text-xl">🏦</span> Bank Transfer</span>
+                    <span className="text-[#bc13fe]">{formatPrice(eventPrices[eventDuration] + 4000)}</span>
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) throw new Error("Not authenticated");
+                        const amount = eventPrices[eventDuration];
+                        const res = await fetch('/api/payment/create', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'QRIS' })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Failed to create payment');
+                        if (data.payment_url) window.location.href = data.payment_url;
+                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
+                    }}
+                    className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
+                  >
+                    <span className="flex items-center gap-3">
+                      <span className="text-xl">📱</span>
+                      <span className="flex items-center gap-2">
+                        Pay with QRIS
+                        <div className="h-4 w-9 bg-white rounded-sm flex items-center justify-center p-0.5 opacity-90 ml-1">
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg" alt="QRIS" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                        </div>
+                      </span>
+                    </span>
+                    <span className="text-[#bc13fe]">{formatPrice(Math.ceil(eventPrices[eventDuration] * 1.007))}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const baseAmount = eventPrices[eventDuration];
+                      const finalWaPrice = Math.ceil(baseAmount * 1.03);
+                      let text = buyCurrency === 'USD' 
+                        ? `Hi I want to buy Buy per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nSelected package: ${eventDuration} hours\nTotal price: ${formatPrice(finalWaPrice)}`
+                        : `Hi saya ingin membeli Beli per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${eventDuration} jam\nTotal harga: ${formatPrice(finalWaPrice)}`;
+                      const encodedText = encodeURIComponent(text);
+                      window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
+                    }}
+                    className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
+                  >
+                    <span className="flex items-center gap-3"><span className="text-xl">💬</span> Pay via WhatsApp</span>
+                    <span className="text-[#25D366]">{formatPrice(Math.ceil(eventPrices[eventDuration] * 1.03))}</span>
                   </button>
                 </div>
               )}

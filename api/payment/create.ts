@@ -23,10 +23,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    const { vendor_id, type, amount, quantity } = req.body;
+    const { vendor_id, type, amount: baseAmount, quantity, payment_method } = req.body;
 
-    if (!vendor_id || !type || !amount || !quantity) {
+    if (!vendor_id || !type || !baseAmount || !quantity || !payment_method) {
         return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    let finalAmount = baseAmount;
+    if (payment_method === 'CREDIT_CARD') {
+        finalAmount = Math.ceil(baseAmount + (baseAmount * 0.028) + 2000);
+    } else if (payment_method === 'BANK_TRANSFER') {
+        finalAmount = baseAmount + 4000;
+    } else if (payment_method === 'QRIS') {
+        finalAmount = Math.ceil(baseAmount + (baseAmount * 0.007));
     }
 
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -59,7 +68,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .insert([{
                 vendor_id,
                 type,
-                amount,
+                amount: finalAmount,
                 quantity,
                 status: 'PENDING'
             }])
@@ -88,16 +97,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         
         const invoiceNumber = `INV-${transaction.id.substring(0, 8).toUpperCase()}-${Date.now()}`;
 
-        const dokuPayload = {
+        const itemName = type === 'CREDIT' ? `Credit ${quantity}` : `Unlimited ${quantity} Hour(s)`;
+        const lineItems = [
+            {
+                name: itemName,
+                price: baseAmount,
+                quantity: 1
+            }
+        ];
+
+        if (finalAmount > baseAmount) {
+            lineItems.push({
+                name: 'Payment Gateway Fee',
+                price: finalAmount - baseAmount,
+                quantity: 1
+            });
+        }
+
+        const dokuPayload: any = {
             order: {
                 invoice_number: invoiceNumber,
-                amount: amount,
-                callback_url: `https://booth.coroai.app/dashboard?payment_success=true&type=${type}&qty=${quantity}`
+                amount: finalAmount,
+                callback_url: `https://booth.coroai.app/dashboard?payment_success=true&type=${type}&qty=${quantity}`,
+                line_items: lineItems
             },
             payment: {
                 payment_due_date: 60 // 60 minutes
             }
         };
+
+        if (payment_method === 'CREDIT_CARD') {
+            dokuPayload.payment.payment_method_types = ["CREDIT_CARD"];
+        } else if (payment_method === 'QRIS') {
+            dokuPayload.payment.payment_method_types = ["QRIS"];
+        } else if (payment_method === 'BANK_TRANSFER') {
+            dokuPayload.payment.payment_method_types = [
+                "VIRTUAL_ACCOUNT_BCA", "VIRTUAL_ACCOUNT_BANK_MANDIRI", "VIRTUAL_ACCOUNT_PEMAID", 
+                "VIRTUAL_ACCOUNT_BRI", "VIRTUAL_ACCOUNT_BNI", "VIRTUAL_ACCOUNT_BNC", 
+                "VIRTUAL_ACCOUNT_PERMATA", "VIRTUAL_ACCOUNT_CIMB", "VIRTUAL_ACCOUNT_DANAMON"
+            ];
+        }
 
         const signature = generateDokuSignature(dokuClientId, dokuSecretKey, requestId, requestTimestamp, requestTarget, dokuPayload);
 
