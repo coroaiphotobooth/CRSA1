@@ -118,7 +118,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             order: {
                 invoice_number: invoiceNumber,
                 amount: finalAmount,
-                callback_url: `https://booth.coroai.app/dashboard?payment_success=true&type=${type}&qty=${quantity}`,
+                callback_url: `https://booth.coroai.app/dashboard?payment_return=true`,
                 line_items: lineItems
             },
             payment: {

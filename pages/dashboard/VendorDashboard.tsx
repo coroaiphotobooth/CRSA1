@@ -162,42 +162,20 @@ export default function VendorDashboard() {
     };
   }, []);
 
-  // Payment Success Handler
+  // Payment Return Handler
   useEffect(() => {
-    if (vendor && searchParams.get('payment_success')) {
-      const type = searchParams.get('type');
-      const qty = searchParams.get('qty');
-      
+    if (vendor && searchParams.get('payment_return')) {
       const isEnglish = language === 'en'; // Based on active component state
 
-      if (type === 'CREDIT') {
-        const title = isEnglish ? 'Payment Successful' : 'Pembayaran Sukses';
-        const message = isEnglish 
-          ? `Thank you! Your credit has been added by ${qty}.\nYour total credit is now ${vendor.credits}.`
-          : `Terimakasih! Credit Anda sudah ditambahkan sebanyak ${qty}.\nSekarang total credit Anda ${vendor.credits}.`;
-        showDialog('alert', title, message);
-      } else if (type === 'UNLIMITED') {
-        const title = isEnglish ? 'Payment Successful' : 'Pembayaran Sukses';
-        const hours = qty;
-        
-        let remainingString = "";
-        if (vendor.unlimited_seconds_left) {
-           const hoursLeft = Math.floor(vendor.unlimited_seconds_left / 3600);
-           const minsLeft = Math.floor((vendor.unlimited_seconds_left % 3600) / 60);
-           remainingString = isEnglish ? `Total unlimited time you have: ${hoursLeft}h ${minsLeft}m.` : `Total unlimited time yang Anda miliki: ${hoursLeft}j ${minsLeft}m.`;
-        }
-
-        const message = isEnglish 
-          ? `Thank you! Unlimited access for ${hours} hour(s) has been activated.\n${remainingString}`
-          : `Terimakasih! Unlimited ${hours} jam sudah aktif.\n${remainingString}`;
-        showDialog('alert', title, message);
-      }
+      const title = isEnglish ? 'Transaction Status' : 'Status Transaksi';
+      const message = isEnglish 
+        ? `Thank you for your transaction!\nIf your payment was successful, your balance will be updated automatically in a few moments.`
+        : `Terima kasih atas transaksi Anda!\nJika pembayaran berhasil, saldo Anda akan diperbarui secara otomatis dalam beberapa saat.`;
+      showDialog('alert', title, message);
 
       // Remove the search params so it doesn't fire on reload
       const newParams = new URLSearchParams(searchParams);
-      newParams.delete('payment_success');
-      newParams.delete('type');
-      newParams.delete('qty');
+      newParams.delete('payment_return');
       setSearchParams(newParams, { replace: true });
     }
   }, [vendor?.id, searchParams]); // only run when loaded
@@ -1851,7 +1829,10 @@ export default function VendorDashboard() {
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) window.location.href = data.payment_url;
+                        if (data.payment_url) {
+                          // @ts-ignore
+                          loadJokulCheckout(data.payment_url);
+                        }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
                     className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
@@ -1892,7 +1873,10 @@ export default function VendorDashboard() {
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) window.location.href = data.payment_url;
+                        if (data.payment_url) {
+                          // @ts-ignore
+                          loadJokulCheckout(data.payment_url);
+                        }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
                     className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
@@ -1917,7 +1901,10 @@ export default function VendorDashboard() {
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) window.location.href = data.payment_url;
+                        if (data.payment_url) {
+                          // @ts-ignore
+                          loadJokulCheckout(data.payment_url);
+                        }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
                     className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
@@ -2103,7 +2090,10 @@ export default function VendorDashboard() {
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) window.location.href = data.payment_url;
+                        if (data.payment_url) {
+                          // @ts-ignore
+                          loadJokulCheckout(data.payment_url);
+                        }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
                     className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
@@ -2141,7 +2131,10 @@ export default function VendorDashboard() {
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) window.location.href = data.payment_url;
+                        if (data.payment_url) {
+                          // @ts-ignore
+                          loadJokulCheckout(data.payment_url);
+                        }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
                     className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
@@ -2163,7 +2156,10 @@ export default function VendorDashboard() {
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) window.location.href = data.payment_url;
+                        if (data.payment_url) {
+                          // @ts-ignore
+                          loadJokulCheckout(data.payment_url);
+                        }
                       } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
                     }}
                     className="w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm"
