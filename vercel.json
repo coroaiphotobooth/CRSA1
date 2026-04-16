@@ -1,51 +1,22 @@
 {
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/payment/webhook",
-      "destination": "/api/payment/webhook"
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
     },
+    { "handle": "filesystem" },
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "headers": [
     {
-      "source": "/api/payment/webhook",
+      "source": "/api/(.*)",
       "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Client-Id, Request-Id, Request-Timestamp, Signature"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        }
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Client-Id, Request-Id, Request-Timestamp, Signature, Authorization" }
       ]
     }
   ]
