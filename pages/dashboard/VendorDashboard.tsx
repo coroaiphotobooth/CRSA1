@@ -147,7 +147,7 @@ export default function VendorDashboard() {
   const [language, setLanguage] = useState<'en' | 'id'>('en');
   const { showDialog } = useDialog();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const impersonatedVendorId = searchParams.get('vendorId');
   const { startTour, isActive, tourType, stepIndex, status } = useTourState();
   const prevTourTypeRef = useRef<string | null>(null);
@@ -161,6 +161,46 @@ export default function VendorDashboard() {
       intervalsRef.current.forEach(clearInterval);
     };
   }, []);
+
+  // Payment Success Handler
+  useEffect(() => {
+    if (vendor && searchParams.get('payment_success')) {
+      const type = searchParams.get('type');
+      const qty = searchParams.get('qty');
+      
+      const isEnglish = language === 'en'; // Based on active component state
+
+      if (type === 'CREDIT') {
+        const title = isEnglish ? 'Payment Successful' : 'Pembayaran Sukses';
+        const message = isEnglish 
+          ? `Thank you! Your credit has been added by ${qty}.\nYour total credit is now ${vendor.credits}.`
+          : `Terimakasih! Credit Anda sudah ditambahkan sebanyak ${qty}.\nSekarang total credit Anda ${vendor.credits}.`;
+        showDialog('alert', title, message);
+      } else if (type === 'UNLIMITED') {
+        const title = isEnglish ? 'Payment Successful' : 'Pembayaran Sukses';
+        const hours = qty;
+        
+        let remainingString = "";
+        if (vendor.unlimited_seconds_left) {
+           const hoursLeft = Math.floor(vendor.unlimited_seconds_left / 3600);
+           const minsLeft = Math.floor((vendor.unlimited_seconds_left % 3600) / 60);
+           remainingString = isEnglish ? `Total unlimited time you have: ${hoursLeft}h ${minsLeft}m.` : `Total unlimited time yang Anda miliki: ${hoursLeft}j ${minsLeft}m.`;
+        }
+
+        const message = isEnglish 
+          ? `Thank you! Unlimited access for ${hours} hour(s) has been activated.\n${remainingString}`
+          : `Terimakasih! Unlimited ${hours} jam sudah aktif.\n${remainingString}`;
+        showDialog('alert', title, message);
+      }
+
+      // Remove the search params so it doesn't fire on reload
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('payment_success');
+      newParams.delete('type');
+      newParams.delete('qty');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [vendor?.id, searchParams]); // only run when loaded
 
   // Presence Channel
   usePresence(impersonatedVendorId ? undefined : vendor?.id, 'dashboard');

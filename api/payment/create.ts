@@ -91,7 +91,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const dokuPayload = {
             order: {
                 invoice_number: invoiceNumber,
-                amount: amount
+                amount: amount,
+                callback_url: `https://booth.coroai.app/dashboard?payment_success=true&type=${type}&qty=${quantity}`
             },
             payment: {
                 payment_due_date: 60 // 60 minutes
