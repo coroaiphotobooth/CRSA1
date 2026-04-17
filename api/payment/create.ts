@@ -132,9 +132,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             dokuPayload.payment.payment_method_types = ["QRIS"];
         } else if (payment_method === 'BANK_TRANSFER') {
             dokuPayload.payment.payment_method_types = [
-                "VIRTUAL_ACCOUNT_BCA", "VIRTUAL_ACCOUNT_BANK_MANDIRI", "VIRTUAL_ACCOUNT_PEMAID", 
-                "VIRTUAL_ACCOUNT_BRI", "VIRTUAL_ACCOUNT_BNI", "VIRTUAL_ACCOUNT_BNC", 
-                "VIRTUAL_ACCOUNT_PERMATA", "VIRTUAL_ACCOUNT_CIMB", "VIRTUAL_ACCOUNT_DANAMON"
+                "VIRTUAL_ACCOUNT_BCA", "VIRTUAL_ACCOUNT_BANK_MANDIRI", "VIRTUAL_ACCOUNT_BSI", 
+                "VIRTUAL_ACCOUNT_BRI", "VIRTUAL_ACCOUNT_BNI", "VIRTUAL_ACCOUNT_BSM", 
+                "VIRTUAL_ACCOUNT_PERMATA", "VIRTUAL_ACCOUNT_CIMB", "VIRTUAL_ACCOUNT_DANAMON",
+                "VIRTUAL_ACCOUNT_BNC", "VIRTUAL_ACCOUNT_BJB", "VIRTUAL_ACCOUNT_MAYBANK",
+                "VIRTUAL_ACCOUNT_MUAMALAT", "VIRTUAL_ACCOUNT_BSS", "VIRTUAL_ACCOUNT_DOKU",
+                "VIRTUAL_ACCOUNT_SINARMAS"
             ];
         }
 

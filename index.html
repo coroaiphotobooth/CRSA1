@@ -66,6 +66,48 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+    
+    /* DOKU Jokul Customizations to remove double scrollbars */
+    #jokul-checkout-wrapper, .jokul-checkout-wrapper {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 999999 !important;
+      background: rgba(0, 0, 0, 0.8) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      overflow: hidden !important;
+    }
+
+    #jokul-checkout-iframe, iframe[src*="jokul.doku.com"] {
+      width: 100% !important;
+      height: 100% !important;
+      max-height: 100vh !important;
+      max-width: 600px !important; /* Make it look like a nice modal on desktop */
+      border: none !important;
+      border-radius: 16px !important;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+      overflow: hidden !important;
+      margin: auto !important;
+    }
+
+    /* Lock body scroll when DOKU is open */
+    body.jokul-checkout-open, 
+    body:has(iframe[src*="jokul.doku"]), 
+    body:has(iframe[src*="sandbox.doku"]),
+    body:has(#jokul-checkout-wrapper) {
+      overflow: hidden !important;
+    }
+
+    @media (max-width: 640px) {
+      #jokul-checkout-iframe, iframe[src*="jokul.doku.com"] {
+        max-width: 100% !important;
+        border-radius: 0 !important;
+      }
+    }
   </style>
 <script type="importmap">
 {
