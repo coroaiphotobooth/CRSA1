@@ -200,7 +200,57 @@ export default function VendorDashboard() {
       newParams.delete('payment_return');
       setSearchParams(newParams, { replace: true });
     }
-  }, [vendor?.id, searchParams]); // only run when loaded
+    
+    // Explicit Realtime Payment Success Handler
+    const successType = searchParams.get('payment_success_type');
+    const successValue = searchParams.get('payment_success_value');
+    if (vendor && successType && successValue) {
+       const isEnglish = language === 'en';
+       let message = '';
+       if (successType === 'CREDIT') {
+           message = isEnglish
+              ? `Payment Successful. Thank you!\nYour credit has been added by ${successValue}.\nYour total credit is now ${vendor.credits}.`
+              : `Pembayaran Berhasil. Terima kasih!\nKredit Anda telah ditambahkan sebesar ${successValue}.\nTotal kredit Anda sekarang adalah ${vendor.credits}.`;
+       } else {
+           message = isEnglish
+              ? `Payment Successful. Thank you!\nYour unlimited quota has been added by ${successValue} hours.`
+              : `Pembayaran Berhasil. Terima kasih!\nKuota unlimited Anda telah ditambahkan sebesar ${successValue} jam.`;
+       }
+       showDialog('alert', isEnglish ? 'Payment Success' : 'Pembayaran Berhasil', message);
+       const newParams = new URLSearchParams(searchParams);
+       newParams.delete('payment_success_type');
+       newParams.delete('payment_success_value');
+       setSearchParams(newParams, { replace: true });
+    }
+  }, [vendor?.id, vendor?.credits, searchParams, language]); 
+
+  // Realtime listener for transaction webhook completion
+  useEffect(() => {
+    if (!vendor?.id) return;
+
+    const channel = supabase
+      .channel(`transactions-${vendor.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'transactions', filter: `vendor_id=eq.${vendor.id}` },
+        (payload: any) => {
+          if (payload.new.status === 'PAID' && (payload.old.status === 'PENDING' || !payload.old.status)) {
+            // Transaction was just completed by the webhook!
+            const url = new URL(window.location.href);
+            url.searchParams.set('payment_success_type', payload.new.type);
+            url.searchParams.set('payment_success_value', payload.new.quantity);
+            url.searchParams.delete('payment_return'); // avoid double alert
+            // By replacing the location, we completely close/destroy DOKU Jokul Checkout and trigger our success UI safely
+            window.location.href = url.toString();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [vendor?.id]);
 
   // Presence Channel
   usePresence(impersonatedVendorId ? undefined : vendor?.id, 'dashboard');
