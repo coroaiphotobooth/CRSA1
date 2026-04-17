@@ -713,7 +713,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                          className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
                          value={concept.prompt} 
                          onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
-                         placeholder="Write your concept or prompt here.. if it is simple, press optimize prompt, the system will make your prompt better."
+                         placeholder="Write your concept or prompt here.. if it is simple, press automatic prompt, the system will make your prompt better."
                       />
                       <div className="flex flex-col items-end gap-1">
                         <button
@@ -727,9 +727,9 @@ Output ONLY the enhanced prompt text, nothing else.`;
                           ) : (
                             <Sparkles className="w-3.5 h-3.5" />
                           )}
-                          OPTIMIZE PROMPT
+                          AUTOMATIC PROMPT
                         </button>
-                        <span className="text-[8px] text-gray-500 italic">use OPTIMIZE PROMPT if you use a simple prompt, we will make it better</span>
+                        <span className="text-[8px] text-gray-500 italic">use AUTOMATIC PROMPT if you use a simple prompt, we will make it better</span>
                       </div>
                     </div>
                   ) : (
