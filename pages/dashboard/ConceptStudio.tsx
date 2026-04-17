@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Upload, Image as ImageIcon, Play, Save, Loader2, Trash2, Edit2, MessageSquare, ArrowLeft, Send, Paperclip, X } from 'lucide-react';
+import { Upload, Image as ImageIcon, Play, Save, Loader2, Trash2, Edit2, MessageSquare, ArrowLeft, Send, Paperclip, X, Copy } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useDialog } from '../../components/DialogProvider';
 import { ConceptTemplate } from '../../types';
@@ -789,20 +789,64 @@ Additional instructions: A ${composition} shot. ${enhancedPrompt}`
               ref={chatScrollRef}
               className="flex-1 p-6 overflow-y-auto space-y-6"
             >
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] rounded-2xl p-4 ${msg.role === 'user' ? 'bg-[#bc13fe] text-white rounded-br-none' : 'bg-white/10 text-gray-100 rounded-bl-none border border-white/5 whitespace-pre-wrap'}`}>
-                    {msg.images && msg.images.length > 0 && (
-                      <div className="flex gap-2 flex-wrap mb-3">
-                        {msg.images.map((img, idx) => (
-                           <img key={idx} src={img} alt="Uploaded ref" className="w-24 h-24 object-cover rounded-lg border border-white/20" />
-                        ))}
-                      </div>
-                    )}
-                    <span className="leading-relaxed text-sm md:text-base">{msg.text}</span>
+              {chatMessages.map((msg, i) => {
+                if (msg.role === 'model') {
+                  let mainText = msg.text;
+                  let suggestionText = '';
+                  
+                  // Regex to detect either the new strict divider or the old variations of "Sugesti Tambahan"
+                  const splitMatch = msg.text.match(/(?:===SUGESTI===|(?:\*\*|#|\s)*Sugesti Tambahan(?:\*\*|:|\s)*)/i);
+                  
+                  if (splitMatch && splitMatch.index !== undefined) {
+                    mainText = msg.text.substring(0, splitMatch.index).trim();
+                    let rawSuggestion = msg.text.substring(splitMatch.index + splitMatch[0].length).trim();
+                    // Clean up any stray markdown formatting at the start of the suggestion text
+                    rawSuggestion = rawSuggestion.replace(/^(\*|:|-|#|\s)+/, '');
+                    suggestionText = "Sugesti Tambahan:\n\n" + rawSuggestion;
+                  }
+
+                  return (
+                    <React.Fragment key={i}>
+                      {mainText && (
+                        <div className="flex justify-start mb-4">
+                          <div className="max-w-[85%] rounded-2xl p-4 bg-white/10 text-gray-100 rounded-bl-none border border-white/5 whitespace-pre-wrap relative group">
+                            <span className="leading-relaxed text-sm md:text-base">{mainText}</span>
+                            <button 
+                              onClick={() => navigator.clipboard.writeText(mainText)}
+                              className="absolute top-2 right-2 p-1.5 bg-black/40 hover:bg-[#bc13fe] text-white rounded opacity-0 group-hover:opacity-100 transition-all text-[10px] uppercase font-bold tracking-wider flex items-center gap-1"
+                              title="Copy Prompt"
+                            >
+                              <Copy className="w-3 h-3" /> Copy
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {suggestionText && (
+                        <div className="flex justify-start mt-2">
+                          <div className="max-w-[85%] rounded-2xl p-4 bg-[#bc13fe]/10 text-[#f5d0fe] rounded-bl-none border border-[#bc13fe]/30 whitespace-pre-wrap">
+                            <span className="leading-relaxed text-sm md:text-base">{suggestionText}</span>
+                          </div>
+                        </div>
+                      )}
+                    </React.Fragment>
+                  );
+                }
+
+                return (
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] rounded-2xl p-4 ${msg.role === 'user' ? 'bg-[#bc13fe] text-white rounded-br-none' : 'bg-white/10 text-gray-100 rounded-bl-none border border-white/5 whitespace-pre-wrap'}`}>
+                      {msg.images && msg.images.length > 0 && (
+                        <div className="flex gap-2 flex-wrap mb-3">
+                          {msg.images.map((img, idx) => (
+                             <img key={idx} src={img} alt="Uploaded ref" className="w-24 h-24 object-cover rounded-lg border border-white/20" />
+                          ))}
+                        </div>
+                      )}
+                      <span className="leading-relaxed text-sm md:text-base">{msg.text}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {isChatting && (
                 <div className="flex justify-start">
                   <div className="bg-white/10 text-gray-100 rounded-2xl rounded-bl-none p-4 flex gap-2 items-center">
