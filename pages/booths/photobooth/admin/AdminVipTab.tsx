@@ -1,6 +1,7 @@
 import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import { PhotoboothSettings } from '../../../../types';
 import { useDialog } from '../../../../components/DialogProvider';
+import { supabase } from '../../../../lib/supabase';
 
 interface AdminVipTabProps {
   settings: PhotoboothSettings;
@@ -20,8 +21,27 @@ const AdminVipTab = forwardRef<AdminVipTabRef, AdminVipTabProps>(({ settings, on
   useImperativeHandle(ref, () => ({
     saveVipSettings: async () => {
       onSaveSettings(localSettings);
-      setIsDirty(false);
-      showDialog('alert', 'Success', 'VIP Settings saved securely to Supabase settings.');
+      
+      try {
+        const eventId = localSettings.activeEventId;
+        if (eventId) {
+          const { error } = await supabase
+            .from('events')
+            .update({ 
+               settings: localSettings
+            })
+            .eq('id', eventId);
+            
+          if (error) {
+             throw error;
+          }
+        }
+        setIsDirty(false);
+        showDialog('alert', 'Success', 'VIP Settings saved securely to Supabase settings.');
+      } catch (err) {
+        console.error("Failed to save VIP settings to Supabase", err);
+        showDialog('alert', 'Error', 'Failed to save VIP settings to cloud.');
+      }
     },
     hasUnsavedChanges: () => isDirty
   }));

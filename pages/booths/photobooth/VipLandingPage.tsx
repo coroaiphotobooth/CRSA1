@@ -117,15 +117,30 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onAdmin, setti
       try {
         const scriptUrl = settings.vipAppsScriptUrl || DEFAULT_SETTINGS.vipAppsScriptUrl;
         if (scriptUrl) {
-          const res = await fetch(`${scriptUrl}?action=verify&kode=${encodeURIComponent(vipKode.trim())}`);
-          const data = await res.json();
+          const targetUrl = `${scriptUrl}?action=verify&kode=${encodeURIComponent(vipKode.trim())}`;
+          console.log("[VIP DEBUG] Fetching URL:", targetUrl);
+          const res = await fetch(targetUrl);
+          const text = await res.text();
+          console.log("[VIP DEBUG] Response text:", text);
+          let data;
+          try {
+             data = JSON.parse(text);
+          } catch(e) {
+             console.error("[VIP DEBUG] Failed to parse JSON", e);
+             return null;
+          }
+
           if (data && data.success && data.guestName) {
             return {
               firstName: data.guestName,
               kode: data.kode || vipKode.trim()
             };
+          } else {
+             console.log("[VIP DEBUG] Verification failed or missing guestName. Data:", data);
           }
           return null;
+        } else {
+           console.log("[VIP DEBUG] No scriptUrl provided in settings or constant.");
         }
         return null;
       } catch (e) {
