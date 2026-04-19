@@ -91,6 +91,7 @@ export interface PhotoboothSettings {
   vipVideoTalkingUrl?: string; // VIP Avatar Talking Video (MP4)
   vipOpenAiKey?: string; // OpenAI Key for TTS
   vipTtsVoice?: string; // Voice choice
+  vipTtsSpeed?: number; // TTS speed multiplier (e.g., 1.0, 1.25)
   
   // Guestbook specific settings
   guestbookPhotoSize?: number; // Scale factor or width

@@ -59,6 +59,7 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
             model: 'tts-1',
             input: greetingText,
             voice: settings.vipTtsVoice || 'nova',
+            speed: settings.vipTtsSpeed ?? 1.25,
           })
         });
         
@@ -86,7 +87,7 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
     // Fallback: Browser Web Speech API
     const utterance = new SpeechSynthesisUtterance(greetingText);
     utterance.lang = 'id-ID';
-    utterance.rate = 0.9; 
+    utterance.rate = settings.vipTtsSpeed ?? 0.9; 
     
     let voices = window.speechSynthesis.getVoices();
     let indoVoice = voices.find(v => v.lang.includes('id'));

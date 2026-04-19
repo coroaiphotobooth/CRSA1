@@ -130,6 +130,25 @@ const AdminVipTab = forwardRef<AdminVipTabRef, AdminVipTabProps>(({ settings, on
               <option value="shimmer">Shimmer (Soft Female)</option>
             </select>
           </div>
+          
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block">
+              Voice Speed (OpenAI)
+            </label>
+            <div className="flex items-center gap-4">
+               <input 
+                 type="range" 
+                 min="0.5" 
+                 max="2.0" 
+                 step="0.05"
+                 value={localSettings.vipTtsSpeed ?? 1.25}
+                 onChange={(e) => handleChange('vipTtsSpeed', parseFloat(e.target.value))}
+                 className="flex-1 accent-[#bc13fe]"
+               />
+               <span className="text-white font-mono text-sm w-12">{localSettings.vipTtsSpeed ?? 1.25}x</span>
+            </div>
+            <p className="text-xs text-gray-500">Sesuaikan kecepatan agar video berbicara dan ucapan terdengar lebih pas/selaras.</p>
+          </div>
         </div>
       </div>
     </div>
