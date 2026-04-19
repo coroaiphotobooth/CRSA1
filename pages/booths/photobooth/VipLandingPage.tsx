@@ -43,12 +43,14 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onAdmin, setti
     // Switch video to talking
     setIsVideoTalking(true);
 
-    if (settings.vipOpenAiKey && settings.vipOpenAiKey.trim() !== '') {
+    const openAiKey = settings.vipOpenAiKey?.trim() || import.meta.env.VITE_OPENAI_API_KEY?.trim();
+
+    if (openAiKey) {
       try {
         const response = await fetch('https://api.openai.com/v1/audio/speech', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${settings.vipOpenAiKey.trim()}`,
+            'Authorization': `Bearer ${openAiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
