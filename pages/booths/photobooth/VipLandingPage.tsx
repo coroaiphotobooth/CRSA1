@@ -290,15 +290,29 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
         
         {!isAvatarGreeting ? (
             vipLoading ? (
-               <div className="flex flex-col items-center justify-center p-8 bg-black/60 backdrop-blur-xl border border-[#bc13fe]/30 rounded-3xl shadow-[0_0_40px_rgba(188,19,254,0.15)] animate-fade-in-up w-full">
-                 <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
-                   <div className="absolute inset-0 border-4 border-t-[#bc13fe] border-transparent rounded-full animate-spin"></div>
-                   <div className="absolute inset-2 border-4 border-b-[#bc13fe] border-l-[#bc13fe]/30 border-transparent rounded-full animate-[spin_1.5s_linear_infinite_reverse]"></div>
-                   <div className="absolute inset-4 bg-[#bc13fe]/20 rounded-full animate-pulse"></div>
-                   <div className="w-1 h-1 bg-white rounded-full"></div>
+               <div className="flex flex-col items-center justify-center p-12 bg-black/80 backdrop-blur-2xl border border-[#bc13fe]/40 rounded-[2.5rem] shadow-[0_0_60px_rgba(188,19,254,0.25)] animate-fade-in-up w-full relative overflow-hidden">
+                 {/* Cyberpunk corner accents */}
+                 <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-[#bc13fe]/50 rounded-tl-[2.5rem] opacity-70"></div>
+                 <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-[#bc13fe]/50 rounded-br-[2.5rem] opacity-70"></div>
+
+                 <div className="relative w-36 h-36 mb-10 flex items-center justify-center">
+                   {/* Core glow */}
+                   <div className="absolute inset-0 bg-[#bc13fe]/20 rounded-full blur-2xl animate-pulse"></div>
+                   {/* Outer orbital */}
+                   <div className="absolute inset-[-10px] border-[3px] border-t-[#bc13fe] border-r-transparent border-b-[#bc13fe]/40 border-l-transparent rounded-full animate-[spin_3s_linear_infinite]"></div>
+                   {/* Inner high-speed ring */}
+                   <div className="absolute inset-2 border-[4px] border-t-[#bc13fe] border-transparent rounded-full animate-[spin_1.5s_linear_infinite_reverse]"></div>
+                   {/* Middle dash ring */}
+                   <div className="absolute inset-6 border-[2px] border-dashed border-[#bc13fe]/60 rounded-full animate-[spin_4s_linear_infinite]"></div>
+                   {/* Center dot */}
+                   <div className="w-3 h-3 bg-white rounded-full shadow-[0_0_15px_white] animate-pulse"></div>
                  </div>
-                 <h3 className="text-white font-mono tracking-[0.3em] text-sm md:text-base uppercase animate-pulse">Accessing Mainframe</h3>
-                 <p className="text-[#bc13fe] font-mono text-xs tracking-widest mt-3 opacity-80 uppercase">Verifying Biometric Data...</p>
+                 <h3 className="text-white font-heading tracking-[0.4em] text-lg md:text-xl uppercase animate-pulse">Accessing Mainframe</h3>
+                 <p className="text-[#bc13fe] font-mono text-sm tracking-[0.2em] mt-4 opacity-80 uppercase">Verifying Biometric Data</p>
+                 
+                 <div className="w-full max-w-[200px] h-1 bg-[#bc13fe]/20 mt-8 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#bc13fe] w-1/2 animate-pulse rounded-full"></div>
+                 </div>
                </div>
             ) : (
                 <form onSubmit={handleVipSubmit} className="flex flex-col gap-4 animate-fade-in-up items-center w-full">
@@ -341,12 +355,39 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
                 </form>
             )
         ) : (
-            <div className="animate-fade-in-up flex flex-col items-center gap-6">
-                <div className="bg-black/60 backdrop-blur-xl border border-white/20 p-8 rounded-3xl min-h-[140px] flex items-center justify-center transform transition-all hover:scale-105">
-                    <p className="text-white text-2xl font-heading leading-relaxed italic tracking-wider">
-                      "Halo <span className="text-[#bc13fe] font-black not-italic px-2">{guestFirstName}</span>, <br/>
-                      Selamat datang di AI experience. Silakan pilih tema untuk melanjutkan!"
-                    </p>
+            <div className="w-full animate-[fade-in_0.5s_ease-out_forwards]">
+                <div className="relative bg-black/80 backdrop-blur-2xl border border-[#bc13fe]/40 p-10 md:p-14 rounded-[2.5rem] min-h-[250px] w-full flex flex-col items-center justify-center transform transition-all shadow-[0_0_60px_rgba(188,19,254,0.2)] overflow-hidden">
+                    
+                    {/* Corner tech accents */}
+                    <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-[#bc13fe]/60 rounded-tr-[2.5rem] opacity-80"></div>
+                    <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-[#bc13fe]/60 rounded-bl-[2.5rem] opacity-80"></div>
+                    
+                    {/* Animated Text Sequence */}
+                    <div className="flex flex-col items-center text-center w-full">
+                        <h2 
+                          className="text-4xl md:text-5xl lg:text-6xl font-heading font-black uppercase tracking-widest text-white drop-shadow-[0_0_20px_rgba(188,19,254,0.6)] opacity-0 animate-fade-in-up"
+                          style={{ animationFillMode: 'both', animationDelay: '300ms' }}
+                        >
+                            Halo, <br className="md:hidden" />
+                            <span className="text-[#bc13fe]">{guestFirstName}</span>!
+                        </h2>
+                        
+                        <div 
+                          className="w-24 h-[1px] bg-gradient-to-r from-transparent via-[#bc13fe] to-transparent my-6 opacity-0 animate-fade-in-up"
+                          style={{ animationFillMode: 'both', animationDelay: '1000ms' }}
+                        ></div>
+                        
+                        <p 
+                          className="text-gray-300 text-xs md:text-sm lg:text-base font-mono leading-relaxed tracking-[0.2em] uppercase opacity-0 animate-fade-in-up"
+                          style={{ animationFillMode: 'both', animationDelay: '1500ms' }}
+                        >
+                            Selamat Datang di AI Experience.<br/>
+                            <span className="text-[#bc13fe]/80 text-[10px] md:text-xs mt-3 block tracking-[0.3em]">Silakan pilih tema untuk melanjutkan inisialisasi</span>
+                        </p>
+                    </div>
+                    
+                    {/* Background glowing line */}
+                    <div className="absolute -bottom-px left-1/2 -translate-x-1/2 w-1/2 h-[2px] bg-gradient-to-r from-transparent via-[#bc13fe] to-transparent opacity-60"></div>
                 </div>
             </div>
         )}
