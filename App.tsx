@@ -149,7 +149,7 @@ const PhotoboothFlow: React.FC = () => {
       parsed.vipAppsScriptUrl = DEFAULT_SETTINGS.vipAppsScriptUrl;
       parsed.vipVideoIdleUrl = DEFAULT_SETTINGS.vipVideoIdleUrl;
       parsed.vipVideoTalkingUrl = DEFAULT_SETTINGS.vipVideoTalkingUrl;
-      parsed.enableVipMode = DEFAULT_SETTINGS.enableVipMode;
+      // Do NOT force enableVipMode, let it read from what they saved or fetched from Supabase
       setSettings(parsed);
     }
 
