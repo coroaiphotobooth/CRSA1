@@ -46,6 +46,13 @@ export type AspectRatio = '16:9' | '9:16' | '3:2' | '2:3';
 
 export type MonitorTheme = 'physics' | 'grid' | 'hero' | 'slider';
 
+export interface BartenderMenuItem {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl?: string;
+}
+
 export interface PhotoboothSettings {
   eventName: string;
   eventDescription: string;
@@ -54,6 +61,7 @@ export interface PhotoboothSettings {
   originalFolderId?: string; 
   storage_folder?: string;
   eventType?: 'photobooth' | 'guestbook' | 'bartender';
+  bartenderMenu?: BartenderMenuItem[];
   spreadsheetId?: string; 
   selectedModel: string;
   gptModelSize?: '512' | '720' | '1024'; 

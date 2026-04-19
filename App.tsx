@@ -28,6 +28,7 @@ import GuestbookFlow from './pages/GuestbookAi/GuestbookFlow';
 import GuestbookAdmin from './pages/GuestbookAi/GuestbookAdmin';
 import PrintServerPage from './pages/booths/photobooth/PrintServerPage';
 import BartenderApp from './pages/booths/bartender/BartenderApp';
+import BartenderAdmin from './pages/booths/bartender/BartenderAdmin';
 import { useDialog } from './components/DialogProvider';
 import { TourProvider } from './components/TourProvider';
 
@@ -592,11 +593,12 @@ const App: React.FC = () => {
           <Route path="/dashboard" element={<VendorDashboard />} />
           <Route path="/result/:sessionId" element={<GuestResultPage />} />
           <Route path="/app/:eventId/*" element={<PhotoboothFlow />} />
+          <Route path="/admin/:eventId/guestbook" element={<GuestbookAdmin />} />
+          <Route path="/admin/:eventId/bartender" element={<BartenderAdmin />} />
           <Route path="/admin/:eventId/*" element={<PhotoboothFlow />} />
           <Route path="/print-server/:eventId" element={<PrintServerPage />} />
           <Route path="/guestbook/:eventId/monitor" element={<GuestbookMonitor />} />
           <Route path="/guestbook/:eventId/guest" element={<GuestbookFlow />} />
-          <Route path="/admin/:eventId/guestbook" element={<GuestbookAdmin />} />
           <Route path="/bartender/:eventId/*" element={<BartenderApp />} />
         </Routes>
       </AuthGuard>

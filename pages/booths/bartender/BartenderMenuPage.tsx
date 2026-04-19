@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { PhotoboothSettings } from '../../../types';
+import { PhotoboothSettings, BartenderMenuItem } from '../../../types';
 import { Wine, Sparkles } from 'lucide-react';
 
 // Touch file
@@ -13,7 +13,7 @@ interface BartenderMenuPageProps {
   onBack: () => void;
 }
 
-const DRINK_MENU = [
+const DEFAULT_DRINK_MENU: BartenderMenuItem[] = [
   { id: 'cyber_mojito', name: 'Cyber Mojito', description: 'Mint, Lime, Neon Blue Curacao, Soda' },
   { id: 'galactic_coffee', name: 'Galactic Coffee', description: 'Cold Brew, Vanilla, Stardust Choco' },
   { id: 'neon_margarita', name: 'Neon Margarita', description: 'Tequila, Triple Sec, Lime, Salt Rim' },
@@ -22,6 +22,8 @@ const DRINK_MENU = [
 const BartenderMenuPage: React.FC<BartenderMenuPageProps> = ({ settings, guestName, guestKode, onBack }) => {
   const [viewState, setViewState] = useState<'CHOICE' | 'MENU_LIST' | 'PROCESSING' | 'DONE'>('CHOICE');
   const [selectedDrink, setSelectedDrink] = useState<string | null>(null);
+
+  const currentMenu = settings.bartenderMenu && settings.bartenderMenu.length > 0 ? settings.bartenderMenu : DEFAULT_DRINK_MENU;
 
   const handleOrderDrink = async (drinkName: string) => {
     setViewState('PROCESSING');
@@ -47,7 +49,7 @@ const BartenderMenuPage: React.FC<BartenderMenuPageProps> = ({ settings, guestNa
     setViewState('PROCESSING');
     
     // Simulate AI choosing a drink
-    const randomDrink = DRINK_MENU[Math.floor(Math.random() * DRINK_MENU.length)];
+    const randomDrink = currentMenu[Math.floor(Math.random() * currentMenu.length)];
     setSelectedDrink(randomDrink.name + " (AI Special)");
 
     try {
@@ -132,15 +134,23 @@ const BartenderMenuPage: React.FC<BartenderMenuPageProps> = ({ settings, guestNa
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {DRINK_MENU.map((drink) => (
+              {currentMenu.map((drink) => (
                 <button
                   key={drink.id}
                   onClick={() => handleOrderDrink(drink.name)}
-                  className="bg-white/5 backdrop-blur-md border border-white/10 hover:border-blue-400 p-6 rounded-2xl flex flex-col text-left transition-all hover:bg-white/10"
+                  className="bg-white/5 backdrop-blur-md border border-white/10 hover:border-blue-400 p-6 rounded-2xl flex flex-col text-left transition-all hover:bg-white/10 relative overflow-hidden group"
                 >
-                  <h3 className="font-heading font-bold text-lg mb-2 uppercase tracking-wide text-white">{drink.name}</h3>
-                  <p className="text-xs font-mono text-gray-400 leading-relaxed mb-6">{drink.description}</p>
-                  <span className="mt-auto text-[10px] font-mono tracking-widest uppercase text-blue-400">Pesan →</span>
+                  {drink.imageUrl && (
+                    <div className="absolute inset-x-0 top-0 h-32 opacity-30 group-hover:opacity-50 transition-opacity">
+                      <img src={drink.imageUrl} alt={drink.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#111] to-transparent"></div>
+                    </div>
+                  )}
+                  <div className={`relative z-10 ${drink.imageUrl ? 'pt-24' : ''}`}>
+                    <h3 className="font-heading font-bold text-lg mb-2 uppercase tracking-wide text-white">{drink.name}</h3>
+                    <p className="text-xs font-mono text-gray-400 leading-relaxed mb-6">{drink.description}</p>
+                    <span className="mt-auto text-[10px] font-mono tracking-widest uppercase text-blue-400">Pesan →</span>
+                  </div>
                 </button>
               ))}
             </div>

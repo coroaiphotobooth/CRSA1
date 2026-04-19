@@ -1645,7 +1645,15 @@ export default function VendorDashboard() {
                         {t.launch}
                       </button>
                       <button 
-                        onClick={() => navigate(`/admin/${event.id}`)}
+                        onClick={() => {
+                          if (event.settings?.eventType === 'guestbook') {
+                            navigate(`/admin/${event.id}/guestbook`);
+                          } else if (event.settings?.eventType === 'bartender') {
+                            navigate(`/admin/${event.id}/bartender`);
+                          } else {
+                            navigate(`/admin/${event.id}`);
+                          }
+                        }}
                         className={`flex-1 min-w-[45%] py-2 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 ${isBartender ? 'bg-blue-500/10 hover:bg-blue-500/20' : 'bg-white/5 hover:bg-white/10'}`}
                       >
                         <Settings className="w-3 h-3" />
