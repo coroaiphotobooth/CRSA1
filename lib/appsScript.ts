@@ -85,6 +85,14 @@ export const fetchImageBase64 = async (fileIdOrUrl: string): Promise<string | nu
 export const saveSessionToCloud = async (sessionData: any): Promise<{success: boolean}> => {
   if (sessionData.eventId) {
     try {
+      const vipName = typeof window !== 'undefined' ? sessionStorage.getItem('vip_guest_name') : null;
+      const vipKode = typeof window !== 'undefined' ? sessionStorage.getItem('vip_kode') : null;
+      
+      let finalGuestName = sessionData.guestName || null;
+      if (vipName && vipKode) {
+        finalGuestName = `VIP_${vipKode}_${vipName}`;
+      }
+
       const { error } = await supabase
         .from('sessions')
         .upsert({
@@ -95,6 +103,7 @@ export const saveSessionToCloud = async (sessionData: any): Promise<{success: bo
           status: sessionData.isVideoRequested ? 'processing' : 'completed',
           video_status: sessionData.isVideoRequested ? 'pending' : 'idle',
           video_prompt: sessionData.videoPrompt || '',
+          guest_name: finalGuestName,
           ...(sessionData.originalImageUrl && { original_image_url: sessionData.originalImageUrl })
         }, { onConflict: 'id' });
         

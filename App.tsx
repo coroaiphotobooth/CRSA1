@@ -49,7 +49,7 @@ const PhotoboothFlow: React.FC = () => {
     : location.pathname.startsWith('/admin') ? AppState.ADMIN : AppState.LANDING;
 
   const [currentPage, setCurrentPage] = useState<AppState>(initialPage);
-  const [adminTab, setAdminTab] = useState<'settings' | 'concepts'>('settings');
+  const [adminTab, setAdminTab] = useState<'settings' | 'concepts' | 'vip'>('settings');
   const [selectedConcept, setSelectedConcept] = useState<Concept | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [settings, setSettings] = useState<PhotoboothSettings>(DEFAULT_SETTINGS);
@@ -70,6 +70,16 @@ const PhotoboothFlow: React.FC = () => {
   const [galleryCache, setGalleryCache] = useState<GalleryItem[]>([]);
 
   usePresence(settings.vendor_id, 'event_photobooth');
+
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUserEmail(data.session?.user?.email || null);
+    });
+  }, []);
+
+  const isVIPAdmin = ['demo@coroai.app', 'coroaiphotobooth@gmail.com'].includes(userEmail || '');
 
   // --- OVERLAY PRELOADER ---
   useEffect(() => {
@@ -406,7 +416,7 @@ const PhotoboothFlow: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case AppState.LANDING:
-        return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} />;
+        return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} isVIPAdmin={isVIPAdmin} />;
       case AppState.THEMES:
         return (
           <ThemesPage 
@@ -455,11 +465,11 @@ const PhotoboothFlow: React.FC = () => {
             />
         );
       case AppState.ADMIN:
-        return <AdminPage settings={settings} concepts={concepts} onSaveSettings={handleUpdateSettings} onSaveConcepts={handleUpdateConcepts} onBack={() => setCurrentPage(AppState.LANDING)} onLaunchMonitor={() => setCurrentPage(AppState.MONITOR)} initialTab={adminTab} />;
+        return <AdminPage settings={settings} concepts={concepts} onSaveSettings={handleUpdateSettings} onSaveConcepts={handleUpdateConcepts} onBack={() => setCurrentPage(AppState.LANDING)} onLaunchMonitor={() => setCurrentPage(AppState.MONITOR)} initialTab={adminTab} isVIPAdmin={isVIPAdmin} />;
       case AppState.MONITOR:
         return <MonitorPage onBack={() => setCurrentPage(AppState.ADMIN)} activeEventId={settings.activeEventId} eventName={settings.eventName} monitorSize={settings.monitorImageSize} theme={settings.monitorTheme} />;
       default:
-        return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} />;
+        return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} isVIPAdmin={isVIPAdmin} />;
     }
   };
 

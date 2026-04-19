@@ -84,6 +84,8 @@ export interface PhotoboothSettings {
   enablePrint?: boolean; // New Setting: Enable Direct Printing Feature
   printMethod?: 'direct' | 'server'; // New Setting: Print Method
   enableDoublePrint?: boolean; // New Setting: Double Print Layout
+  enableVipMode?: boolean; // Temporary VIP Feature
+  vipGuests?: any[]; // Temporary VIP Feature Data
   
   // Guestbook specific settings
   guestbookPhotoSize?: number; // Scale factor or width

@@ -2,21 +2,29 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PhotoboothSettings, ProcessNotification } from '../../../types';
-import { ChevronDown, Settings } from 'lucide-react';
+import { ChevronDown, Settings, AlertCircle, CheckCircle } from 'lucide-react';
+import { useDialog } from '../../../components/DialogProvider';
 
 interface LandingPageProps {
   onStart: () => void;
   onGallery: () => void;
-  onAdmin: (tab?: 'settings' | 'concepts') => void;
+  onAdmin: (tab?: 'settings' | 'concepts' | 'vip') => void;
   settings: PhotoboothSettings;
-  notifications?: ProcessNotification[]; // New Prop
+  notifications?: ProcessNotification[]; 
+  isVIPAdmin?: boolean;
 }
 
-const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, settings, notifications = [] }) => {
+const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, settings, notifications = [], isVIPAdmin = false }) => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   
+  // VIP State
+  const [vipKode, setVipKode] = useState('');
+  const [vipLoading, setVipLoading] = useState(false);
+  const [vipSuccessMessage, setVipSuccessMessage] = useState<string | null>(null);
+  const [vipError, setVipError] = useState<string | null>(null);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -37,6 +45,38 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
         document.exitFullscreen();
       }
     }
+  };
+
+  const handleVipSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vipKode.trim()) return;
+
+    setVipLoading(true);
+    setVipError(null);
+
+    // Give it a tiny delay to feel like it's processing
+    setTimeout(() => {
+      const guests = settings.vipGuests || [];
+      const matchedGuest = guests.find(g => g.kode === vipKode.trim());
+
+      if (matchedGuest) {
+        setVipSuccessMessage(`Halo, selamat datang ${matchedGuest.firstName} ${matchedGuest.lastName || ''}!`);
+        
+        // Save to session storage so Photobooth.tsx knows who is playing
+        const guestName = `${matchedGuest.firstName} ${matchedGuest.lastName || ''}`.trim();
+        sessionStorage.setItem('vip_kode', matchedGuest.kode);
+        sessionStorage.setItem('vip_guest_name', guestName);
+
+        // After 2.5s, trigger normal flow
+        setTimeout(() => {
+          onStart();
+        }, 2500);
+
+      } else {
+        setVipError('ID Tidak Ditemukan. Silakan cek kembali.');
+        setVipLoading(false);
+      }
+    }, 500);
   };
 
   return (
@@ -75,10 +115,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
               </button>
               <button 
                 onClick={() => { setIsMenuOpen(false); onAdmin('concepts'); }}
-                className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors"
+                className={`px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors ${isVIPAdmin ? 'border-b border-white/5' : ''}`}
               >
                 Settings Concept
               </button>
+              {isVIPAdmin && (
+                <button 
+                  onClick={() => { setIsMenuOpen(false); onAdmin('vip'); }}
+                  className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors"
+                >
+                  VIP Import
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -93,21 +141,75 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
         </h2>
       </div>
 
-      <div className="relative z-10 flex flex-col md:flex-row gap-4 md:gap-8 w-full max-w-md md:max-w-none justify-center">
-        <button 
-          onClick={onStart}
-          className="group relative px-8 md:px-12 py-5 md:py-6 bg-[#bc13fe] hover:bg-[#a010d8] transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden"
-        >
-          <span className="relative z-10 italic">LAUNCH</span>
-          <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
-        </button>
+      <div className="relative z-10 flex flex-col items-center gap-4 md:gap-8 w-full max-w-md md:max-w-none">
+        
+        {settings.enableVipMode ? (
+          <div className="w-full max-w-sm flex flex-col items-center">
+            {vipSuccessMessage ? (
+              <div className="animate-[slideInUp_0.4s_ease-out] flex flex-col items-center gap-4 bg-[#bc13fe]/20 border border-[#bc13fe]/50 px-8 py-6 rounded-2xl w-full">
+                <CheckCircle className="w-12 h-12 text-[#bc13fe] animate-pulse" />
+                <h3 className="text-xl md:text-2xl font-bold text-white text-center italic font-heading tracking-wider">
+                  {vipSuccessMessage}
+                </h3>
+              </div>
+            ) : (
+              <form onSubmit={handleVipSubmit} className="w-full relative flex flex-col items-center space-y-4">
+                <input
+                  type="text"
+                  placeholder="ENTER UNIQUE ID"
+                  value={vipKode}
+                  onChange={(e) => {
+                    setVipKode(e.target.value.toUpperCase());
+                    setVipError(null);
+                  }}
+                  disabled={vipLoading}
+                  className="w-full px-6 py-4 bg-black/60 border-2 border-white/20 focus:border-[#bc13fe] rounded-xl text-white font-mono text-center tracking-[0.3em] uppercase transition-all shadow-2xl focus:outline-none"
+                  autoFocus
+                />
+                
+                {vipError && (
+                  <p className="text-red-400 text-xs font-mono tracking-widest uppercase flex items-center gap-1 animate-pulse">
+                    <AlertCircle className="w-3 h-3" /> {vipError}
+                  </p>
+                )}
 
-        <button 
-          onClick={onGallery}
-          className="group relative px-8 md:px-12 py-5 md:py-6 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest overflow-hidden"
-        >
-          <span className="relative z-10 italic">GALLERY</span>
-        </button>
+                <button 
+                  type="submit"
+                  disabled={vipLoading || !vipKode.trim()}
+                  className="group w-full relative px-8 py-4 bg-[#bc13fe] hover:bg-[#a010d8] disabled:bg-gray-700 disabled:cursor-not-allowed transition-all rounded-xl font-heading text-lg tracking-widest neon-border overflow-hidden"
+                >
+                  <span className="relative z-10 italic">{vipLoading ? 'VERIFYING...' : 'SUBMIT ID'}</span>
+                  {!vipLoading && <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />}
+                </button>
+              </form>
+            )}
+
+            <button 
+              onClick={onGallery}
+              className="mt-6 px-8 py-3 text-gray-400 hover:text-white transition-all rounded-full font-heading text-sm tracking-widest"
+            >
+              <span className="italic">VIEW GALLERY</span>
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col md:flex-row gap-4 md:gap-8 justify-center">
+            <button 
+              onClick={onStart}
+              className="group relative px-8 md:px-12 py-5 md:py-6 bg-[#bc13fe] hover:bg-[#a010d8] transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden"
+            >
+              <span className="relative z-10 italic">LAUNCH</span>
+              <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
+            </button>
+
+            <button 
+              onClick={onGallery}
+              className="group relative px-8 md:px-12 py-5 md:py-6 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest overflow-hidden"
+            >
+              <span className="relative z-10 italic">GALLERY</span>
+            </button>
+          </div>
+        )}
+
       </div>
 
       {/* SYSTEM LOGS / NOTIFICATIONS */}

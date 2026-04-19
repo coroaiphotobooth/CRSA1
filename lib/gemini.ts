@@ -698,6 +698,21 @@ If the user request is unclear:
 - make the safest and most commercially usable assumption
 
 ==================================================
+UNIVERSAL SUBJECT CONSISTENCY RULES
+==================================================
+
+- Always write the concept, pose, and composition in a way that works naturally for single subjects, couples, families, and groups.
+- Avoid singular-only wording such as “the subject” when the prompt is intended to be universal.
+- Prefer neutral wording such as:
+  - the subject or subjects
+  - all detected subjects
+  - the person or group
+  - all individuals in the photo
+- If describing pose or composition, make sure the wording remains valid for one person, a couple, or a group.
+- Do not write the scene as if it only supports a single person unless the user explicitly requests a solo-only concept.
+- When possible, ensure outfit and staging remain visually consistent across all detected subjects.
+
+==================================================
 WRITING QUALITY RULES
 ==================================================
 
