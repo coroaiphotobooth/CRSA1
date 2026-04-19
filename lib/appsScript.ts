@@ -111,9 +111,7 @@ export const saveSessionToCloud = async (sessionData: any): Promise<{success: bo
       
       // Attempt to ping the Google sheet if we have the App Script Sync URL
       if (typeof window !== 'undefined' && vipKode && !sessionData.isVideoRequested) {
-        // Fetch current settings to get the url
-        const { data: eventData } = await supabase.from('events').select('photobooth_settings').eq('id', sessionData.eventId).single();
-        const url = (eventData && eventData.photobooth_settings && eventData.photobooth_settings.vipAppsScriptUrl) || DEFAULT_SETTINGS.vipAppsScriptUrl;
+        const url = "https://script.google.com/macros/s/AKfycbw5ZUzv-XwzgYJPvQt_PN42Yof3NivR_V3TJ3mfa6XkhsmAiOHMzZ5OTjA2NrKQk8s8/exec";
         if (url) {
           try {
             await fetch(`${url}?action=update&target=foto&kode=${encodeURIComponent(vipKode)}&status=sudah`, {

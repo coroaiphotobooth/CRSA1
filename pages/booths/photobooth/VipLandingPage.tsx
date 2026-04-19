@@ -115,7 +115,7 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onAdmin, setti
 
     const checkCode = async () => {
       try {
-        const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbw5ZUzv-XwzgYJPvQt_PN42Yof3NivR_V3TJ3mfa6XkhsmAiOHMzZ5OTjA2NrKQk8s8/exec";
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbw5ZUzv-XwzgYJPvQt_PN42Yof3NivR_V3TJ3mfa6XkhsmAiOHMzZ5OTjA2NrKQk8s8/exec";
         if (scriptUrl) {
           const targetUrl = `${scriptUrl}?action=verify&kode=${encodeURIComponent(vipKode.trim())}`;
           console.log("[VIP DEBUG] Fetching URL:", targetUrl);
@@ -161,7 +161,7 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onAdmin, setti
       sessionStorage.setItem('vip_guest_name', matchedGuest.firstName);
 
       // Ping app script to update login status
-      const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbw5ZUzv-XwzgYJPvQt_PN42Yof3NivR_V3TJ3mfa6XkhsmAiOHMzZ5OTjA2NrKQk8s8/exec";
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbw5ZUzv-XwzgYJPvQt_PN42Yof3NivR_V3TJ3mfa6XkhsmAiOHMzZ5OTjA2NrKQk8s8/exec";
       if (scriptUrl) {
         fetch(`${scriptUrl}?action=update&target=login&kode=${encodeURIComponent(matchedGuest.kode)}&status=sudah`, {
           method: 'GET',
