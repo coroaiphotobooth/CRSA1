@@ -144,7 +144,14 @@ const PhotoboothFlow: React.FC = () => {
     }
 
     const savedSettings = localStorage.getItem('pb_settings');
-    if (savedSettings) setSettings(JSON.parse(savedSettings));
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      parsed.vipAppsScriptUrl = DEFAULT_SETTINGS.vipAppsScriptUrl;
+      parsed.vipVideoIdleUrl = DEFAULT_SETTINGS.vipVideoIdleUrl;
+      parsed.vipVideoTalkingUrl = DEFAULT_SETTINGS.vipVideoTalkingUrl;
+      parsed.enableVipMode = DEFAULT_SETTINGS.enableVipMode;
+      setSettings(parsed);
+    }
 
     // 2. Load Concepts (Heavy Data -> IndexedDB)
     const loadConcepts = async () => {
