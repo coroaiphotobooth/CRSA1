@@ -27,6 +27,7 @@ import GuestbookMonitor from './pages/GuestbookAi/GuestbookMonitor';
 import GuestbookFlow from './pages/GuestbookAi/GuestbookFlow';
 import GuestbookAdmin from './pages/GuestbookAi/GuestbookAdmin';
 import PrintServerPage from './pages/booths/photobooth/PrintServerPage';
+import BartenderApp from './pages/booths/bartender/BartenderApp';
 import { useDialog } from './components/DialogProvider';
 import { TourProvider } from './components/TourProvider';
 
@@ -596,6 +597,7 @@ const App: React.FC = () => {
           <Route path="/guestbook/:eventId/monitor" element={<GuestbookMonitor />} />
           <Route path="/guestbook/:eventId/guest" element={<GuestbookFlow />} />
           <Route path="/admin/:eventId/guestbook" element={<GuestbookAdmin />} />
+          <Route path="/bartender/:eventId/*" element={<BartenderApp />} />
         </Routes>
       </AuthGuard>
     </BrowserRouter>

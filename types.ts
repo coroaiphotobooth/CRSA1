@@ -53,7 +53,7 @@ export interface PhotoboothSettings {
   folderId: string;
   originalFolderId?: string; 
   storage_folder?: string;
-  eventType?: 'photobooth' | 'guestbook';
+  eventType?: 'photobooth' | 'guestbook' | 'bartender';
   spreadsheetId?: string; 
   selectedModel: string;
   gptModelSize?: '512' | '720' | '1024'; 

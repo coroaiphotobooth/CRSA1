@@ -154,7 +154,7 @@ export default function VendorDashboard() {
   const [rentDuration, setRentDuration] = useState<'minggu' | 'bulan'>('minggu');
   const [newEventName, setNewEventName] = useState('');
   const [newEventDescription, setNewEventDescription] = useState('AI PHOTOBOOTH EXPERIENCE');
-  const [newEventType, setNewEventType] = useState<'photobooth' | 'guestbook'>('photobooth');
+  const [newEventType, setNewEventType] = useState<'photobooth' | 'guestbook' | 'bartender'>('photobooth');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ current: number, total: number } | null>(null);
   const [backupProgress, setBackupProgress] = useState<{ current: number, total: number, success: number, fail: number } | null>(null);
@@ -1553,6 +1553,21 @@ export default function VendorDashboard() {
               <Plus className="w-4 h-4" />
               {t.createEvent}
             </button>
+            
+            {(vendor?.email === 'demo@coroai.app' || vendor?.email === 'coroaiphotobooth@gmail.com') && (
+              <button 
+                onClick={() => {
+                  setNewEventName('AI Bartender Event');
+                  setNewEventDescription('AI Bartender Experience');
+                  setNewEventType('bartender');
+                  setShowCreateModal(true);
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-blue-600/20"
+              >
+                <Plus className="w-4 h-4" />
+                CREATE BARTENDER
+              </button>
+            )}
 
           </div>
 
@@ -1604,6 +1619,29 @@ export default function VendorDashboard() {
                 </div>
               </button>
 
+              {/* Create Bartender Card */}
+              {(vendor?.email === 'demo@coroai.app' || vendor?.email === 'coroaiphotobooth@gmail.com') && (
+                <button 
+                  onClick={() => {
+                    setNewEventName('AI Bartender Event');
+                    setNewEventDescription('AI Bartender Experience');
+                    setNewEventType('bartender');
+                    setShowCreateModal(true);
+                  }}
+                  className="glass-card p-6 rounded-2xl border-2 border-dashed border-blue-500/30 hover:border-blue-500/60 transition-all flex flex-col items-center justify-center gap-4 group min-h-[250px] bg-blue-900/[0.02]"
+                >
+                  <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
+                    <Plus className="w-8 h-8 text-blue-400" />
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-bold text-lg text-white">BARTENDER</h3>
+                    <p className="text-sm text-gray-400 mt-1">
+                      {language === 'id' ? 'Mulai AI Bartender' : 'Start AI Bartender'}
+                    </p>
+                  </div>
+                </button>
+              )}
+
 
 
               {events.map((event, index) => (
@@ -1624,6 +1662,8 @@ export default function VendorDashboard() {
                         onClick={async () => {
                           if (event.settings?.eventType === 'guestbook') {
                             navigate(`/guestbook/${event.id}/monitor`);
+                          } else if (event.settings?.eventType === 'bartender') {
+                            navigate(`/bartender/${event.id}`);
                           } else {
                             try {
                               // Request camera and mic permissions upfront
