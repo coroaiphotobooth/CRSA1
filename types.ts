@@ -87,6 +87,10 @@ export interface PhotoboothSettings {
   enableVipMode?: boolean; // Temporary VIP Feature
   vipGuests?: any[]; // Temporary VIP Feature Data
   vipAppsScriptUrl?: string; // App Script Sync URL
+  vipVideoIdleUrl?: string; // VIP Avatar Idle Video (MP4)
+  vipVideoTalkingUrl?: string; // VIP Avatar Talking Video (MP4)
+  vipOpenAiKey?: string; // OpenAI Key for TTS
+  vipTtsVoice?: string; // Voice choice
   
   // Guestbook specific settings
   guestbookPhotoSize?: number; // Scale factor or width

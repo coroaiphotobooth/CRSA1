@@ -18,12 +18,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  
-  // VIP State
-  const [vipKode, setVipKode] = useState('');
-  const [vipLoading, setVipLoading] = useState(false);
-  const [vipSuccessMessage, setVipSuccessMessage] = useState<string | null>(null);
-  const [vipError, setVipError] = useState<string | null>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -44,68 +38,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       if (document.exitFullscreen) {
         document.exitFullscreen();
       }
-    }
-  };
-
-  const handleVipSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!vipKode.trim()) return;
-
-    setVipLoading(true);
-    setVipError(null);
-
-    const checkCode = async () => {
-      try {
-        if (settings.vipAppsScriptUrl) {
-          // Use Google Apps Script
-          const res = await fetch(`${settings.vipAppsScriptUrl}?action=verify&kode=${encodeURIComponent(vipKode.trim())}`);
-          const data = await res.json();
-          
-          if (data && data.success && data.guestName) {
-            return {
-              firstName: data.guestName,
-              kode: data.kode || vipKode.trim()
-            };
-          }
-          return null;
-        } else {
-          // Fallback to local CSV data if no script provided
-          const guests = settings.vipGuests || [];
-          const matchedGuest = guests.find(g => g.kode === vipKode.trim());
-          return matchedGuest;
-        }
-      } catch (e) {
-        console.error("Verification failed", e);
-        return null;
-      }
-    };
-
-    const matchedGuest = await checkCode();
-
-    if (matchedGuest) {
-      const gName = matchedGuest.firstName + (matchedGuest.lastName ? ` ${matchedGuest.lastName}` : '');
-      setVipSuccessMessage(`Halo, selamat datang ${gName}!`);
-      
-      // Save to session storage so Photobooth.tsx knows who is playing
-      sessionStorage.setItem('vip_kode', matchedGuest.kode);
-      sessionStorage.setItem('vip_guest_name', gName);
-
-      // Ping app script to update login status
-      if (settings.vipAppsScriptUrl) {
-        fetch(`${settings.vipAppsScriptUrl}?action=update&target=login&kode=${encodeURIComponent(matchedGuest.kode)}&status=sudah`, {
-          method: 'GET',
-          mode: 'no-cors'
-        }).catch(err => console.error("Failed to update login status", err));
-      }
-
-      // After 2.5s, trigger normal flow
-      setTimeout(() => {
-        onStart();
-      }, 2500);
-
-    } else {
-      setVipError('ID Tidak Ditemukan atau Gagal Memverifikasi. Silakan cek kembali.');
-      setVipLoading(false);
     }
   };
 
@@ -172,56 +104,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       </div>
 
       <div className="relative z-10 flex flex-col items-center gap-4 md:gap-8 w-full max-w-md md:max-w-none">
-        
-        {settings.enableVipMode ? (
-          <div className="w-full max-w-sm flex flex-col items-center">
-            {vipSuccessMessage ? (
-              <div className="animate-[slideInUp_0.4s_ease-out] flex flex-col items-center gap-4 bg-[#bc13fe]/20 border border-[#bc13fe]/50 px-8 py-6 rounded-2xl w-full">
-                <CheckCircle className="w-12 h-12 text-[#bc13fe] animate-pulse" />
-                <h3 className="text-xl md:text-2xl font-bold text-white text-center italic font-heading tracking-wider">
-                  {vipSuccessMessage}
-                </h3>
-              </div>
-            ) : (
-              <form onSubmit={handleVipSubmit} className="w-full relative flex flex-col items-center space-y-4">
-                <input
-                  type="text"
-                  placeholder="ENTER UNIQUE ID"
-                  value={vipKode}
-                  onChange={(e) => {
-                    setVipKode(e.target.value.toUpperCase());
-                    setVipError(null);
-                  }}
-                  disabled={vipLoading}
-                  className="w-full px-6 py-4 bg-black/60 border-2 border-white/20 focus:border-[#bc13fe] rounded-xl text-white font-mono text-center tracking-[0.3em] uppercase transition-all shadow-2xl focus:outline-none"
-                  autoFocus
-                />
-                
-                {vipError && (
-                  <p className="text-red-400 text-xs font-mono tracking-widest uppercase flex items-center gap-1 animate-pulse">
-                    <AlertCircle className="w-3 h-3" /> {vipError}
-                  </p>
-                )}
-
-                <button 
-                  type="submit"
-                  disabled={vipLoading || !vipKode.trim()}
-                  className="group w-full relative px-8 py-4 bg-[#bc13fe] hover:bg-[#a010d8] disabled:bg-gray-700 disabled:cursor-not-allowed transition-all rounded-xl font-heading text-lg tracking-widest neon-border overflow-hidden"
-                >
-                  <span className="relative z-10 italic">{vipLoading ? 'VERIFYING...' : 'SUBMIT ID'}</span>
-                  {!vipLoading && <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />}
-                </button>
-              </form>
-            )}
-
-            <button 
-              onClick={onGallery}
-              className="mt-6 px-8 py-3 text-gray-400 hover:text-white transition-all rounded-full font-heading text-sm tracking-widest"
-            >
-              <span className="italic">VIEW GALLERY</span>
-            </button>
-          </div>
-        ) : (
           <div className="flex flex-col md:flex-row gap-4 md:gap-8 justify-center">
             <button 
               onClick={onStart}
@@ -238,8 +120,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
               <span className="relative z-10 italic">GALLERY</span>
             </button>
           </div>
-        )}
-
       </div>
 
       {/* SYSTEM LOGS / NOTIFICATIONS */}

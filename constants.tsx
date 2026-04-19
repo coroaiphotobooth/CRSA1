@@ -39,5 +39,7 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   printMethod: 'direct', // Default direct
   enableDoublePrint: false, // Default off
   enableVipMode: false,
-  vipAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbxUmgIA0fWFcjLE5r0vwdDAFTAjQqbhDHDSMmx0ky_sKZZQbXAfQwz8WoNRSYcJmam9/exec'
+  vipAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbxUmgIA0fWFcjLE5r0vwdDAFTAjQqbhDHDSMmx0ky_sKZZQbXAfQwz8WoNRSYcJmam9/exec',
+  vipVideoIdleUrl: 'https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO/LOOP%20IDLE.mp4',
+  vipVideoTalkingUrl: 'https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO/TALKING.mp4',
 };

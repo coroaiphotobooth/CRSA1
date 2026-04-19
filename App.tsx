@@ -10,6 +10,7 @@ import { aiQueue } from './lib/aiQueue';
 import { saveLargeData, getLargeData } from './lib/storage'; 
 import { supabase, decrementCredits } from './lib/supabase';
 import LandingPage from './pages/booths/photobooth/LandingPage';
+import VipLandingPage from './pages/booths/photobooth/VipLandingPage';
 import ThemesPage from './pages/booths/photobooth/ThemesPage';
 import CameraPage from './pages/booths/photobooth/CameraPage';
 import ResultPage from './pages/booths/photobooth/ResultPage';
@@ -416,6 +417,16 @@ const PhotoboothFlow: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case AppState.LANDING:
+        if (settings.enableVipMode) {
+          return (
+            <VipLandingPage 
+               onStart={() => setCurrentPage(AppState.THEMES)} 
+               onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} 
+               settings={settings} 
+               isVIPAdmin={isVIPAdmin} 
+            />
+          );
+        }
         return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} isVIPAdmin={isVIPAdmin} />;
       case AppState.THEMES:
         return (
