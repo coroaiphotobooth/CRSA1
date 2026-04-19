@@ -269,7 +269,7 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
       </div>
 
       {/* Main Interaction Content */}
-      <div className="relative z-20 w-full max-w-md mx-auto px-6 h-full flex flex-col justify-center pb-20">
+      <div className="relative z-20 w-full max-w-md mx-auto px-6 min-h-screen flex flex-col justify-center">
         
         {!isAvatarGreeting ? (
             <form onSubmit={handleVipSubmit} className="flex flex-col gap-4 animate-fade-in-up items-center w-full">
