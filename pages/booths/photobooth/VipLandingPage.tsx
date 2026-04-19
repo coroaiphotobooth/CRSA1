@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Settings, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { PhotoboothSettings } from '../../../types';
 import { DEFAULT_SETTINGS } from '../../../constants';
@@ -288,9 +289,17 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
       {/* Main Interaction Content */}
       <div className="relative z-20 w-full max-w-md mx-auto px-6 min-h-screen flex flex-col justify-center">
         
+        <AnimatePresence mode="wait">
         {!isAvatarGreeting ? (
             vipLoading ? (
-               <div className="flex flex-col items-center justify-center p-12 bg-black/80 backdrop-blur-2xl border border-[#bc13fe]/40 rounded-[2.5rem] shadow-[0_0_60px_rgba(188,19,254,0.25)] animate-fade-in-up w-full relative overflow-hidden">
+               <motion.div 
+                 key="scanning"
+                 initial={{ opacity: 0, scale: 0.9 }}
+                 animate={{ opacity: 1, scale: 1 }}
+                 exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
+                 transition={{ duration: 0.5, ease: "easeInOut" }}
+                 className="flex flex-col items-center justify-center p-12 bg-black/80 backdrop-blur-2xl border border-[#bc13fe]/40 rounded-[2.5rem] shadow-[0_0_60px_rgba(188,19,254,0.25)] w-full relative overflow-hidden"
+               >
                  {/* Cyberpunk corner accents */}
                  <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-[#bc13fe]/50 rounded-tl-[2.5rem] opacity-70"></div>
                  <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-[#bc13fe]/50 rounded-br-[2.5rem] opacity-70"></div>
@@ -313,9 +322,17 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
                  <div className="w-full max-w-[200px] h-1 bg-[#bc13fe]/20 mt-8 rounded-full overflow-hidden">
                     <div className="h-full bg-[#bc13fe] w-1/2 animate-pulse rounded-full"></div>
                  </div>
-               </div>
+               </motion.div>
             ) : (
-                <form onSubmit={handleVipSubmit} className="flex flex-col gap-4 animate-fade-in-up items-center w-full">
+                <motion.form 
+                  key="form"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20, filter: 'blur(5px)' }}
+                  transition={{ duration: 0.4, ease: "easeInOut" }}
+                  onSubmit={handleVipSubmit} 
+                  className="flex flex-col gap-4 items-center w-full"
+                >
                   <h2 className="text-xl md:text-2xl tracking-[0.2em] md:tracking-[0.3em] text-white font-bold uppercase mb-4 drop-shadow-lg text-center">
                     Enter Valid VIP ID
                   </h2>
@@ -352,48 +369,50 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
                   >
                     View Event Gallery
                   </button>
-                </form>
+                </motion.form>
             )
         ) : (
-            <div className="w-full animate-[fade-in_0.5s_ease-out_forwards]">
-                <div className="relative bg-black/80 backdrop-blur-2xl border border-[#bc13fe]/40 p-10 md:p-14 rounded-[2.5rem] min-h-[250px] w-full flex flex-col items-center justify-center transform transition-all shadow-[0_0_60px_rgba(188,19,254,0.2)] overflow-hidden">
+            <motion.div 
+               key="greeting"
+               initial={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
+               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+               transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+               className="w-full flex flex-col items-center justify-center p-6 bg-transparent w-full relative"
+            >
+                {/* Animated Text Sequence without container box */}
+                <div className="flex flex-col items-center text-center w-full">
+                    <motion.h2 
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6, duration: 0.8 }}
+                      className="text-5xl md:text-7xl font-sans font-black tracking-tighter text-[#bc13fe] drop-shadow-[0_0_30px_rgba(188,19,254,0.8)]"
+                    >
+                        <span className="text-white text-3xl md:text-4xl block mb-2 opacity-80 tracking-widest font-heading font-normal">Halo,</span>
+                        {guestFirstName}
+                    </motion.h2>
                     
-                    {/* Corner tech accents */}
-                    <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-[#bc13fe]/60 rounded-tr-[2.5rem] opacity-80"></div>
-                    <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-[#bc13fe]/60 rounded-bl-[2.5rem] opacity-80"></div>
+                    <motion.div 
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: '120px' }}
+                      transition={{ delay: 1.2, duration: 0.8 }}
+                      className="h-[2px] bg-gradient-to-r from-transparent via-white to-transparent my-8"
+                    ></motion.div>
                     
-                    {/* Animated Text Sequence */}
-                    <div className="flex flex-col items-center text-center w-full">
-                        <h2 
-                          className="text-4xl md:text-5xl lg:text-6xl font-heading font-black uppercase tracking-widest text-white drop-shadow-[0_0_20px_rgba(188,19,254,0.6)] opacity-0 animate-fade-in-up"
-                          style={{ animationFillMode: 'both', animationDelay: '300ms' }}
-                        >
-                            Halo, <br className="md:hidden" />
-                            <span className="text-[#bc13fe]">{guestFirstName}</span>!
-                        </h2>
-                        
-                        <div 
-                          className="w-24 h-[1px] bg-gradient-to-r from-transparent via-[#bc13fe] to-transparent my-6 opacity-0 animate-fade-in-up"
-                          style={{ animationFillMode: 'both', animationDelay: '1000ms' }}
-                        ></div>
-                        
-                        <p 
-                          className="text-gray-300 text-xs md:text-sm lg:text-base font-mono leading-relaxed tracking-[0.2em] uppercase opacity-0 animate-fade-in-up"
-                          style={{ animationFillMode: 'both', animationDelay: '1500ms' }}
-                        >
-                            Selamat Datang di AI Experience.<br/>
-                            <span className="text-[#bc13fe]/80 text-[10px] md:text-xs mt-3 block tracking-[0.3em]">Silakan pilih tema untuk melanjutkan inisialisasi</span>
-                        </p>
-                    </div>
-                    
-                    {/* Background glowing line */}
-                    <div className="absolute -bottom-px left-1/2 -translate-x-1/2 w-1/2 h-[2px] bg-gradient-to-r from-transparent via-[#bc13fe] to-transparent opacity-60"></div>
+                    <motion.p 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 1.6, duration: 0.8 }}
+                      className="text-white text-sm md:text-lg font-mono leading-relaxed tracking-[0.3em] uppercase drop-shadow-md"
+                    >
+                        Selamat Datang di AI Experience<br/>
+                        <span className="text-[#bc13fe]/80 text-[10px] md:text-xs mt-3 block tracking-[0.4em]">Silakan pilih tema untuk melanjutkan inisialisasi</span>
+                    </motion.p>
                 </div>
-            </div>
+            </motion.div>
         )}
+        </AnimatePresence>
 
       </div>
-
     </div>
   );
 };
