@@ -23,6 +23,7 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
   
   const [isVideoTalking, setIsVideoTalking] = useState(false);
   const [isAvatarGreeting, setIsAvatarGreeting] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
   const [guestFirstName, setGuestFirstName] = useState('');
   
   const talkingVideoRef = useRef<HTMLVideoElement>(null);
@@ -73,8 +74,16 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
         
         audio.onended = () => {
            setIsVideoTalking(false);
-           onStart(); // Proceed to concepts
+           setIsExiting(true);
+           setTimeout(() => {
+              onStart(); // Proceed to concepts after smooth fade out
+           }, 1000);
         };
+        
+        if (talkingVideoRef.current) {
+           talkingVideoRef.current.currentTime = 0;
+           talkingVideoRef.current.play().catch(e => console.error("Video play err:", e));
+        }
         
         await audio.play();
         return;
@@ -95,8 +104,16 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
 
     utterance.onend = () => {
       setIsVideoTalking(false);
-      onStart();
+      setIsExiting(true);
+      setTimeout(() => {
+          onStart();
+      }, 1000);
     };
+
+    if (talkingVideoRef.current) {
+       talkingVideoRef.current.currentTime = 0;
+       talkingVideoRef.current.play().catch(e => console.error("Video play err:", e));
+    }
 
     window.speechSynthesis.speak(utterance);
     
@@ -181,14 +198,14 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
   };
 
   return (
-    <div className="flex flex-col items-center justify-end w-full min-h-screen relative text-center overflow-hidden tour-app-page">
+    <div className={`flex flex-col items-center justify-end w-full min-h-screen relative text-center overflow-hidden tour-app-page transition-opacity duration-1000 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
       
       {/* BACKGROUND AVATAR VIDEO LAYER */}
       <div className="absolute inset-0 w-full h-full bg-black z-0">
         {/* Idle Video */}
         <video 
           src={settings.vipVideoIdleUrl || '/placeholder-idle.mp4'} 
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${!isVideoTalking ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${!isVideoTalking ? 'opacity-100' : 'opacity-0'}`}
           autoPlay 
           loop 
           muted 
@@ -199,7 +216,7 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
         <video 
           ref={talkingVideoRef}
           src={settings.vipVideoTalkingUrl || '/placeholder-talking.mp4'} 
-          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isVideoTalking ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${isVideoTalking ? 'opacity-100' : 'opacity-0'}`}
           autoPlay 
           loop 
           muted 
@@ -272,44 +289,57 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
       <div className="relative z-20 w-full max-w-md mx-auto px-6 min-h-screen flex flex-col justify-center">
         
         {!isAvatarGreeting ? (
-            <form onSubmit={handleVipSubmit} className="flex flex-col gap-4 animate-fade-in-up items-center w-full">
-              <h2 className="text-xl md:text-2xl tracking-[0.2em] md:tracking-[0.3em] text-white font-bold uppercase mb-4 drop-shadow-lg text-center">
-                Enter Valid VIP ID
-              </h2>
-              <div className="relative flex flex-col items-center w-full">
-                 <input 
-                    type="text"
-                    value={vipKode}
-                    onChange={(e) => {
-                        setVipKode(e.target.value.toUpperCase());
-                        setVipError(null);
-                    }}
-                    placeholder="E.g., 69GG"
-                    className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-5 text-center text-3xl font-heading text-white tracking-[0.5em] focus:border-[#bc13fe] focus:outline-none transition-all shadow-xl"
-                    autoComplete="off"
-                    disabled={vipLoading}
-                 />
-                 {vipError && (
-                    <span className="absolute -bottom-8 text-red-400 text-xs tracking-widest block bg-black/80 backdrop-blur-md border border-red-500/30 px-4 py-1.5 rounded-full">{vipError}</span>
-                 )}
-              </div>
-              <button 
-                type="submit" 
-                disabled={vipLoading || !vipKode}
-                className="mt-6 w-full glass-button group relative overflow-hidden rounded-2xl py-5 transition-all text-sm font-bold tracking-[0.4em] uppercase hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed bg-white/10 hover:bg-[#bc13fe]/40 border border-white/10 hover:border-[#bc13fe]/50"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-sweep"></div>
-                {vipLoading ? 'Verifying...' : 'Submit ID'}
-              </button>
-              
-              <button 
-                type="button"
-                onClick={onGallery}
-                className="mt-4 text-white/50 hover:text-white transition-colors uppercase text-xs tracking-[0.2em] underline font-sans"
-              >
-                View Event Gallery
-              </button>
-            </form>
+            vipLoading ? (
+               <div className="flex flex-col items-center justify-center p-8 bg-black/60 backdrop-blur-xl border border-[#bc13fe]/30 rounded-3xl shadow-[0_0_40px_rgba(188,19,254,0.15)] animate-fade-in-up w-full">
+                 <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
+                   <div className="absolute inset-0 border-4 border-t-[#bc13fe] border-transparent rounded-full animate-spin"></div>
+                   <div className="absolute inset-2 border-4 border-b-[#bc13fe] border-l-[#bc13fe]/30 border-transparent rounded-full animate-[spin_1.5s_linear_infinite_reverse]"></div>
+                   <div className="absolute inset-4 bg-[#bc13fe]/20 rounded-full animate-pulse"></div>
+                   <div className="w-1 h-1 bg-white rounded-full"></div>
+                 </div>
+                 <h3 className="text-white font-mono tracking-[0.3em] text-sm md:text-base uppercase animate-pulse">Accessing Mainframe</h3>
+                 <p className="text-[#bc13fe] font-mono text-xs tracking-widest mt-3 opacity-80 uppercase">Verifying Biometric Data...</p>
+               </div>
+            ) : (
+                <form onSubmit={handleVipSubmit} className="flex flex-col gap-4 animate-fade-in-up items-center w-full">
+                  <h2 className="text-xl md:text-2xl tracking-[0.2em] md:tracking-[0.3em] text-white font-bold uppercase mb-4 drop-shadow-lg text-center">
+                    Enter Valid VIP ID
+                  </h2>
+                  <div className="relative flex flex-col items-center w-full">
+                     <input 
+                        type="text"
+                        value={vipKode}
+                        onChange={(e) => {
+                            setVipKode(e.target.value.toUpperCase());
+                            setVipError(null);
+                        }}
+                        placeholder="E.g., 69GG"
+                        className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-5 text-center text-3xl font-heading text-white tracking-[0.5em] focus:border-[#bc13fe] focus:outline-none transition-all shadow-xl"
+                        autoComplete="off"
+                        disabled={vipLoading}
+                     />
+                     {vipError && (
+                        <span className="absolute -bottom-8 text-red-400 text-xs tracking-widest block bg-black/80 backdrop-blur-md border border-red-500/30 px-4 py-1.5 rounded-full">{vipError}</span>
+                     )}
+                  </div>
+                  <button 
+                    type="submit" 
+                    disabled={vipLoading || !vipKode}
+                    className="mt-6 w-full glass-button group relative overflow-hidden rounded-2xl py-5 transition-all text-sm font-bold tracking-[0.4em] uppercase hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed bg-white/10 hover:bg-[#bc13fe]/40 border border-white/10 hover:border-[#bc13fe]/50"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-sweep"></div>
+                    Submit ID
+                  </button>
+                  
+                  <button 
+                    type="button"
+                    onClick={onGallery}
+                    className="mt-4 text-white/50 hover:text-white transition-colors uppercase text-xs tracking-[0.2em] underline font-sans"
+                  >
+                    View Event Gallery
+                  </button>
+                </form>
+            )
         ) : (
             <div className="animate-fade-in-up flex flex-col items-center gap-6">
                 <div className="bg-black/60 backdrop-blur-xl border border-white/20 p-8 rounded-3xl min-h-[140px] flex items-center justify-center transform transition-all hover:scale-105">
