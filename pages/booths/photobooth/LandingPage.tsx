@@ -47,36 +47,66 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
     }
   };
 
-  const handleVipSubmit = (e: React.FormEvent) => {
+  const handleVipSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vipKode.trim()) return;
 
     setVipLoading(true);
     setVipError(null);
 
-    // Give it a tiny delay to feel like it's processing
-    setTimeout(() => {
-      const guests = settings.vipGuests || [];
-      const matchedGuest = guests.find(g => g.kode === vipKode.trim());
-
-      if (matchedGuest) {
-        setVipSuccessMessage(`Halo, selamat datang ${matchedGuest.firstName} ${matchedGuest.lastName || ''}!`);
-        
-        // Save to session storage so Photobooth.tsx knows who is playing
-        const guestName = `${matchedGuest.firstName} ${matchedGuest.lastName || ''}`.trim();
-        sessionStorage.setItem('vip_kode', matchedGuest.kode);
-        sessionStorage.setItem('vip_guest_name', guestName);
-
-        // After 2.5s, trigger normal flow
-        setTimeout(() => {
-          onStart();
-        }, 2500);
-
-      } else {
-        setVipError('ID Tidak Ditemukan. Silakan cek kembali.');
-        setVipLoading(false);
+    const checkCode = async () => {
+      try {
+        if (settings.vipAppsScriptUrl) {
+          // Use Google Apps Script
+          const res = await fetch(`${settings.vipAppsScriptUrl}?action=verify&kode=${encodeURIComponent(vipKode.trim())}`);
+          const data = await res.json();
+          
+          if (data && data.success && data.guestName) {
+            return {
+              firstName: data.guestName,
+              kode: data.kode || vipKode.trim()
+            };
+          }
+          return null;
+        } else {
+          // Fallback to local CSV data if no script provided
+          const guests = settings.vipGuests || [];
+          const matchedGuest = guests.find(g => g.kode === vipKode.trim());
+          return matchedGuest;
+        }
+      } catch (e) {
+        console.error("Verification failed", e);
+        return null;
       }
-    }, 500);
+    };
+
+    const matchedGuest = await checkCode();
+
+    if (matchedGuest) {
+      const gName = matchedGuest.firstName + (matchedGuest.lastName ? ` ${matchedGuest.lastName}` : '');
+      setVipSuccessMessage(`Halo, selamat datang ${gName}!`);
+      
+      // Save to session storage so Photobooth.tsx knows who is playing
+      sessionStorage.setItem('vip_kode', matchedGuest.kode);
+      sessionStorage.setItem('vip_guest_name', gName);
+
+      // Ping app script to update login status
+      if (settings.vipAppsScriptUrl) {
+        fetch(`${settings.vipAppsScriptUrl}?action=update&target=login&kode=${encodeURIComponent(matchedGuest.kode)}&status=sudah`, {
+          method: 'GET',
+          mode: 'no-cors'
+        }).catch(err => console.error("Failed to update login status", err));
+      }
+
+      // After 2.5s, trigger normal flow
+      setTimeout(() => {
+        onStart();
+      }, 2500);
+
+    } else {
+      setVipError('ID Tidak Ditemukan atau Gagal Memverifikasi. Silakan cek kembali.');
+      setVipLoading(false);
+    }
   };
 
   return (

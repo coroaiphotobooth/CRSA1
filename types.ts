@@ -86,6 +86,7 @@ export interface PhotoboothSettings {
   enableDoublePrint?: boolean; // New Setting: Double Print Layout
   enableVipMode?: boolean; // Temporary VIP Feature
   vipGuests?: any[]; // Temporary VIP Feature Data
+  vipAppsScriptUrl?: string; // App Script Sync URL
   
   // Guestbook specific settings
   guestbookPhotoSize?: number; // Scale factor or width

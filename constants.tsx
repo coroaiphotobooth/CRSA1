@@ -37,5 +37,7 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   enableModelShortcut: false, // Default off
   enablePrint: false, // Default off
   printMethod: 'direct', // Default direct
-  enableDoublePrint: false // Default off
+  enableDoublePrint: false, // Default off
+  enableVipMode: false,
+  vipAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbxUmgIA0fWFcjLE5r0vwdDAFTAjQqbhDHDSMmx0ky_sKZZQbXAfQwz8WoNRSYcJmam9/exec'
 };

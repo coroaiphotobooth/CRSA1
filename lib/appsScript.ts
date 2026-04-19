@@ -108,6 +108,23 @@ export const saveSessionToCloud = async (sessionData: any): Promise<{success: bo
         }, { onConflict: 'id' });
         
       if (error) throw error;
+      
+      // Attempt to ping the Google sheet if we have the App Script Sync URL
+      if (typeof window !== 'undefined' && vipKode && !sessionData.isVideoRequested) {
+        // Fetch current settings to get the url
+        const { data: eventData } = await supabase.from('events').select('photobooth_settings').eq('id', sessionData.eventId).single();
+        if (eventData && eventData.photobooth_settings && eventData.photobooth_settings.vipAppsScriptUrl) {
+          const url = eventData.photobooth_settings.vipAppsScriptUrl;
+          try {
+            await fetch(`${url}?action=update&target=foto&kode=${encodeURIComponent(vipKode)}&status=sudah`, {
+              method: 'GET', // or POST if Apps Script is configured for it
+              mode: 'no-cors' // No-cors prevents CORS blocking from the browser, but we won't be able to read the JSON response. That's fine for a one-way ping.
+            });
+          } catch(e) {
+            console.error("Failed to ping Google Sheet:", e);
+          }
+        }
+      }
 
       // Send broadcast for real-time updates without postgres_changes
       const channel = supabase.channel(`gallery_updates_${sessionData.eventId}`);
