@@ -146,9 +146,9 @@ const PhotoboothFlow: React.FC = () => {
     const savedSettings = localStorage.getItem('pb_settings');
     if (savedSettings) {
       const parsed = JSON.parse(savedSettings);
-      parsed.vipAppsScriptUrl = DEFAULT_SETTINGS.vipAppsScriptUrl;
-      parsed.vipVideoIdleUrl = DEFAULT_SETTINGS.vipVideoIdleUrl;
-      parsed.vipVideoTalkingUrl = DEFAULT_SETTINGS.vipVideoTalkingUrl;
+      parsed.vipAppsScriptUrl = parsed.vipAppsScriptUrl || DEFAULT_SETTINGS.vipAppsScriptUrl;
+      parsed.vipVideoIdleUrl = parsed.vipVideoIdleUrl || DEFAULT_SETTINGS.vipVideoIdleUrl;
+      parsed.vipVideoTalkingUrl = parsed.vipVideoTalkingUrl || DEFAULT_SETTINGS.vipVideoTalkingUrl;
       // Do NOT force enableVipMode, let it read from what they saved or fetched from Supabase
       setSettings(parsed);
     }

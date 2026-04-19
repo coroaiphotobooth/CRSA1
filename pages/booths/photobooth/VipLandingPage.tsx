@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Settings, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PhotoboothSettings } from '../../../types';
+import { DEFAULT_SETTINGS } from '../../../constants';
 
 interface VipLandingPageProps {
   onStart: () => void;
@@ -114,8 +115,9 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onAdmin, setti
 
     const checkCode = async () => {
       try {
-        if (settings.vipAppsScriptUrl) {
-          const res = await fetch(`${settings.vipAppsScriptUrl}?action=verify&kode=${encodeURIComponent(vipKode.trim())}`);
+        const scriptUrl = settings.vipAppsScriptUrl || DEFAULT_SETTINGS.vipAppsScriptUrl;
+        if (scriptUrl) {
+          const res = await fetch(`${scriptUrl}?action=verify&kode=${encodeURIComponent(vipKode.trim())}`);
           const data = await res.json();
           if (data && data.success && data.guestName) {
             return {
@@ -144,8 +146,9 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onAdmin, setti
       sessionStorage.setItem('vip_guest_name', matchedGuest.firstName);
 
       // Ping app script to update login status
-      if (settings.vipAppsScriptUrl) {
-        fetch(`${settings.vipAppsScriptUrl}?action=update&target=login&kode=${encodeURIComponent(matchedGuest.kode)}&status=sudah`, {
+      const scriptUrl = settings.vipAppsScriptUrl || DEFAULT_SETTINGS.vipAppsScriptUrl;
+      if (scriptUrl) {
+        fetch(`${scriptUrl}?action=update&target=login&kode=${encodeURIComponent(matchedGuest.kode)}&status=sudah`, {
           method: 'GET',
           mode: 'no-cors'
         }).catch(err => console.error(err));

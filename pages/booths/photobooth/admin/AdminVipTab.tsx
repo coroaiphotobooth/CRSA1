@@ -51,24 +51,10 @@ const AdminVipTab = forwardRef<AdminVipTabRef, AdminVipTabProps>(({ settings, on
         </h3>
         
         <p className="text-sm text-gray-400 mb-8 max-w-2xl">
-          Connect your Google Sheet via an Apps Script Web App URL. The Photobooth will verify ID codes live and update the "Status foto" column directly in the sheet.
+          Event ini akan menggunakan fitur VIP Avatar Sapaan & otomatis sinkronisasi ke Google Sheet Database CoroAI bawaan.
         </p>
 
         <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-              VIP Apps Script Web App URL
-            </label>
-            <input 
-              type="text" 
-              value={localSettings.vipAppsScriptUrl || ''}
-              onChange={(e) => handleChange('vipAppsScriptUrl', e.target.value)}
-              placeholder="https://script.google.com/macros/s/.../exec"
-              className="w-full bg-black/40 border-2 border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:border-[#bc13fe] transition-colors focus:outline-none font-mono text-sm"
-            />
-            <p className="text-xs text-gray-500">Deploy your Google Sheet script as a web app and paste the deployment URL here.</p>
-          </div>
-
           <div className="space-y-2 pt-4">
             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">
               Avatar Background (IDLE) MP4 URL

@@ -1,6 +1,6 @@
 
 import { GalleryItem, PhotoboothSettings, Concept, EventRecord } from '../types';
-import { DEFAULT_GAS_URL } from '../constants';
+import { DEFAULT_GAS_URL, DEFAULT_SETTINGS } from '../constants';
 import { supabase } from './supabase';
 
 const getGasUrl = () => {
@@ -113,12 +113,12 @@ export const saveSessionToCloud = async (sessionData: any): Promise<{success: bo
       if (typeof window !== 'undefined' && vipKode && !sessionData.isVideoRequested) {
         // Fetch current settings to get the url
         const { data: eventData } = await supabase.from('events').select('photobooth_settings').eq('id', sessionData.eventId).single();
-        if (eventData && eventData.photobooth_settings && eventData.photobooth_settings.vipAppsScriptUrl) {
-          const url = eventData.photobooth_settings.vipAppsScriptUrl;
+        const url = (eventData && eventData.photobooth_settings && eventData.photobooth_settings.vipAppsScriptUrl) || DEFAULT_SETTINGS.vipAppsScriptUrl;
+        if (url) {
           try {
             await fetch(`${url}?action=update&target=foto&kode=${encodeURIComponent(vipKode)}&status=sudah`, {
-              method: 'GET', // or POST if Apps Script is configured for it
-              mode: 'no-cors' // No-cors prevents CORS blocking from the browser, but we won't be able to read the JSON response. That's fine for a one-way ping.
+              method: 'GET',
+              mode: 'no-cors'
             });
           } catch(e) {
             console.error("Failed to ping Google Sheet:", e);
