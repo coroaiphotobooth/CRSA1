@@ -121,10 +121,19 @@ const BartenderLandingPage: React.FC<BartenderLandingPageProps> = ({ onStart, se
         const scriptUrl = "https://script.google.com/macros/s/AKfycbw5ZUzv-XwzgYJPvQt_PN42Yof3NivR_V3TJ3mfa6XkhsmAiOHMzZ5OTjA2NrKQk8s8/exec";
         if (scriptUrl) {
           const targetUrl = `${scriptUrl}?action=verify&kode=${encodeURIComponent(vipKode.trim())}`;
-          const res = await fetch(targetUrl, { method: 'GET' });
-          if (!res.ok) throw new Error("HTTP error " + res.status);
-          const data = await res.json();
-          if (data.status === 'success' && data.guestName) {
+          console.log("[BARTENDER DEBUG] Fetching URL:", targetUrl);
+          const res = await fetch(targetUrl);
+          const text = await res.text();
+          console.log("[BARTENDER DEBUG] Response text:", text);
+          let data;
+          try {
+             data = JSON.parse(text);
+          } catch(e) {
+             console.error("[BARTENDER DEBUG] Failed to parse JSON", e);
+             return null;
+          }
+
+          if (data && data.success && data.guestName) {
             return { firstName: data.guestName, kode: data.kode || vipKode.trim() };
           }
         }
