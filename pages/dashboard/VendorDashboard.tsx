@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft, Palette, Monitor } from 'lucide-react';
+import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft, Palette, Monitor, Camera, Wine } from 'lucide-react';
 import { Vendor, Event } from '../../types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -1553,21 +1553,6 @@ export default function VendorDashboard() {
               <Plus className="w-4 h-4" />
               {t.createEvent}
             </button>
-            
-            {(vendor?.email === 'demo@coroai.app' || vendor?.email === 'coroaiphotobooth@gmail.com') && (
-              <button 
-                onClick={() => {
-                  setNewEventName('AI Bartender Event');
-                  setNewEventDescription('AI Bartender Experience');
-                  setNewEventType('bartender');
-                  setShowCreateModal(true);
-                }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-blue-600/20"
-              >
-                <Plus className="w-4 h-4" />
-                CREATE BARTENDER
-              </button>
-            )}
 
           </div>
 
@@ -1619,33 +1604,10 @@ export default function VendorDashboard() {
                 </div>
               </button>
 
-              {/* Create Bartender Card */}
-              {(vendor?.email === 'demo@coroai.app' || vendor?.email === 'coroaiphotobooth@gmail.com') && (
-                <button 
-                  onClick={() => {
-                    setNewEventName('AI Bartender Event');
-                    setNewEventDescription('AI Bartender Experience');
-                    setNewEventType('bartender');
-                    setShowCreateModal(true);
-                  }}
-                  className="glass-card p-6 rounded-2xl border-2 border-dashed border-blue-500/30 hover:border-blue-500/60 transition-all flex flex-col items-center justify-center gap-4 group min-h-[250px] bg-blue-900/[0.02]"
-                >
-                  <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                    <Plus className="w-8 h-8 text-blue-400" />
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-bold text-lg text-white">BARTENDER</h3>
-                    <p className="text-sm text-gray-400 mt-1">
-                      {language === 'id' ? 'Mulai AI Bartender' : 'Start AI Bartender'}
-                    </p>
-                  </div>
-                </button>
-              )}
-
-
-
-              {events.map((event, index) => (
-                <div key={event.id} className={`glass-card p-6 rounded-2xl border border-white/10 flex flex-col gap-4 hover:border-[#bc13fe]/50 transition-colors group ${index === 0 ? 'tour-event-card' : ''}`}>
+              {events.map((event, index) => {
+                const isBartender = event.settings?.eventType === 'bartender';
+                return (
+                <div key={event.id} className={`glass-card p-6 rounded-2xl border flex flex-col gap-4 transition-colors group ${index === 0 ? 'tour-event-card' : ''} ${isBartender ? 'border-blue-500/30 hover:border-blue-400/60 bg-blue-900/[0.05]' : 'border-white/10 hover:border-[#bc13fe]/50'}`}>
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-bold text-lg mb-1">{event.name}</h3>
@@ -1656,7 +1618,7 @@ export default function VendorDashboard() {
                   
                   <p className="text-sm text-gray-400 line-clamp-2">{event.description || 'New Photobooth Event'}</p>
                   
-                  <div className="mt-auto pt-4 border-t border-white/10 flex flex-col gap-2">
+                  <div className={`mt-auto pt-4 border-t flex flex-col gap-2 ${isBartender ? 'border-blue-500/20' : 'border-white/10'}`}>
                     <div className="flex flex-wrap gap-2">
                       <button 
                         onClick={async () => {
@@ -1677,21 +1639,21 @@ export default function VendorDashboard() {
                             navigate(`/app/${event.id}`);
                           }
                         }}
-                        className="flex-1 min-w-[45%] py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 tour-app-page"
+                        className={`flex-1 min-w-[45%] py-2 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 tour-app-page ${isBartender ? 'bg-blue-500/20 hover:bg-blue-500/40' : 'bg-white/5 hover:bg-white/10'}`}
                       >
                         <Play className="w-3 h-3" />
                         {t.launch}
                       </button>
                       <button 
                         onClick={() => navigate(`/admin/${event.id}`)}
-                        className="flex-1 min-w-[45%] py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                        className={`flex-1 min-w-[45%] py-2 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 ${isBartender ? 'bg-blue-500/10 hover:bg-blue-500/20' : 'bg-white/5 hover:bg-white/10'}`}
                       >
                         <Settings className="w-3 h-3" />
                         {t.settings}
                       </button>
                       <button 
                         onClick={() => navigate(`/app/${event.id}?page=gallery`)}
-                        className="flex-1 min-w-[45%] py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                        className={`flex-1 min-w-[45%] py-2 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 ${isBartender ? 'bg-blue-500/10 hover:bg-blue-500/20' : 'bg-white/5 hover:bg-white/10'}`}
                       >
                         <ImageIcon className="w-3 h-3" />
                         {t.gallery}
@@ -1717,7 +1679,7 @@ export default function VendorDashboard() {
                       </button>
                       <button 
                         onClick={() => handleDeleteEvent(event.id)}
-                        className="flex-1 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                        className="flex-1 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
                         title={t.delete}
                       >
                         <Trash2 className="w-3 h-3" />
@@ -1726,7 +1688,7 @@ export default function VendorDashboard() {
                     </div>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
           )}
         </div>
@@ -2346,6 +2308,34 @@ export default function VendorDashboard() {
               </button>
             </div>
             <form onSubmit={handleCreateEvent}>
+              {(vendor?.email === 'demo@coroai.app' || vendor?.email === 'coroaiphotobooth@gmail.com') && (
+                <div className="mb-6">
+                  <label className="block text-sm text-gray-400 mb-2">Event Type</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                          setNewEventType('photobooth');
+                      }}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${newEventType === 'photobooth' ? 'border-[#bc13fe] bg-[#bc13fe]/20' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
+                    >
+                      <Camera className={`w-5 h-5 ${newEventType === 'photobooth' ? 'text-[#bc13fe]' : 'text-gray-400'}`} />
+                      <span className="font-bold text-xs uppercase tracking-wider">Photobooth</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                          setNewEventType('bartender');
+                          if (newEventName === '') setNewEventName('AI Bartender Event');
+                      }}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${newEventType === 'bartender' ? 'border-blue-500 bg-blue-500/20' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
+                    >
+                      <Wine className={`w-5 h-5 ${newEventType === 'bartender' ? 'text-blue-400' : 'text-gray-400'}`} />
+                      <span className="font-bold text-xs uppercase tracking-wider">Bartender</span>
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="mb-4">
                 <label className="block text-sm text-gray-400 mb-2">{t.eventName}</label>
                 <input
