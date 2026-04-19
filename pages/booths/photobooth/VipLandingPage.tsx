@@ -6,12 +6,13 @@ import { DEFAULT_SETTINGS } from '../../../constants';
 
 interface VipLandingPageProps {
   onStart: () => void;
+  onGallery: () => void;
   onAdmin: (tab?: 'settings' | 'concepts' | 'vip') => void;
   settings: PhotoboothSettings;
   isVIPAdmin?: boolean;
 }
 
-const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onAdmin, settings, isVIPAdmin = false }) => {
+const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onAdmin, settings, isVIPAdmin = false }) => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -267,14 +268,14 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onAdmin, setti
       </div>
 
       {/* Main Interaction Content */}
-      <div className="relative z-20 w-full max-w-md mx-auto px-6 pb-20">
+      <div className="relative z-20 w-full max-w-md mx-auto px-6 h-full flex flex-col justify-center pb-20">
         
         {!isAvatarGreeting ? (
-            <form onSubmit={handleVipSubmit} className="flex flex-col gap-4 animate-fade-in-up">
-              <h2 className="text-xl md:text-2xl tracking-[0.2em] md:tracking-[0.3em] text-white font-bold uppercase mb-2 drop-shadow-lg">
+            <form onSubmit={handleVipSubmit} className="flex flex-col gap-4 animate-fade-in-up items-center w-full">
+              <h2 className="text-xl md:text-2xl tracking-[0.2em] md:tracking-[0.3em] text-white font-bold uppercase mb-4 drop-shadow-lg text-center">
                 Enter Valid VIP ID
               </h2>
-              <div className="relative flex flex-col items-center">
+              <div className="relative flex flex-col items-center w-full">
                  <input 
                     type="text"
                     value={vipKode}
@@ -283,21 +284,29 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onAdmin, setti
                         setVipError(null);
                     }}
                     placeholder="E.g., 69GG"
-                    className="w-full bg-white/10 backdrop-blur-md border-2 border-white/20 rounded-2xl px-6 py-5 text-center text-3xl font-heading text-white tracking-[0.5em] focus:border-[#bc13fe] focus:outline-none transition-all shadow-xl"
+                    className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-5 text-center text-3xl font-heading text-white tracking-[0.5em] focus:border-[#bc13fe] focus:outline-none transition-all shadow-xl"
                     autoComplete="off"
                     disabled={vipLoading}
                  />
                  {vipError && (
-                    <span className="absolute -bottom-8 text-red-400 text-xs tracking-widest block bg-black/60 px-3 py-1 rounded-full">{vipError}</span>
+                    <span className="absolute -bottom-8 text-red-400 text-xs tracking-widest block bg-black/80 backdrop-blur-md border border-red-500/30 px-4 py-1.5 rounded-full">{vipError}</span>
                  )}
               </div>
               <button 
                 type="submit" 
                 disabled={vipLoading || !vipKode}
-                className="mt-6 w-full glass-button group relative overflow-hidden rounded-2xl py-5 transition-all text-sm font-bold tracking-[0.4em] uppercase hover:scale-105 active:scale-100 disabled:opacity-50 disabled:cursor-not-allowed bg-white/10 hover:bg-[#bc13fe]/20"
+                className="mt-6 w-full glass-button group relative overflow-hidden rounded-2xl py-5 transition-all text-sm font-bold tracking-[0.4em] uppercase hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed bg-white/10 hover:bg-[#bc13fe]/40 border border-white/10 hover:border-[#bc13fe]/50"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-sweep"></div>
                 {vipLoading ? 'Verifying...' : 'Submit ID'}
+              </button>
+              
+              <button 
+                type="button"
+                onClick={onGallery}
+                className="mt-4 text-white/50 hover:text-white transition-colors uppercase text-xs tracking-[0.2em] underline font-sans"
+              >
+                View Event Gallery
               </button>
             </form>
         ) : (

@@ -428,6 +428,7 @@ const PhotoboothFlow: React.FC = () => {
           return (
             <VipLandingPage 
                onStart={() => setCurrentPage(AppState.THEMES)} 
+               onGallery={() => setCurrentPage(AppState.GALLERY)}
                onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} 
                settings={settings} 
                isVIPAdmin={isVIPAdmin} 
