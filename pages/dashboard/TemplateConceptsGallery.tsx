@@ -12,11 +12,11 @@ interface TemplateConceptsGalleryProps {
 export default function TemplateConceptsGallery({ templateConcepts, setTemplateConcepts }: TemplateConceptsGalleryProps) {
   const [showConceptModal, setShowConceptModal] = useState(false);
   const [editingConcept, setEditingConcept] = useState<TemplateConcept | null>(null);
-  const [conceptForm, setConceptForm] = useState({ name: '', prompt: '', thumbnail: '', ref_image: '' });
+  const [conceptForm, setConceptForm] = useState({ name: '', prompt: '', thumbnail: '', ref_image: '', ref_image_2: '' });
   const [savingConcept, setSavingConcept] = useState(false);
   const { showDialog } = useDialog();
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'thumbnail' | 'ref_image') => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'thumbnail' | 'ref_image' | 'ref_image_2') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -59,7 +59,8 @@ export default function TemplateConceptsGallery({ templateConcepts, setTemplateC
             name: conceptForm.name,
             prompt: conceptForm.prompt,
             thumbnail: conceptForm.thumbnail,
-            ref_image: conceptForm.ref_image || null
+            ref_image: conceptForm.ref_image || null,
+            ref_image_2: conceptForm.ref_image_2 || null
           })
           .eq('id', editingConcept.id);
 
@@ -72,7 +73,8 @@ export default function TemplateConceptsGallery({ templateConcepts, setTemplateC
             name: conceptForm.name,
             prompt: conceptForm.prompt,
             thumbnail: conceptForm.thumbnail,
-            ref_image: conceptForm.ref_image || null
+            ref_image: conceptForm.ref_image || null,
+            ref_image_2: conceptForm.ref_image_2 || null
           }])
           .select();
 
@@ -83,7 +85,7 @@ export default function TemplateConceptsGallery({ templateConcepts, setTemplateC
       }
       setShowConceptModal(false);
       setEditingConcept(null);
-      setConceptForm({ name: '', prompt: '', thumbnail: '', ref_image: '' });
+      setConceptForm({ name: '', prompt: '', thumbnail: '', ref_image: '', ref_image_2: '' });
       await showDialog('alert', 'Success', 'Template concept saved successfully!');
     } catch (err: any) {
       await showDialog('alert', 'Error', `Failed to save template concept: ${err.message}`);
@@ -121,7 +123,7 @@ export default function TemplateConceptsGallery({ templateConcepts, setTemplateC
         <button 
           onClick={() => {
             setEditingConcept(null);
-            setConceptForm({ name: '', prompt: '', thumbnail: '', ref_image: '' });
+            setConceptForm({ name: '', prompt: '', thumbnail: '', ref_image: '', ref_image_2: '' });
             setShowConceptModal(true);
           }}
           className="w-full py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
@@ -143,7 +145,8 @@ export default function TemplateConceptsGallery({ templateConcepts, setTemplateC
                           name: concept.name,
                           prompt: concept.prompt,
                           thumbnail: concept.thumbnail,
-                          ref_image: concept.ref_image || ''
+                          ref_image: concept.ref_image || '',
+                          ref_image_2: concept.ref_image_2 || ''
                         });
                         setShowConceptModal(true);
                       }}
@@ -238,41 +241,85 @@ export default function TemplateConceptsGallery({ templateConcepts, setTemplateC
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-300">Reference Image (Optional)</label>
-                  <div className="aspect-square rounded-xl border-2 border-dashed border-white/20 overflow-hidden relative group bg-black/50">
-                    {conceptForm.ref_image ? (
-                      <>
-                        <img src={conceptForm.ref_image} alt="Reference" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                          <label className="cursor-pointer px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-bold backdrop-blur-sm transition-colors">
-                            Change
+                  <label className="text-sm font-bold text-gray-300">Reference Images (Optional)</label>
+                  <div className="flex gap-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="text-[10px] text-gray-400 font-bold uppercase">Image 1 (Style)</div>
+                      <div className="aspect-square rounded-xl border-2 border-dashed border-white/20 overflow-hidden relative group bg-black/50">
+                        {conceptForm.ref_image ? (
+                          <>
+                            <img src={conceptForm.ref_image} alt="Reference 1" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                              <label className="cursor-pointer px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold backdrop-blur-sm transition-colors">
+                                Change
+                                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'ref_image')} />
+                              </label>
+                              <button 
+                                onClick={() => setConceptForm({ ...conceptForm, ref_image: '' })}
+                                className="px-3 py-1.5 bg-red-500/50 hover:bg-red-500/80 rounded-lg text-xs font-bold backdrop-blur-sm transition-colors"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors">
+                            <span className="text-3xl mb-2">+</span>
+                            <span className="text-xs text-gray-400">Upload Ref 1</span>
                             <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'ref_image')} />
                           </label>
-                          <button 
-                            onClick={() => setConceptForm({ ...conceptForm, ref_image: '' })}
-                            className="px-4 py-2 bg-red-500/50 hover:bg-red-500/80 rounded-lg text-sm font-bold backdrop-blur-sm transition-colors"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors">
-                        <span className="text-3xl mb-2">+</span>
-                        <span className="text-sm text-gray-400">Upload Reference</span>
-                        <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'ref_image')} />
-                      </label>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs text-gray-500 font-bold whitespace-nowrap">OR URL:</span>
-                    <input
-                      type="text"
-                      value={conceptForm.ref_image}
-                      onChange={e => setConceptForm({ ...conceptForm, ref_image: e.target.value })}
-                      className="flex-1 bg-black/50 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-[#bc13fe] outline-none"
-                      placeholder="Paste image URL here..."
-                    />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[10px] text-gray-500 font-bold whitespace-nowrap">OR URL:</span>
+                        <input
+                          type="text"
+                          value={conceptForm.ref_image || ''}
+                          onChange={e => setConceptForm({ ...conceptForm, ref_image: e.target.value })}
+                          className="flex-1 bg-black/50 border border-white/10 rounded-lg p-2 text-[10px] text-white focus:border-[#bc13fe] outline-none"
+                          placeholder="Paste URL..."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex-1 space-y-2">
+                      <div className="text-[10px] text-gray-400 font-bold uppercase">Image 2 (Clothes/BG)</div>
+                      <div className="aspect-square rounded-xl border-2 border-dashed border-white/20 overflow-hidden relative group bg-black/50">
+                        {conceptForm.ref_image_2 ? (
+                          <>
+                            <img src={conceptForm.ref_image_2} alt="Reference 2" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2">
+                              <label className="cursor-pointer px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold backdrop-blur-sm transition-colors">
+                                Change
+                                <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'ref_image_2')} />
+                              </label>
+                              <button 
+                                onClick={() => setConceptForm({ ...conceptForm, ref_image_2: '' })}
+                                className="px-3 py-1.5 bg-red-500/50 hover:bg-red-500/80 rounded-lg text-xs font-bold backdrop-blur-sm transition-colors"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors">
+                            <span className="text-3xl mb-2">+</span>
+                            <span className="text-xs text-gray-400">Upload Ref 2</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={e => handleImageUpload(e, 'ref_image_2')} />
+                          </label>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[10px] text-gray-500 font-bold whitespace-nowrap">OR URL:</span>
+                        <input
+                          type="text"
+                          value={conceptForm.ref_image_2 || ''}
+                          onChange={e => setConceptForm({ ...conceptForm, ref_image_2: e.target.value })}
+                          className="flex-1 bg-black/50 border border-white/10 rounded-lg p-2 text-[10px] text-white focus:border-[#bc13fe] outline-none"
+                          placeholder="Paste URL..."
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

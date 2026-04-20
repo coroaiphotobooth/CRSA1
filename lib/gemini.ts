@@ -117,7 +117,7 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
     }
 
     // Default to 'booth' mode if a reference image is provided and mode is 'wrapped' (default)
-    if ((concept.refImage || concept.reference_image_split || concept.reference_image_bg) && promptMode === 'wrapped') {
+    if ((concept.refImage || concept.refImage2 || concept.reference_image_split || concept.reference_image_bg) && promptMode === 'wrapped') {
         promptMode = 'booth';
         console.log("Auto-switching to BOOTH mode for Reference Image workflow");
     }
@@ -337,12 +337,21 @@ Additional instructions: ${finalPrompt}`;
         // 3. Add Person Image (Image 1)
         parts.push({ inlineData: { data: cleanBase64, mimeType: mimeType } });
 
-        if (concept.refImage && concept.refImage.trim() !== '') {
-           parts.push({ text: "REFERENCE IMAGE (Style/Background/Clothing):" });
-           const img = await fetchImageAsBase64(concept.refImage);
-           parts.push({ inlineData: img });
+        if ((concept.refImage && concept.refImage.trim() !== '') || (concept.refImage2 && concept.refImage2.trim() !== '')) {
            
-           parts.push({ text: executionPrompt + `\n\n[IMPORTANT]: The REFERENCE IMAGE provided is a VISUAL REFERENCE for the style, background, or clothing. Combine the person from the MAIN PHOTO with the style/aesthetics of the REFERENCE IMAGE.\nStyle: ${finalStyle}.` });
+           if (concept.refImage && concept.refImage.trim() !== '') {
+             parts.push({ text: "REFERENCE IMAGE 1 (Style/Pose):" });
+             const img = await fetchImageAsBase64(concept.refImage);
+             parts.push({ inlineData: img });
+           }
+
+           if (concept.refImage2 && concept.refImage2.trim() !== '') {
+             parts.push({ text: "REFERENCE IMAGE 2 (Clothing/Background/Extra):" });
+             const img = await fetchImageAsBase64(concept.refImage2);
+             parts.push({ inlineData: img });
+           }
+           
+           parts.push({ text: executionPrompt + `\n\n[IMPORTANT]: The REFERENCE IMAGES provided are VISUAL REFERENCES for the style, background, or clothing. Combine the person from the MAIN PHOTO with the style/aesthetics of the REFERENCE IMAGES. If there is a second reference image, use it strongly for clothing and background.\nStyle: ${finalStyle}.` });
         } else {
            parts.push({ text: executionPrompt + `\nStyle: ${finalStyle}.` });
         }

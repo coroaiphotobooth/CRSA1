@@ -6,6 +6,7 @@ export interface Concept {
   prompt: string;
   thumbnail: string;
   refImage?: string; // Optional: Reference image for style/clothes/background
+  refImage2?: string; // Optional: Second reference image
   reference_image_split?: string;
   reference_image_bg?: string;
   style_preset?: string;
@@ -17,6 +18,7 @@ export interface TemplateConcept {
   prompt: string;
   thumbnail: string;
   ref_image?: string;
+  ref_image_2?: string;
   created_at?: string;
 }
 
@@ -28,6 +30,8 @@ export interface ConceptTemplate {
   thumbnail?: string;
   reference_image_split?: string;
   reference_image_bg?: string;
+  ref_image?: string;
+  ref_image_2?: string;
   style_preset?: string;
   created_at?: string;
 }

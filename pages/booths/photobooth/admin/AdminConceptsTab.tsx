@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Concept, PhotoboothSettings, TemplateConcept, ConceptTemplate } from '../../../../types';
 import { saveConceptsToGas } from '../../../../lib/appsScript';
 import { supabase } from '../../../../lib/supabase';
 import { useDialog } from '../../../../components/DialogProvider';
-import { Loader2, Sparkles, Plus, X, Palette } from 'lucide-react';
+import { Loader2, Sparkles, Plus, X, Palette, Trash2, Edit } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 
 import { useTourState, setTourState } from '../../../../lib/tourState';
@@ -24,10 +24,14 @@ interface AdminConceptsTabProps {
 const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(({ concepts, onSaveConcepts, adminPin, settings }, ref) => {
   const [localConcepts, setLocalConcepts] = useState(concepts);
   const { eventId } = useParams<{ eventId: string }>();
+  const navigate = useNavigate();
   const [isSavingConcepts, setIsSavingConcepts] = useState(false);
   const { showDialog } = useDialog();
   const { isActive, tourType, stepIndex } = useTourState();
   const prevIsActive = useRef(isActive);
+
+  // Creation Selection Modal
+  const [showCreationSelectionModal, setShowCreationSelectionModal] = useState(false);
 
   // Create from Image State
   const [showCreateFromImageModal, setShowCreateFromImageModal] = useState(false);
@@ -36,6 +40,9 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
   const [createFromImagePreview, setCreateFromImagePreview] = useState<string | null>(null);
   const [isCreatingFromImage, setIsCreatingFromImage] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+
+  // Edit Modal State
+  const [editingConceptIndex, setEditingConceptIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setIsDirty(JSON.stringify(localConcepts) !== JSON.stringify(concepts));
@@ -286,7 +293,11 @@ keep it if someone is wearing glasses, hijab, or head accessories,s
       prompt: '',
       thumbnail: 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500'
     };
-    setLocalConcepts(prev => [...prev, newConcept]);
+    setLocalConcepts(prev => {
+      const newList = [...prev, newConcept];
+      setEditingConceptIndex(newList.length - 1);
+      return newList;
+    });
     if (isActive && tourType === 'concept' && stepIndex === 2) {
       setTourState({ stepIndex: 3 });
     }
@@ -306,6 +317,10 @@ keep it if someone is wearing glasses, hijab, or head accessories,s
 
   const handleRefImageChange = (index: number, base64: string) => {
     setLocalConcepts(prev => prev.map((c, i) => i === index ? { ...c, refImage: base64 } : c));
+  };
+
+  const handleRefImageChange2 = (index: number, base64: string) => {
+    setLocalConcepts(prev => prev.map((c, i) => i === index ? { ...c, refImage2: base64 } : c));
   };
 
   const [isEnhancing, setIsEnhancing] = useState<number | null>(null);
@@ -406,7 +421,17 @@ Output ONLY the enhanced prompt text, nothing else.`;
     }));
   };
 
-  const handleUploadAsset = async (file: File, type: 'thumbnail' | 'refImage', index: number) => {
+  const handleRemoveRefImage2 = (index: number) => {
+    setLocalConcepts(prev => prev.map((c, i) => {
+       if (i === index) {
+          const { refImage2, ...rest } = c;
+          return rest as Concept;
+       }
+       return c;
+    }));
+  };
+
+  const handleUploadAsset = async (file: File, type: 'thumbnail' | 'refImage' | 'refImage2', index: number) => {
     if (eventId) {
       try {
         const fileExt = file.name.split('.').pop();
@@ -425,8 +450,10 @@ Output ONLY the enhanced prompt text, nothing else.`;
           
         if (type === 'thumbnail') {
           handleThumbChange(index, publicUrl);
-        } else {
+        } else if (type === 'refImage') {
           handleRefImageChange(index, publicUrl);
+        } else if (type === 'refImage2') {
+          handleRefImageChange2(index, publicUrl);
         }
       } catch (err) {
         console.error(`Error uploading ${type}:`, err);
@@ -438,8 +465,10 @@ Output ONLY the enhanced prompt text, nothing else.`;
       reader.onload = () => {
         if (type === 'thumbnail') {
           handleThumbChange(index, reader.result as string);
-        } else {
+        } else if (type === 'refImage') {
           handleRefImageChange(index, reader.result as string);
+        } else if (type === 'refImage2') {
+          handleRefImageChange2(index, reader.result as string);
         }
       };
       reader.readAsDataURL(file);
@@ -505,6 +534,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
             prompt: c.prompt,
             thumbnail: c.thumbnail,
             ref_image: c.refImage || (c as any).ref_image || null,
+            ref_image_2: c.refImage2 || (c as any).ref_image_2 || null,
             reference_image_split: c.reference_image_split || null,
             reference_image_bg: c.reference_image_bg || null,
             style_preset: c.style_preset || null
@@ -549,6 +579,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
             prompt: c.prompt,
             thumbnail: c.thumbnail,
             refImage: c.ref_image || undefined,
+            refImage2: c.ref_image_2 || undefined,
             reference_image_split: c.reference_image_split || undefined,
             reference_image_bg: c.reference_image_bg || undefined,
             style_preset: c.style_preset || undefined
@@ -579,7 +610,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
 
   return (
     <div className="flex flex-col gap-10">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {localConcepts.map((concept, index) => {
           const isTemplateOrSmart = concept.concept_id?.startsWith('template_') || 
                                     concept.id.startsWith('template_') || 
@@ -589,201 +620,323 @@ Output ONLY the enhanced prompt text, nothing else.`;
                                     concept.id.startsWith('concept_studio_');
 
           return (
-          <div key={concept.id} className="glass-card p-6 flex flex-col gap-4 relative group backdrop-blur-md bg-black/60 rounded-xl border border-white/10">
-            <button 
-              onClick={(e) => { e.stopPropagation(); handleDeleteConcept(index); }} 
-              className="absolute top-4 right-4 text-red-900/40 hover:text-red-500 transition-colors p-2 z-20 hover:bg-white/10 rounded"
-              title="Delete Concept"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
-            </button>
+          <div key={concept.id} onClick={() => setEditingConceptIndex(index)} className={`glass-card relative group rounded-xl overflow-hidden border border-white/10 aspect-[3/4] flex flex-col cursor-pointer hover:border-[#bc13fe]/50 hover:shadow-[0_0_20px_rgba(188,19,254,0.2)] transition-all ${index === localConcepts.length - 1 ? 'tour-thumbnail' : ''}`}>
+               <img src={concept.thumbnail} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+               
+               <button 
+                 onClick={(e) => { e.stopPropagation(); handleDeleteConcept(index); }} 
+                 className="absolute top-2 right-2 text-white/50 hover:text-red-500 bg-black/50 hover:bg-black/80 backdrop-blur-md transition-colors p-2 z-20 rounded-full"
+                 title="Delete Concept"
+               >
+                 <Trash2 className="w-4 h-4" />
+               </button>
 
-            <div className="flex gap-4">
-               {/* THUMBNAIL */}
-               <div className={`flex flex-col gap-2 items-center w-24 shrink-0 ${index === localConcepts.length - 1 ? 'tour-thumbnail' : ''}`}>
-                 <div className="w-full aspect-[9/16] bg-white/5 border border-white/10 rounded-xl overflow-hidden relative group/thumb shadow-lg">
-                    <img src={concept.thumbnail} className="w-full h-full object-cover" />
-                    <label className="absolute inset-0 bg-[#bc13fe]/80 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1">
-                       UPLOAD THUMBNAIL
-                       <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                             if (file.size > 1024 * 1024) {
-                                await showDialog('alert', 'Error', "File too large! Max size is 1MB.");
-                                return;
-                             }
-                             setIsSavingConcepts(true);
-                             await handleUploadAsset(file, 'thumbnail', index);
-                             setIsSavingConcepts(false);
-                          }
-                       }} />
-                    </label>
-                 </div>
-                 <div className="text-[8px] text-gray-400 font-bold text-center uppercase tracking-wider leading-tight">
-                   UPLOAD IMAGE THUMBNAIL PREVIEW
-                 </div>
-                 <label className="bg-white/10 hover:bg-[#bc13fe]/80 text-[9px] px-2 py-1.5 rounded cursor-pointer transition-colors text-white uppercase font-bold text-center w-full">
-                   Upload
-                   <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                         if (file.size > 1024 * 1024) {
-                            await showDialog('alert', 'Error', "File too large! Max size is 1MB.");
-                            return;
-                         }
-                         setIsSavingConcepts(true);
-                         await handleUploadAsset(file, 'thumbnail', index);
-                         setIsSavingConcepts(false);
-                      }
-                   }} />
-                 </label>
+               <div className="absolute inset-x-0 bottom-0 p-3 flex flex-col gap-1 z-10 w-full">
+                 <h3 className="text-white font-bold text-sm truncate drop-shadow-md w-full">{concept.name || 'Untitled'}</h3>
+                 <p className="text-white/60 text-[9px] uppercase font-bold tracking-wider truncate w-full">{isTemplateOrSmart ? 'Template / AI' : 'Custom Concept'}</p>
                </div>
-
-               {/* REFERENCE IMAGE (NEW) - HIDDEN FOR TEMPLATES/SMART */}
-               {!isTemplateOrSmart && (
-                 <div className={`flex flex-col gap-2 items-center w-24 shrink-0 ${index === localConcepts.length - 1 ? 'tour-reference' : ''}`}>
-                   <div className="w-full aspect-[9/16] bg-white/5 border border-dashed border-white/20 rounded-xl overflow-hidden relative group/ref shadow-lg flex items-center justify-center">
-                      {concept.refImage ? (
-                         <>
-                            <img src={concept.refImage} className="w-full h-full object-cover" />
-                            <button 
-                               onClick={() => handleRemoveRefImage(index)}
-                               className="absolute top-1 right-1 bg-red-600 rounded-full w-4 h-4 flex items-center justify-center text-white z-20 hover:scale-110"
-                            >
-                               <span className="text-[10px]">✕</span>
-                            </button>
-                         </>
-                      ) : (
-                         <span className="text-[8px] text-white/30 text-center px-2">Ref Image (Style)</span>
-                      )}
-                      
-                      <label className="absolute inset-0 bg-blue-600/80 opacity-0 group-hover/ref:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
-                         UPLOAD REFERENCE
-                         <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                               if (file.size > 2 * 1024 * 1024) {
-                                  await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
-                                  return;
-                               }
-                               setIsSavingConcepts(true);
-                               await handleUploadAsset(file, 'refImage', index);
-                               setIsSavingConcepts(false);
-                            }
-                         }} />
-                      </label>
-                   </div>
-                   <div className="text-[8px] text-gray-400 font-bold text-center uppercase tracking-wider leading-tight">
-                     REFERENCE IMAGE (MAX 2MB)
-                   </div>
-                   <label className="bg-white/10 hover:bg-blue-600/80 text-[9px] px-2 py-1.5 rounded cursor-pointer transition-colors text-white uppercase font-bold text-center w-full">
-                     Upload
-                     <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                           if (file.size > 2 * 1024 * 1024) {
-                              await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
-                              return;
-                           }
-                           setIsSavingConcepts(true);
-                           await handleUploadAsset(file, 'refImage', index);
-                           setIsSavingConcepts(false);
-                        }
-                     }} />
-                   </label>
-                 </div>
-               )}
-
-               {/* TEXT INPUTS */}
-               <div className="flex-1 flex flex-col gap-4">
-                  <div className="relative flex items-center group">
-                    <input 
-                       className="bg-black/30 border border-white/10 p-3 rounded-lg font-heading uppercase italic text-white outline-none focus:border-[#bc13fe] w-full transition-colors" 
-                       value={concept.name} 
-                       onChange={e => handleConceptChange(index, 'name', e.target.value)} 
-                       placeholder="Concept Name"
-                       title="Edit concept name"
-                    />
+               
+               <div className="absolute inset-0 bg-[#bc13fe]/0 group-hover:bg-[#bc13fe]/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 z-0">
+                  <div className="bg-black/80 text-white rounded-full p-3 transform translate-y-4 group-hover:translate-y-0 shadow-xl transition-all">
+                     <Edit className="w-5 h-5" />
                   </div>
-                  
-                  {/* PROMPT OR TEMPLATE PLACEHOLDER */}
-                  {!isTemplateOrSmart ? (
-                    <div className={`w-full flex flex-col gap-2 ${index === localConcepts.length - 1 ? 'tour-prompt' : ''}`}>
-                      <textarea 
-                         className="bg-black/30 border border-white/5 p-3 text-[10px] font-mono h-24 text-gray-400 outline-none focus:border-white/20 resize-none w-full rounded-lg" 
-                         value={concept.prompt} 
-                         onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
-                         placeholder="Write your concept or prompt here.. if it is simple, press automatic prompt, the system will make your prompt better."
-                      />
-                      <div className="flex flex-col items-end gap-1">
-                        <button
-                          onClick={() => handleEnhancePrompt(index)}
-                          disabled={isEnhancing === index || !concept.prompt.trim()}
-                          className={`bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] border border-[#bc13fe]/30 rounded px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${index === localConcepts.length - 1 ? 'tour-optimize-prompt' : ''}`}
-                          title="Optimize prompt using AI"
-                        >
-                          {isEnhancing === index ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <Sparkles className="w-3.5 h-3.5" />
-                          )}
-                          AUTOMATIC PROMPT
-                        </button>
-                        <span className="text-[8px] text-gray-500 italic">use AUTOMATIC PROMPT if you use a simple prompt, we will make it better</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex-1 bg-black/40 border border-white/10 rounded-lg flex flex-col items-center justify-center p-6 text-center min-h-[120px]">
-                       <Sparkles className="w-8 h-8 text-[#bc13fe]/50 mb-3" />
-                       <span className="text-lg md:text-xl font-heading font-bold uppercase tracking-widest text-white/70">
-                          {(concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_')) ? 'CREATE FROM AI IMAGE' : 'LOAD FROM TEMPLATE CONCEPT'}
-                       </span>
-                    </div>
-                  )}
                </div>
-            </div>
-            
-            {/* HELPER TEXT */}
-            {!isTemplateOrSmart && (
-              <div className="bg-white/5 p-2 rounded text-[9px] text-gray-500 italic">
-                 * <strong>Thumbnail:</strong> Displayed in concept menu. <br/>
-                 * <strong>Reference Image:</strong> Optional. If uploaded, AI will use it as style/clothing/background reference.
-              </div>
-            )}
           </div>
         )})}
-        <div className="glass-card p-8 flex flex-col items-center justify-center gap-6 border-2 border-dashed border-white/10 rounded-xl backdrop-blur-sm">
-          <button 
-            onClick={handleAddConcept} 
-            className="w-full py-4 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 border border-white/10 tour-create-own"
-          >
-            <Plus className="w-4 h-4" />
-            CREATE YOUR OWN CONCEPT
-          </button>
 
-          <button 
-            onClick={() => setShowCreateFromImageModal(true)}
-            className="w-full py-4 bg-blue-500/20 hover:bg-blue-500/40 text-blue-400 rounded-lg text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 border border-blue-500/20"
-          >
-            <Sparkles className="w-4 h-4" />
-            CREATE FROM AI IMAGE
-          </button>
-          
-          <div className="w-full flex items-center justify-center gap-4">
-            <div className="h-px bg-white/10 flex-1"></div>
-            <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">OR</span>
-            <div className="h-px bg-white/10 flex-1"></div>
-          </div>
-
-          <button 
-            onClick={handleOpenTemplateModal}
-            className="w-full py-4 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 text-[#bc13fe] rounded-lg text-xs font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 border border-[#bc13fe]/20 tour-use-template"
-          >
-            <Sparkles className="w-4 h-4" />
-            USE TEMPLATE CONCEPT
-          </button>
+        <div onClick={() => setShowCreationSelectionModal(true)} className="glass-card flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-white/20 hover:border-[#bc13fe]/50 hover:bg-[#bc13fe]/5 transition-all cursor-pointer min-h-[200px] tour-create-own group">
+           <div className="bg-white/5 rounded-full p-4 text-white group-hover:scale-110 group-hover:text-[#bc13fe] transition-all">
+              <Plus className="w-6 h-6" />
+           </div>
+           <div className="text-center px-4">
+              <h3 className="font-bold text-xs mb-1 uppercase tracking-wider group-hover:text-[#bc13fe] transition-colors">Add Concept</h3>
+              <p className="text-[9px] text-gray-500">Choose method</p>
+           </div>
         </div>
       </div>
+
+      {/* CONCEPT EDITING MODAL */}
+      {editingConceptIndex !== null && localConcepts[editingConceptIndex] && (() => {
+        const index = editingConceptIndex;
+        const concept = localConcepts[index];
+        const isTemplateOrSmart = concept.concept_id?.startsWith('template_') || 
+                                  concept.id.startsWith('template_') || 
+                                  concept.concept_id?.startsWith('smart_') || 
+                                  concept.id.startsWith('smart_') ||
+                                  concept.concept_id?.startsWith('concept_studio_') ||
+                                  concept.id.startsWith('concept_studio_');
+
+        return (
+         <div className="fixed inset-0 z-[10005] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setEditingConceptIndex(null)}></div>
+            <div className="relative bg-[#111]/90 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+               <div className="p-4 border-b border-white/10 flex justify-between items-center bg-[#111]/80 backdrop-blur-md z-10 shrink-0">
+                  <h2 className="text-lg font-bold">Edit Concept</h2>
+                  <button onClick={() => setEditingConceptIndex(null)} className="text-gray-400 hover:text-white transition-colors">
+                     <X className="w-5 h-5" />
+                  </button>
+               </div>
+               
+               <div className="p-4 overflow-y-auto custom-scrollbar flex flex-col gap-6 flex-1">
+                 {/* TITLE & TEXT INPUTS */}
+                 <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-gray-400">CONCEPT NAME</label>
+                    <input 
+                       className="bg-black/50 border border-white/10 p-3 rounded-lg font-heading text-base font-bold text-white outline-none focus:border-[#bc13fe] w-full transition-colors" 
+                       value={concept.name} 
+                       onChange={e => handleConceptChange(index, 'name', e.target.value)} 
+                       placeholder="E.g. Neon Cyberpunk"
+                    />
+                 </div>
+
+                 <div className="flex flex-col sm:flex-row gap-6">
+                    {/* THUMBNAIL */}
+                    <div className={`flex flex-col gap-2 w-full sm:w-[120px] shrink-0 ${index === localConcepts.length - 1 ? 'tour-thumbnail' : ''}`}>
+                      <label className="text-xs font-bold text-gray-400">THUMBNAIL</label>
+                      <div className="w-full sm:w-[120px] aspect-[3/4] bg-black/50 border border-dashed border-white/20 rounded-lg overflow-hidden relative group/thumb shadow-lg">
+                         {concept.thumbnail ? (
+                           <img src={concept.thumbnail} className="w-full h-full object-cover" />
+                         ) : (
+                           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                             <Plus className="w-6 h-6 mb-1" />
+                             <span className="text-[10px]">Upload</span>
+                           </div>
+                         )}
+                         <label className="absolute inset-0 bg-[#bc13fe]/80 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-2">
+                            UPLOAD
+                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                               const file = e.target.files?.[0];
+                               if (file) {
+                                  if (file.size > 1024 * 1024) {
+                                     await showDialog('alert', 'Error', "File too large! Max size is 1MB.");
+                                     return;
+                                  }
+                                  setIsSavingConcepts(true);
+                                  await handleUploadAsset(file, 'thumbnail', index);
+                                  setIsSavingConcepts(false);
+                               }
+                            }} />
+                         </label>
+                      </div>
+                    </div>
+
+                    {/* REFERENCE IMAGES (NEW) - HIDDEN FOR TEMPLATES/SMART */}
+                    {!isTemplateOrSmart ? (
+                      <div className={`flex flex-col gap-2 flex-1 ${index === localConcepts.length - 1 ? 'tour-reference' : ''}`}>
+                        <label className="text-xs font-bold text-gray-400">REFERENCES (OPTIONAL)</label>
+                        <div className="flex gap-3">
+                          <div className="flex flex-col gap-1.5 flex-1">
+                            <span className="text-[9px] text-gray-400 font-bold uppercase">Image 1 (Style/Pose)</span>
+                            <div className="w-full aspect-square bg-black/50 border border-dashed border-white/20 rounded-lg overflow-hidden relative group/ref shadow-lg flex items-center justify-center">
+                               {concept.refImage ? (
+                                  <>
+                                     <img src={concept.refImage} className="w-full h-full object-cover" />
+                                     <button 
+                                        onClick={() => handleRemoveRefImage(index)}
+                                        className="absolute top-1 right-1 bg-red-600 rounded-full p-1 flex items-center justify-center text-white z-20 hover:scale-110"
+                                     >
+                                        <X className="w-3 h-3" />
+                                     </button>
+                                  </>
+                               ) : (
+                                  <span className="text-[10px] text-white/30 text-center px-2">Ref 1</span>
+                               )}
+                               
+                               <label className="absolute inset-0 bg-blue-600/80 opacity-0 group-hover/ref:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
+                                  UPLOAD
+                                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                     const file = e.target.files?.[0];
+                                     if (file) {
+                                        if (file.size > 2 * 1024 * 1024) {
+                                           await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
+                                           return;
+                                        }
+                                        setIsSavingConcepts(true);
+                                        await handleUploadAsset(file, 'refImage', index);
+                                        setIsSavingConcepts(false);
+                                     }
+                                  }} />
+                               </label>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1.5 flex-1">
+                            <span className="text-[9px] text-gray-400 font-bold uppercase">Image 2 (Clothes/BG)</span>
+                            <div className="w-full aspect-square bg-black/50 border border-dashed border-white/20 rounded-lg overflow-hidden relative group/ref2 shadow-lg flex items-center justify-center">
+                               {concept.refImage2 ? (
+                                  <>
+                                     <img src={concept.refImage2} className="w-full h-full object-cover" />
+                                     <button 
+                                        onClick={() => handleRemoveRefImage2(index)}
+                                        className="absolute top-1 right-1 bg-red-600 rounded-full p-1 flex items-center justify-center text-white z-20 hover:scale-110"
+                                     >
+                                        <X className="w-3 h-3" />
+                                     </button>
+                                  </>
+                               ) : (
+                                  <span className="text-[10px] text-white/30 text-center px-2">Ref 2</span>
+                               )}
+                               
+                               <label className="absolute inset-0 bg-blue-600/80 opacity-0 group-hover/ref2:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
+                                  UPLOAD
+                                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                     const file = e.target.files?.[0];
+                                     if (file) {
+                                        if (file.size > 2 * 1024 * 1024) {
+                                           await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
+                                           return;
+                                        }
+                                        setIsSavingConcepts(true);
+                                        await handleUploadAsset(file, 'refImage2', index);
+                                        setIsSavingConcepts(false);
+                                     }
+                                  }} />
+                               </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-1 bg-black/40 border border-white/10 rounded-lg flex flex-col items-center justify-center p-4 text-center min-h-[140px]">
+                         <Sparkles className="w-8 h-8 text-[#bc13fe]/50 mb-2" />
+                         <span className="text-sm font-heading font-bold uppercase tracking-widest text-white/70">
+                            {(concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_')) ? 'AI GENERATED' : 'TEMPLATE'}
+                         </span>
+                         <p className="text-[10px] text-gray-500 mt-2">Locked simple prompt.</p>
+                      </div>
+                    )}
+                 </div>
+                  
+                 {/* PROMPT OR TEMPLATE PLACEHOLDER */}
+                 <div className="flex flex-col gap-2">
+                    <label className="text-xs font-bold text-gray-400">PROMPT</label>
+                    {!isTemplateOrSmart && (
+                      <div className={`w-full flex flex-col gap-2 ${index === localConcepts.length - 1 ? 'tour-prompt' : ''}`}>
+                        <textarea 
+                           className="bg-black/50 border border-white/10 p-3 text-[11px] font-mono h-28 text-white outline-none focus:border-white/30 resize-y w-full rounded-lg custom-scrollbar" 
+                           value={concept.prompt} 
+                           onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
+                           placeholder="Describe the aesthetic, background, mood, lighting..."
+                        />
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-1">
+                          <span className="text-[10px] text-gray-500">Click to optimize -&gt;</span>
+                          <button
+                            onClick={() => handleEnhancePrompt(index)}
+                            disabled={isEnhancing === index || !concept.prompt.trim()}
+                            className={`bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${index === localConcepts.length - 1 ? 'tour-optimize-prompt' : ''}`}
+                          >
+                            {isEnhancing === index ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-4 h-4" />
+                            )}
+                            AUTO OPTIMIZE
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                 </div>
+
+                 {/* SAVE/CLOSE MODAL ACTION */}
+                 <div className="border-t border-white/10 pt-4 mt-2">
+                    <button 
+                       onClick={() => setEditingConceptIndex(null)}
+                       className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                    >
+                       Done Editing
+                    </button>
+                 </div>
+               </div>
+            </div>
+         </div>
+        )
+      })()}
+
+      {/* CREATION SELECTION MODAL */}
+      {showCreationSelectionModal && (
+        <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowCreationSelectionModal(false)}></div>
+          <div className="relative bg-[#111]/90 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-lg flex flex-col overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#111]/80 backdrop-blur-md z-10 shrink-0">
+               <h2 className="text-xl font-bold">Add Concept</h2>
+               <button onClick={() => setShowCreationSelectionModal(false)} className="text-gray-400 hover:text-white transition-colors">
+                  <X className="w-5 h-5" />
+               </button>
+            </div>
+            
+            <div className="p-6 flex flex-col gap-4">
+               {/* 1. Create Your Own (Scratch) */}
+               <button 
+                  onClick={() => {
+                     setShowCreationSelectionModal(false);
+                     handleAddConcept();
+                  }}
+                  className="w-full text-left bg-black/40 hover:bg-[#bc13fe]/20 border border-white/5 hover:border-[#bc13fe]/50 p-4 rounded-xl transition-all group flex items-start gap-4"
+               >
+                  <div className="bg-white/10 group-hover:bg-[#bc13fe]/30 rounded-lg p-3 text-white group-hover:text-[#bc13fe] transition-colors">
+                     <Plus className="w-6 h-6" />
+                  </div>
+                  <div>
+                     <h3 className="font-bold text-base text-white group-hover:text-[#bc13fe] transition-colors">Create Your Own Concept</h3>
+                     <p className="text-xs text-gray-500 mt-1">Start from scratch with your own prompt, style, and reference images.</p>
+                  </div>
+               </button>
+
+               {/* 2. Create from AI Image */}
+               <button 
+                  onClick={() => {
+                     setShowCreationSelectionModal(false);
+                     setShowCreateFromImageModal(true);
+                  }}
+                  className="w-full text-left bg-black/40 hover:bg-blue-500/20 border border-white/5 hover:border-blue-500/50 p-4 rounded-xl transition-all group flex items-start gap-4"
+               >
+                  <div className="bg-white/10 group-hover:bg-blue-500/30 rounded-lg p-3 text-white group-hover:text-blue-400 transition-colors">
+                     <Sparkles className="w-6 h-6" />
+                  </div>
+                  <div>
+                     <h3 className="font-bold text-base text-white group-hover:text-blue-400 transition-colors">Create by AI Image</h3>
+                     <p className="text-xs text-gray-500 mt-1">Upload a reference, and let Gemini AI write the perfect prompt for you.</p>
+                  </div>
+               </button>
+
+               {/* 3. Create in Concept Studio */}
+               <button 
+                  onClick={() => {
+                     setShowCreationSelectionModal(false);
+                     navigate('/dashboard?tab=studio');
+                  }}
+                  className="w-full text-left bg-black/40 hover:bg-amber-500/20 border border-white/5 hover:border-amber-500/50 p-4 rounded-xl transition-all group flex items-start gap-4"
+               >
+                  <div className="bg-white/10 group-hover:bg-amber-500/30 rounded-lg p-3 text-white group-hover:text-amber-400 transition-colors">
+                     <Edit className="w-6 h-6" />
+                  </div>
+                  <div>
+                     <h3 className="font-bold text-base text-white group-hover:text-amber-400 transition-colors">Create in Concept Studio</h3>
+                     <p className="text-xs text-gray-500 mt-1">Go to the Studio to experiment, test generation, and save templates.</p>
+                  </div>
+               </button>
+
+               {/* 4. Select by Template */}
+               <button 
+                  onClick={() => {
+                     setShowCreationSelectionModal(false);
+                     handleOpenTemplateModal();
+                  }}
+                  className="w-full text-left bg-black/40 hover:bg-[#bc13fe]/20 border border-white/5 hover:border-[#bc13fe]/50 p-4 rounded-xl transition-all group flex items-start gap-4"
+               >
+                  <div className="bg-white/10 group-hover:bg-[#bc13fe]/30 rounded-lg p-3 text-white group-hover:text-[#bc13fe] transition-colors">
+                     <Palette className="w-6 h-6" />
+                  </div>
+                  <div>
+                     <h3 className="font-bold text-base text-white group-hover:text-[#bc13fe] transition-colors">Select by Template</h3>
+                     <p className="text-xs text-gray-500 mt-1">Load ready-to-use concepts from the global or your personal gallery.</p>
+                  </div>
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create From Image Modal */}
       {showCreateFromImageModal && (
