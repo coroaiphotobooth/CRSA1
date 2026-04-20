@@ -130,6 +130,81 @@ export const applyOverlay = async (
     }
   };
 
+export const createMergedPrintLayout = async (
+  base64Image1: string,
+  base64Image2: string,
+  originalWidth: number,
+  originalHeight: number
+): Promise<string> => {
+  try {
+    const img1 = await preloadImage(base64Image1, true);
+    const img2 = await preloadImage(base64Image2, true);
+    const isPortrait = originalHeight > originalWidth;
+    
+    const canvas = document.createElement('canvas');
+    
+    // Force output to be exactly 4R ratio (3:2 or 2:3)
+    const longestSide = Math.max(originalWidth, originalHeight);
+    
+    if (isPortrait) {
+      // Output Landscape 4R (3:2)
+      canvas.width = longestSide;
+      canvas.height = Math.round(longestSide * (2 / 3));
+    } else {
+      // Output Portrait 4R (2:3)
+      canvas.width = Math.round(longestSide * (2 / 3));
+      canvas.height = longestSide;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error("Canvas context unavailable");
+    }
+
+    // Fill white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (isPortrait) {
+      // Canvas is Landscape (3:2)
+      const halfWidth = canvas.width / 2;
+      const scale = Math.min(halfWidth / originalWidth, canvas.height / originalHeight);
+      const scaledWidth = originalWidth * scale;
+      const scaledHeight = originalHeight * scale;
+      
+      const x1 = (halfWidth - scaledWidth) / 2;
+      const y1 = (canvas.height - scaledHeight) / 2;
+      const x2 = halfWidth + x1;
+      const y2 = y1;
+      
+      // Draw first image left, second image right
+      ctx.drawImage(img1, x1, y1, scaledWidth, scaledHeight);
+      ctx.drawImage(img2, x2, y2, scaledWidth, scaledHeight);
+    } else {
+      // Canvas is Portrait (2:3)
+      const halfHeight = canvas.height / 2;
+      const scale = Math.min(canvas.width / originalWidth, halfHeight / originalHeight);
+      const scaledWidth = originalWidth * scale;
+      const scaledHeight = originalHeight * scale;
+      
+      const x1 = (canvas.width - scaledWidth) / 2;
+      const y1 = (halfHeight - scaledHeight) / 2;
+      const x2 = x1;
+      const y2 = halfHeight + y1;
+      
+      // Draw first image top, second image bottom
+      ctx.drawImage(img1, x1, y1, scaledWidth, scaledHeight);
+      ctx.drawImage(img2, x2, y2, scaledWidth, scaledHeight);
+    }
+
+    // High quality JPEG
+    return canvas.toDataURL('image/jpeg', 0.95);
+  } catch (error) {
+    console.error("Failed to create merged print layout", error);
+    return base64Image2; // Fallback to the second image
+  }
+};
+
 export const createDoublePrintLayout = async (
   base64Image: string,
   originalWidth: number,

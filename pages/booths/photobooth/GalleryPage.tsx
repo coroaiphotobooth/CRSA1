@@ -3,7 +3,7 @@ import { GalleryItem, Concept, PhotoboothSettings, ProcessNotification } from '.
 import { fetchGallery, fetchImageBase64, deletePhotoFromGas, deleteAllPhotosFromGas, queueVideoTask } from '../../../lib/appsScript';
 import { supabase, decrementCredits } from '../../../lib/supabase';
 import { printImage } from '../../../lib/printUtils'; // Import Print Utils
-import { createDoublePrintLayout } from '../../../lib/imageUtils';
+import { createDoublePrintLayout, createMergedPrintLayout } from '../../../lib/imageUtils';
 import { useDialog } from '../../../components/DialogProvider';
 
 interface GalleryPageProps {
@@ -368,20 +368,45 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
       if (!selectedItem) return;
       let printUrl = getHighResUrl(selectedItem);
       
-      if (settings?.enableDoublePrint) {
+      let targetWidth = 1080;
+      let targetHeight = 1920;
+      const outputRatio = settings?.outputRatio || '9:16';
+      switch (outputRatio) {
+        case '16:9': targetWidth = 1920; targetHeight = 1080; break;
+        case '9:16': targetWidth = 1080; targetHeight = 1920; break;
+        case '3:2': targetWidth = 1800; targetHeight = 1200; break;
+        case '2:3': targetWidth = 1200; targetHeight = 1800; break;
+      }
+
+      if (settings?.doublePrintMode === 'queue') {
+         const queueKey = `printQueue_${settings.activeEventId}`;
+         const queuedImage = localStorage.getItem(queueKey);
+         
+         if (!queuedImage) {
+            // Nothing in queue, fetch image to base64 to store in queue
+            try {
+               const b64 = await fetch(printUrl).then(r=>r.blob()).then(blob => new Promise<string>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.readAsDataURL(blob);
+               }));
+               localStorage.setItem(queueKey, b64);
+               await showDialog('alert', 'Photo Queued!', 'Success! Your photo is queued and will print with the next guest to save paper.');
+               return;
+            } catch (e) {
+               console.error("Failed to queue image from gallery", e);
+            }
+         } else {
+            // Something is in queue, merge it with current image
+            try {
+               printUrl = await createMergedPrintLayout(queuedImage, printUrl, targetWidth, targetHeight);
+               localStorage.removeItem(queueKey);
+            } catch (e) {
+               console.error("Queue merge failed in gallery", e);
+            }
+         }
+      } else if (settings?.doublePrintMode === 'duplicate' || (settings?.enableDoublePrint && !settings?.doublePrintMode)) {
         try {
-          // Determine original dimensions based on settings outputRatio
-          let targetWidth = 1080;
-          let targetHeight = 1920;
-          const outputRatio = settings.outputRatio || '9:16';
-          switch (outputRatio) {
-            case '16:9': targetWidth = 1920; targetHeight = 1080; break;
-            case '9:16': targetWidth = 1080; targetHeight = 1920; break;
-            case '3:2': targetWidth = 1800; targetHeight = 1200; break;
-            case '2:3': targetWidth = 1200; targetHeight = 1800; break;
-          }
-          
-          // Convert URL to base64 if needed, createDoublePrintLayout can handle URL but it's better to fetch it first to avoid CORS issues if any, or just pass the URL since createDoublePrintLayout uses loadImg which handles CORS.
           printUrl = await createDoublePrintLayout(printUrl, targetWidth, targetHeight);
         } catch (e) {
           console.error("Failed to create double print layout for gallery print:", e);

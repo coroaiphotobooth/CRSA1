@@ -140,6 +140,7 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
       if (merged.enablePrint === undefined) merged.enablePrint = false;
       if (merged.printMethod === undefined) merged.printMethod = 'direct';
       if (merged.enableDoublePrint === undefined) merged.enableDoublePrint = false;
+      if (merged.doublePrintMode === undefined) merged.doublePrintMode = merged.enableDoublePrint ? 'duplicate' : 'disabled';
       return merged;
     });
   }, [settings]);
@@ -367,20 +368,38 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                )}
              </div>
 
-             {/* Double Print Layout Toggle (NEW) */}
+             {/* Double Print Layout Mode */}
              <div className="flex flex-col gap-4 bg-white/5 p-4 rounded border border-white/10">
-               <div className="flex items-center justify-between">
+               <div className="flex flex-col gap-3">
                  <div className="flex flex-col">
-                     <label className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">Double Print Layout</label>
-                     <span className="text-[8px] text-gray-500">Duplicate photo side-by-side for 4x6 print</span>
+                     <label className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">4x6 Double Print Settings</label>
+                     <span className="text-[8px] text-gray-500">Configure how photos are printed to save 4x6 paper</span>
                  </div>
-                 <div className="flex items-center">
-                   <input 
-                     type="checkbox" 
-                     className="w-5 h-5 accent-cyan-600 cursor-pointer"
-                     checked={localSettings.enableDoublePrint ?? false}
-                     onChange={e => setLocalSettings({...localSettings, enableDoublePrint: e.target.checked})}
-                   />
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <button
+                      onClick={() => setLocalSettings({...localSettings, doublePrintMode: 'disabled', enableDoublePrint: false})}
+                      className={`p-3 border border-white/10 rounded font-mono text-[10px] uppercase tracking-wider text-left transition-all flex flex-col gap-1 ${(!localSettings.doublePrintMode || localSettings.doublePrintMode === 'disabled') ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-lg' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                    >
+                      <span className="font-bold">Single Print</span>
+                      <span className="text-[8px] opacity-70 normal-case font-sans">Print 1 photo per 4x6 sheet (center).</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setLocalSettings({...localSettings, doublePrintMode: 'duplicate', enableDoublePrint: true})}
+                      className={`p-3 border border-white/10 rounded font-mono text-[10px] uppercase tracking-wider text-left transition-all flex flex-col gap-1 ${localSettings.doublePrintMode === 'duplicate' ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-lg' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                    >
+                      <span className="font-bold">Duplicate</span>
+                      <span className="text-[8px] opacity-70 normal-case font-sans">Print same photo 2x on one 4x6 sheet.</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setLocalSettings({...localSettings, doublePrintMode: 'queue', enableDoublePrint: true})}
+                      className={`p-3 border border-white/10 rounded font-mono text-[10px] uppercase tracking-wider text-left transition-all flex flex-col gap-1 ${localSettings.doublePrintMode === 'queue' ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-lg' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                    >
+                      <span className="font-bold text-amber-400">Queue & Merge</span>
+                      <span className="text-[8px] opacity-70 normal-case font-sans tracking-tight">Wait for next guest, print 2 different photos together.</span>
+                    </button>
                  </div>
                </div>
              </div>

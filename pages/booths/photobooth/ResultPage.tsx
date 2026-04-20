@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Concept, PhotoboothSettings, AspectRatio } from '../../../types';
 import { generateAIImage } from '../../../lib/gemini';
 import { uploadToDrive, createSessionFolder, queueVideoTask, saveSessionToCloud } from '../../../lib/appsScript';
-import { applyOverlay, getGoogleDriveDirectLink, createDoublePrintLayout } from '../../../lib/imageUtils';
+import { applyOverlay, getGoogleDriveDirectLink, createDoublePrintLayout, createMergedPrintLayout } from '../../../lib/imageUtils';
 import { OverlayCache } from '../../../lib/overlayCache'; 
 import { printImage } from '../../../lib/printUtils';
 import { decrementCredits, supabase } from '../../../lib/supabase';
@@ -133,7 +133,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
       let finalImage = await applyOverlay(aiOutput, settings.overlayImage, targetWidth, targetHeight);
       
       let doublePrintImage = null;
-      if (settings.enableDoublePrint) {
+      if (settings.doublePrintMode === 'duplicate' || (settings.enableDoublePrint && !settings.doublePrintMode)) {
         setProgress("CREATING DOUBLE PRINT LAYOUT...");
         doublePrintImage = await createDoublePrintLayout(finalImage, targetWidth, targetHeight);
       }
@@ -289,8 +289,34 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   };
 
   const handlePrint = async () => {
-      const imageToPrint = printLayoutImage || resultImage;
+      let imageToPrint = printLayoutImage || resultImage;
       if (!imageToPrint) return;
+
+      // Handle Queue Mode
+      if (settings.doublePrintMode === 'queue') {
+         const queueKey = `printQueue_${settings.activeEventId}`;
+         const queuedImage = localStorage.getItem(queueKey);
+         
+         if (!queuedImage) {
+            // Nothing in queue, save this image to queue and do not print yet
+            localStorage.setItem(queueKey, imageToPrint);
+            await showDialog('alert', 'Photo Queued!', 'Success! Your photo is queued and will print with the next guest to save paper.');
+            return;
+         } else {
+            // Something is in queue, merge it with current image
+            setProgress("MERGING PRINTS...");
+            // Use targetWidth and targetHeight for the base image size
+            try {
+               imageToPrint = await createMergedPrintLayout(queuedImage, imageToPrint, targetWidth, targetHeight);
+               // Clear queue since we are printing
+               localStorage.removeItem(queueKey);
+            } catch (e) {
+               console.error("Queue merge failed", e);
+               // If merge fails, clear queue anyway? Wait, preserve queue if fail or clear to avoid blocking?
+               // It's safer to clear it and just print current image. Use fallback inside createMergedPrintLayout.
+            }
+         }
+      }
       
       if (settings.printMethod === 'server') {
         // Send broadcast to print server

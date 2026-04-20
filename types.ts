@@ -95,7 +95,8 @@ export interface PhotoboothSettings {
   enableModelShortcut?: boolean; // New Setting: Show Quick Model Toggle on Camera
   enablePrint?: boolean; // New Setting: Enable Direct Printing Feature
   printMethod?: 'direct' | 'server'; // New Setting: Print Method
-  enableDoublePrint?: boolean; // New Setting: Double Print Layout
+  enableDoublePrint?: boolean; // Legacy Setting: Double Print Layout (migrating to doublePrintMode)
+  doublePrintMode?: 'disabled' | 'duplicate' | 'queue'; // 'duplicate' = duplicate same session, 'queue' = wait next
   enableVipMode?: boolean; // Temporary VIP Feature
   vipGuests?: any[]; // Temporary VIP Feature Data
   vipAppsScriptUrl?: string; // App Script Sync URL
