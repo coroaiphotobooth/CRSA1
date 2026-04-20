@@ -467,6 +467,47 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                    <strong>Transparency/Fade:</strong> + gives faded/clearer look to white paper, - increases sharp contrast.
                  </p>
                </div>
+               
+               {/* Wrapper Bridge Settings (Only shown if running inside Webview2) */}
+               {typeof window !== 'undefined' && (window as any).chrome && (window as any).chrome.webview && (
+                 <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-white/10">
+                   <div className="flex flex-col gap-1">
+                     <label className="text-[10px] text-emerald-400 uppercase tracking-widest font-bold">Windows App Wrapper Integration</label>
+                     <span className="text-[8px] text-gray-500">Overrides print dialog using bridge to C# WebView2.</span>
+                   </div>
+                   
+                   <div className="flex justify-between items-center bg-black/40 p-4 rounded border border-emerald-500/30">
+                      <div className="flex flex-col">
+                         <span className="text-white font-bold text-xs">Silent Print (No Dialog)</span>
+                         <span className="text-[10px] text-gray-400">Print directly from Windows OS without confirming.</span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={localSettings.enableSilentPrintWrapper || false}
+                          onChange={(e) => {
+                             const isSilent = e.target.checked;
+                             setLocalSettings({...localSettings, enableSilentPrintWrapper: isSilent});
+                             
+                             // Immediately push the instruction to the C# Wrapper
+                             try {
+                               (window as any).chrome.webview.postMessage({
+                                 action: "SET_PRINT_DIALOG",
+                                 disableDialog: isSilent,
+                                 requestId: "req_" + Date.now()
+                               });
+                             } catch(err) {
+                               console.error("Failed to send message to wrapper", err);
+                             }
+                          }}
+                        />
+                        <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                      </label>
+                   </div>
+                 </div>
+               )}
+
              </div>
 
           </div>

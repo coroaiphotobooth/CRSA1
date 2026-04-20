@@ -1,13 +1,35 @@
 
+declare global {
+  interface Window {
+    chrome?: {
+      webview?: {
+        postMessage: (message: any) => void;
+      };
+    };
+  }
+}
+
 /**
  * Utility untuk mencetak gambar.
  * 
  * NOTE: Agar printing berjalan tanpa pop-up (silent printing),
  * Browser pada mesin Kiosk harus dijalankan dengan flag: --kiosk-printing
- * Contoh Chrome: chrome.exe --kiosk --kiosk-printing https://your-app-url.com
+ * Atau gunakan C# Windows Wrapper App yang mengontrol WebView.
  */
 
 export const printImage = (imageUrl: string) => {
+    // 0. Deteksi jika kita berjalan di Windows Desktop Wrapper (C# WebView2)
+    if (window.chrome && window.chrome.webview) {
+        // Kirim payload imageBase64 langsung ke C# Backend Wrapper Desktop
+        window.chrome.webview.postMessage({
+            action: "PRINT",
+            base64: imageUrl 
+            // 'silent' boolean sengaja tidak dikirim per-request, 
+            // membiarkan wrapper memakai global state 'disableDialog' yang kita set via Event Settings
+        });
+        return; // Hentikan fallback ke iframe browser print
+    }
+
     // 1. Buat iframe tersembunyi
     const iframe = document.createElement('iframe');
     

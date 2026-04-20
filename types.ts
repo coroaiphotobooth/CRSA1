@@ -100,6 +100,7 @@ export interface PhotoboothSettings {
   printOrientation?: 'auto' | 'portrait' | 'landscape'; // Force hardware print layout
   printBrightness?: number; // Adjust printed brightness (-20 to +20)
   printTransparency?: number; // Adjust printed transparency/contrast (-20 to +20)
+  enableSilentPrintWrapper?: boolean; // Windows App Wrapper specific flag
   enableVipMode?: boolean; // Temporary VIP Feature
   vipGuests?: any[]; // Temporary VIP Feature Data
   vipAppsScriptUrl?: string; // App Script Sync URL
