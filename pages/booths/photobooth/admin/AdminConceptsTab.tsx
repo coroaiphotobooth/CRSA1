@@ -980,7 +980,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
                   </div>
                   <div>
                      <h3 className="font-bold text-base text-white group-hover:text-blue-400 transition-colors uppercase tracking-wide">Create by AI Image</h3>
-                     <p className="text-xs text-white/50 mt-1">Upload a reference, and let Gemini AI write the perfect prompt for you.</p>
+                     <p className="text-xs text-white/50 mt-1">Upload a reference, and let Coro AI write the perfect prompt for you.</p>
                   </div>
                </button>
 
