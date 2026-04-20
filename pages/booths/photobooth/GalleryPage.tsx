@@ -3,7 +3,7 @@ import { GalleryItem, Concept, PhotoboothSettings, ProcessNotification } from '.
 import { fetchGallery, fetchImageBase64, deletePhotoFromGas, deleteAllPhotosFromGas, queueVideoTask } from '../../../lib/appsScript';
 import { supabase, decrementCredits } from '../../../lib/supabase';
 import { printImage } from '../../../lib/printUtils'; // Import Print Utils
-import { createDoublePrintLayout, createMergedPrintLayout } from '../../../lib/imageUtils';
+import { createDoublePrintLayout, createMergedPrintLayout, processPrintOrientation } from '../../../lib/imageUtils';
 import { useDialog } from '../../../components/DialogProvider';
 
 interface GalleryPageProps {
@@ -378,6 +378,9 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
         case '2:3': targetWidth = 1200; targetHeight = 1800; break;
       }
 
+      const isDuplicateMode = settings?.doublePrintMode === 'duplicate' || (settings?.enableDoublePrint && (!settings?.doublePrintMode || settings?.doublePrintMode === 'disabled'));
+      const isSingle2RMode = settings?.doublePrintMode === 'single_2r';
+
       if (settings?.doublePrintMode === 'queue') {
          const queueKey = `printQueue_${settings.activeEventId}`;
          const queuedImage = localStorage.getItem(queueKey);
@@ -399,17 +402,24 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
          } else {
             // Something is in queue, merge it with current image
             try {
-               printUrl = await createMergedPrintLayout(queuedImage, printUrl, targetWidth, targetHeight);
+               printUrl = await createMergedPrintLayout(queuedImage, printUrl, targetWidth, targetHeight, settings?.printOrientation);
                localStorage.removeItem(queueKey);
             } catch (e) {
                console.error("Queue merge failed in gallery", e);
             }
          }
-      } else if (settings?.doublePrintMode === 'duplicate' || (settings?.enableDoublePrint && !settings?.doublePrintMode)) {
+      } else if (isDuplicateMode || isSingle2RMode) {
         try {
-          printUrl = await createDoublePrintLayout(printUrl, targetWidth, targetHeight);
+          const modeToUse = isSingle2RMode ? 'single_2r' : 'duplicate';
+          printUrl = await createDoublePrintLayout(printUrl, targetWidth, targetHeight, modeToUse, settings?.printOrientation);
         } catch (e) {
-          console.error("Failed to create double print layout for gallery print:", e);
+          console.error("Failed to create print layout for gallery print:", e);
+        }
+      } else if (settings?.printOrientation && settings?.printOrientation !== 'auto') {
+        try {
+          printUrl = await processPrintOrientation(printUrl, settings.printOrientation);
+        } catch (e) {
+          console.error("Failed to apply layout orientation in gallery:", e);
         }
       }
       

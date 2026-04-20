@@ -96,7 +96,8 @@ export interface PhotoboothSettings {
   enablePrint?: boolean; // New Setting: Enable Direct Printing Feature
   printMethod?: 'direct' | 'server'; // New Setting: Print Method
   enableDoublePrint?: boolean; // Legacy Setting: Double Print Layout (migrating to doublePrintMode)
-  doublePrintMode?: 'disabled' | 'duplicate' | 'queue'; // 'duplicate' = duplicate same session, 'queue' = wait next
+  doublePrintMode?: 'disabled' | 'duplicate' | 'queue' | 'single_2r'; // 'duplicate' = duplicate same session, 'queue' = wait next
+  printOrientation?: 'auto' | 'portrait' | 'landscape'; // Force hardware print layout
   enableVipMode?: boolean; // Temporary VIP Feature
   vipGuests?: any[]; // Temporary VIP Feature Data
   vipAppsScriptUrl?: string; // App Script Sync URL

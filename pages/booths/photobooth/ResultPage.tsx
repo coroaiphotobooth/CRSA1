@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Concept, PhotoboothSettings, AspectRatio } from '../../../types';
 import { generateAIImage } from '../../../lib/gemini';
 import { uploadToDrive, createSessionFolder, queueVideoTask, saveSessionToCloud } from '../../../lib/appsScript';
-import { applyOverlay, getGoogleDriveDirectLink, createDoublePrintLayout, createMergedPrintLayout } from '../../../lib/imageUtils';
+import { applyOverlay, getGoogleDriveDirectLink, createDoublePrintLayout, createMergedPrintLayout, processPrintOrientation } from '../../../lib/imageUtils';
 import { OverlayCache } from '../../../lib/overlayCache'; 
 import { printImage } from '../../../lib/printUtils';
 import { decrementCredits, supabase } from '../../../lib/supabase';
@@ -133,9 +133,16 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
       let finalImage = await applyOverlay(aiOutput, settings.overlayImage, targetWidth, targetHeight);
       
       let doublePrintImage = null;
-      if (settings.doublePrintMode === 'duplicate' || (settings.enableDoublePrint && !settings.doublePrintMode)) {
-        setProgress("CREATING DOUBLE PRINT LAYOUT...");
-        doublePrintImage = await createDoublePrintLayout(finalImage, targetWidth, targetHeight);
+      const isDuplicateMode = settings.doublePrintMode === 'duplicate' || (settings.enableDoublePrint && (!settings.doublePrintMode || settings.doublePrintMode === 'disabled'));
+      const isSingle2RMode = settings.doublePrintMode === 'single_2r';
+      
+      if (isDuplicateMode || isSingle2RMode) {
+        setProgress(isSingle2RMode ? "CREATING 2R LAYOUT..." : "CREATING PRINT LAYOUT...");
+        const modeToUse = isSingle2RMode ? 'single_2r' : 'duplicate';
+        doublePrintImage = await createDoublePrintLayout(finalImage, targetWidth, targetHeight, modeToUse, settings.printOrientation);
+      } else if (settings.doublePrintMode !== 'queue' && settings.printOrientation && settings.printOrientation !== 'auto') {
+        setProgress("APPLYING FORMATTING...");
+        doublePrintImage = await processPrintOrientation(finalImage, settings.printOrientation);
       }
       
       setResultImage(finalImage);
@@ -307,7 +314,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
             setProgress("MERGING PRINTS...");
             // Use targetWidth and targetHeight for the base image size
             try {
-               imageToPrint = await createMergedPrintLayout(queuedImage, imageToPrint, targetWidth, targetHeight);
+               imageToPrint = await createMergedPrintLayout(queuedImage, imageToPrint, targetWidth, targetHeight, settings.printOrientation);
                // Clear queue since we are printing
                localStorage.removeItem(queueKey);
             } catch (e) {

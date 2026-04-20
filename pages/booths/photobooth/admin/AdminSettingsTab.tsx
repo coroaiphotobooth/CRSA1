@@ -372,25 +372,33 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
              <div className="flex flex-col gap-4 bg-white/5 p-4 rounded border border-white/10">
                <div className="flex flex-col gap-3">
                  <div className="flex flex-col">
-                     <label className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">4x6 Double Print Settings</label>
-                     <span className="text-[8px] text-gray-500">Configure how photos are printed to save 4x6 paper</span>
+                     <label className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">4x6 Print Layout Modes</label>
+                     <span className="text-[8px] text-gray-500">Configure how photos are arranged on 4x6 paper</span>
                  </div>
                  
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     <button
                       onClick={() => setLocalSettings({...localSettings, doublePrintMode: 'disabled', enableDoublePrint: false})}
                       className={`p-3 border border-white/10 rounded font-mono text-[10px] uppercase tracking-wider text-left transition-all flex flex-col gap-1 ${(!localSettings.doublePrintMode || localSettings.doublePrintMode === 'disabled') ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-lg' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                     >
-                      <span className="font-bold">Single Print</span>
-                      <span className="text-[8px] opacity-70 normal-case font-sans">Print 1 photo per 4x6 sheet (center).</span>
+                      <span className="font-bold">Single (Full)</span>
+                      <span className="text-[8px] opacity-70 normal-case font-sans tracking-tight">Print 1 photo per sheet (fills paper).</span>
                     </button>
                     
+                    <button
+                      onClick={() => setLocalSettings({...localSettings, doublePrintMode: 'single_2r', enableDoublePrint: true})}
+                      className={`p-3 border border-white/10 rounded font-mono text-[10px] uppercase tracking-wider text-left transition-all flex flex-col gap-1 ${localSettings.doublePrintMode === 'single_2r' ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-lg' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                    >
+                      <span className="font-bold">Single 2R (Left)</span>
+                      <span className="text-[8px] opacity-70 normal-case font-sans tracking-tight">1 photo left aligned (size 2R). Right blank.</span>
+                    </button>
+
                     <button
                       onClick={() => setLocalSettings({...localSettings, doublePrintMode: 'duplicate', enableDoublePrint: true})}
                       className={`p-3 border border-white/10 rounded font-mono text-[10px] uppercase tracking-wider text-left transition-all flex flex-col gap-1 ${localSettings.doublePrintMode === 'duplicate' ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-lg' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                     >
                       <span className="font-bold">Duplicate</span>
-                      <span className="text-[8px] opacity-70 normal-case font-sans">Print same photo 2x on one 4x6 sheet.</span>
+                      <span className="text-[8px] opacity-70 normal-case font-sans tracking-tight">Print same photo 2x on one sheet.</span>
                     </button>
                     
                     <button
@@ -398,7 +406,37 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                       className={`p-3 border border-white/10 rounded font-mono text-[10px] uppercase tracking-wider text-left transition-all flex flex-col gap-1 ${localSettings.doublePrintMode === 'queue' ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-lg' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                     >
                       <span className="font-bold text-amber-400">Queue & Merge</span>
-                      <span className="text-[8px] opacity-70 normal-case font-sans tracking-tight">Wait for next guest, print 2 different photos together.</span>
+                      <span className="text-[8px] opacity-70 normal-case font-sans tracking-tight">Wait for next guest, merge 2 different photos.</span>
+                    </button>
+                 </div>
+               </div>
+               
+               <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-white/10">
+                 <div className="flex flex-col">
+                     <label className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">Printer Hardware Orientation</label>
+                     <span className="text-[8px] text-gray-500">Force canvas rotation to match printer paper feed.</span>
+                 </div>
+                 
+                 <div className="grid grid-cols-3 gap-3">
+                    <button
+                      onClick={() => setLocalSettings({...localSettings, printOrientation: 'auto'})}
+                      className={`p-3 border border-white/10 rounded font-mono text-[10px] uppercase tracking-wider text-center transition-all flex flex-col gap-1 ${(!localSettings.printOrientation || localSettings.printOrientation === 'auto') ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-lg' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                    >
+                      <span className="font-bold">Auto</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setLocalSettings({...localSettings, printOrientation: 'portrait'})}
+                      className={`p-3 border border-white/10 rounded font-mono text-[10px] uppercase tracking-wider text-center transition-all flex flex-col gap-1 ${localSettings.printOrientation === 'portrait' ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-lg' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                    >
+                      <span className="font-bold">Portrait</span>
+                    </button>
+
+                    <button
+                      onClick={() => setLocalSettings({...localSettings, printOrientation: 'landscape'})}
+                      className={`p-3 border border-white/10 rounded font-mono text-[10px] uppercase tracking-wider text-center transition-all flex flex-col gap-1 ${localSettings.printOrientation === 'landscape' ? 'bg-cyan-600/30 border-cyan-500 text-white shadow-lg' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                    >
+                      <span className="font-bold">Landscape</span>
                     </button>
                  </div>
                </div>

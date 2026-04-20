@@ -130,11 +130,62 @@ export const applyOverlay = async (
     }
   };
 
+export const applyPrintOrientation = (canvas: HTMLCanvasElement, orientation?: 'auto' | 'portrait' | 'landscape'): HTMLCanvasElement => {
+  if (!orientation || orientation === 'auto') return canvas;
+  const isLandscape = canvas.width > canvas.height;
+  
+  if (orientation === 'portrait' && isLandscape) {
+    const rotated = document.createElement('canvas');
+    rotated.width = canvas.height;
+    rotated.height = canvas.width;
+    const ctx = rotated.getContext('2d');
+    if (ctx) {
+      ctx.translate(rotated.width / 2, rotated.height / 2);
+      ctx.rotate(90 * Math.PI / 180);
+      ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+    }
+    return rotated;
+  } else if (orientation === 'landscape' && !isLandscape) {
+    const rotated = document.createElement('canvas');
+    rotated.width = canvas.height;
+    rotated.height = canvas.width;
+    const ctx = rotated.getContext('2d');
+    if (ctx) {
+      ctx.translate(rotated.width / 2, rotated.height / 2);
+      ctx.rotate(-90 * Math.PI / 180);
+      ctx.drawImage(canvas, -canvas.width / 2, -canvas.height / 2);
+    }
+    return rotated;
+  }
+  return canvas;
+};
+
+export const processPrintOrientation = async (base64Image: string, orientation?: 'auto' | 'portrait' | 'landscape'): Promise<string> => {
+  if (!orientation || orientation === 'auto') return base64Image;
+  try {
+      const img = await preloadImage(base64Image, true);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return base64Image;
+      ctx.drawImage(img, 0, 0);
+      
+      const rotated = applyPrintOrientation(canvas, orientation);
+      if (rotated === canvas) return base64Image;
+      return rotated.toDataURL('image/jpeg', 0.95);
+  } catch (err) {
+      console.error("Orientation error:", err);
+      return base64Image;
+  }
+};
+
 export const createMergedPrintLayout = async (
   base64Image1: string,
   base64Image2: string,
   originalWidth: number,
-  originalHeight: number
+  originalHeight: number,
+  orientation: 'auto' | 'portrait' | 'landscape' = 'auto'
 ): Promise<string> => {
   try {
     const img1 = await preloadImage(base64Image1, true);
@@ -142,25 +193,21 @@ export const createMergedPrintLayout = async (
     
     const canvas = document.createElement('canvas');
     
-    // Always use Portrait 4R (2:3) layout
+    // Use Landscape 4R (3:2) layout for side-by-side base
     const longestSide = Math.max(originalWidth, originalHeight);
-    canvas.width = Math.round(longestSide * (2 / 3));
-    canvas.height = longestSide;
+    canvas.width = longestSide;
+    canvas.height = Math.round(longestSide * (2 / 3));
     
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       throw new Error("Canvas context unavailable");
     }
 
-    // Fill white background (leaves right side blank)
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const halfHeight = canvas.height / 2;
-    
-    // Scale photo to fit half the height, limit width not to exceed canvas just in case
-    const scale1 = Math.min(canvas.width / img1.width, halfHeight / img1.height);
-    const scale2 = Math.min(canvas.width / img2.width, halfHeight / img2.height);
+    const scale1 = Math.min(canvas.height / img1.height, (canvas.width / 2) / img1.width);
+    const scale2 = Math.min(canvas.height / img2.height, (canvas.width / 2) / img2.width);
     
     const scaledWidth1 = img1.width * scale1;
     const scaledHeight1 = img1.height * scale1;
@@ -168,65 +215,63 @@ export const createMergedPrintLayout = async (
     const scaledWidth2 = img2.width * scale2;
     const scaledHeight2 = img2.height * scale2;
     
-    // Center vertically as a touching group
-    const totalGroupHeight = scaledHeight1 + scaledHeight2;
-    const startY = (canvas.height - totalGroupHeight) / 2;
+    const startY1 = (canvas.height - scaledHeight1) / 2;
+    const startY2 = (canvas.height - scaledHeight2) / 2;
     
-    // Draw stacked vertically on the left (x=0) and touching each other in the Y axis
-    ctx.drawImage(img1, 0, startY, scaledWidth1, scaledHeight1);
-    ctx.drawImage(img2, 0, startY + scaledHeight1, scaledWidth2, scaledHeight2);
+    ctx.drawImage(img1, 0, startY1, scaledWidth1, scaledHeight1);
+    ctx.drawImage(img2, scaledWidth1, startY2, scaledWidth2, scaledHeight2);
 
-    // High quality JPEG
-    return canvas.toDataURL('image/jpeg', 0.95);
+    const finalCanvas = applyPrintOrientation(canvas, orientation);
+    return finalCanvas.toDataURL('image/jpeg', 0.95);
   } catch (error) {
     console.error("Failed to create merged print layout", error);
-    return base64Image2; // Fallback to the second image
+    return base64Image2;
   }
 };
 
 export const createDoublePrintLayout = async (
   base64Image: string,
   originalWidth: number,
-  originalHeight: number
+  originalHeight: number,
+  mode: 'duplicate' | 'single_2r' = 'duplicate',
+  orientation: 'auto' | 'portrait' | 'landscape' = 'auto'
 ): Promise<string> => {
   try {
     const img = await preloadImage(base64Image, true);
     
     const canvas = document.createElement('canvas');
     
-    // Always use Portrait 4R (2:3) layout
+    // Use Landscape 4R (3:2) layout for base
     const longestSide = Math.max(originalWidth, originalHeight);
-    canvas.width = Math.round(longestSide * (2 / 3));
-    canvas.height = longestSide;
+    canvas.width = longestSide;
+    canvas.height = Math.round(longestSide * (2 / 3));
     
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       throw new Error("Canvas context unavailable");
     }
 
-    // Fill white background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const halfHeight = canvas.height / 2;
-    
-    // Scale to fit half height
-    const scale = Math.min(canvas.width / img.width, halfHeight / img.height);
+    const scale = Math.min(canvas.height / img.height, (canvas.width / 2) / img.width);
     
     const scaledWidth = img.width * scale;
     const scaledHeight = img.height * scale;
     
-    // Center vertically as a touching group
-    const totalGroupHeight = scaledHeight * 2;
-    const startY = (canvas.height - totalGroupHeight) / 2;
+    const startY = (canvas.height - scaledHeight) / 2;
     
-    // Draw left (x=0), stacked vertically, touching
+    // Draw first image mepet kiri
     ctx.drawImage(img, 0, startY, scaledWidth, scaledHeight);
-    ctx.drawImage(img, 0, startY + scaledHeight, scaledWidth, scaledHeight);
+    
+    if (mode === 'duplicate') {
+       ctx.drawImage(img, scaledWidth, startY, scaledWidth, scaledHeight);
+    }
 
-    return canvas.toDataURL('image/jpeg', 0.95);
+    const finalCanvas = applyPrintOrientation(canvas, orientation);
+    return finalCanvas.toDataURL('image/jpeg', 0.95);
   } catch (err) {
-    console.error("Image load error for double print:", err);
-    return base64Image; // Fallback to original
+    console.error("Image load error for print layout:", err);
+    return base64Image;
   }
 };
