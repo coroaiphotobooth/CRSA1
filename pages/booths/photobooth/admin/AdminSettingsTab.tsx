@@ -440,6 +440,33 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                     </button>
                  </div>
                </div>
+
+               <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-white/10">
+                 <div className="flex flex-col gap-1">
+                   <label className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">Print Color & Layout Fine-Tuning</label>
+                   <span className="text-[8px] text-gray-500">Adjust raw output to fix printer hardware color variations.</span>
+                 </div>
+                 
+                 <div className="flex items-center justify-between bg-black/40 p-2 rounded">
+                   <span className="text-xs text-white">Brightness: {localSettings.printBrightness || 0}</span>
+                   <div className="flex gap-2">
+                     <button onClick={() => setLocalSettings({...localSettings, printBrightness: (localSettings.printBrightness || 0) - 1})} className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded font-mono" disabled={(localSettings.printBrightness || 0) <= -20}>-</button>
+                     <button onClick={() => setLocalSettings({...localSettings, printBrightness: (localSettings.printBrightness || 0) + 1})} className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded font-mono" disabled={(localSettings.printBrightness || 0) >= 20}>+</button>
+                   </div>
+                 </div>
+                 
+                 <div className="flex items-center justify-between bg-black/40 p-2 rounded">
+                   <span className="text-xs text-white">Transparency/Fade: {localSettings.printTransparency || 0}</span>
+                   <div className="flex gap-2">
+                     <button onClick={() => setLocalSettings({...localSettings, printTransparency: (localSettings.printTransparency || 0) - 1})} className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded font-mono" disabled={(localSettings.printTransparency || 0) <= -20}>-</button>
+                     <button onClick={() => setLocalSettings({...localSettings, printTransparency: (localSettings.printTransparency || 0) + 1})} className="w-8 h-8 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded font-mono" disabled={(localSettings.printTransparency || 0) >= 20}>+</button>
+                   </div>
+                 </div>
+                 <p className="text-[8px] text-gray-400 mt-1">
+                   <strong>Brightness:</strong> + increases light, - darkens.<br/>
+                   <strong>Transparency/Fade:</strong> + gives faded/clearer look to white paper, - increases sharp contrast.
+                 </p>
+               </div>
              </div>
 
           </div>

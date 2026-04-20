@@ -180,6 +180,48 @@ export const processPrintOrientation = async (base64Image: string, orientation?:
   }
 };
 
+export const applyPrintAdjustments = async (
+  base64Image: string,
+  brightness: number = 0,
+  transparency: number = 0
+): Promise<string> => {
+  if (brightness === 0 && transparency === 0) return base64Image;
+  
+  try {
+    const img = await preloadImage(base64Image, true);
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return base64Image;
+
+    // Fill white background to blend transparency
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Transparency logic: 
+    // Positive transparency fades image to white (reduces alpha). 
+    // e.g., +1 = 95% alpha (5% white).
+    const alpha = transparency > 0 ? Math.max(0.05, 1.0 - (transparency * 0.05)) : 1.0;
+    ctx.globalAlpha = alpha;
+
+    // Negative transparency boosts contrast (makes blacks blacker). e.g., -1 = 105% contrast.
+    const contrastFilter = transparency < 0 ? 100 + (Math.abs(transparency) * 5) : 100;
+    
+    // Brightness logic: +1 = 105% brightness
+    const brightnessFilter = 100 + (brightness * 5);
+    
+    ctx.filter = `brightness(${brightnessFilter}%) contrast(${contrastFilter}%)`;
+
+    ctx.drawImage(img, 0, 0);
+
+    return canvas.toDataURL('image/jpeg', 0.95);
+  } catch (e) {
+    console.error("Print adjustments failed", e);
+    return base64Image;
+  }
+};
+
 export const createMergedPrintLayout = async (
   base64Image1: string,
   base64Image2: string,

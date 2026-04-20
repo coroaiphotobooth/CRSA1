@@ -98,6 +98,8 @@ export interface PhotoboothSettings {
   enableDoublePrint?: boolean; // Legacy Setting: Double Print Layout (migrating to doublePrintMode)
   doublePrintMode?: 'disabled' | 'duplicate' | 'queue' | 'single_2r'; // 'duplicate' = duplicate same session, 'queue' = wait next
   printOrientation?: 'auto' | 'portrait' | 'landscape'; // Force hardware print layout
+  printBrightness?: number; // Adjust printed brightness (-20 to +20)
+  printTransparency?: number; // Adjust printed transparency/contrast (-20 to +20)
   enableVipMode?: boolean; // Temporary VIP Feature
   vipGuests?: any[]; // Temporary VIP Feature Data
   vipAppsScriptUrl?: string; // App Script Sync URL

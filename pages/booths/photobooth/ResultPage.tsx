@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Concept, PhotoboothSettings, AspectRatio } from '../../../types';
 import { generateAIImage } from '../../../lib/gemini';
 import { uploadToDrive, createSessionFolder, queueVideoTask, saveSessionToCloud } from '../../../lib/appsScript';
-import { applyOverlay, getGoogleDriveDirectLink, createDoublePrintLayout, createMergedPrintLayout, processPrintOrientation } from '../../../lib/imageUtils';
+import { applyOverlay, getGoogleDriveDirectLink, createDoublePrintLayout, createMergedPrintLayout, processPrintOrientation, applyPrintAdjustments } from '../../../lib/imageUtils';
 import { OverlayCache } from '../../../lib/overlayCache'; 
 import { printImage } from '../../../lib/printUtils';
 import { decrementCredits, supabase } from '../../../lib/supabase';
@@ -325,6 +325,16 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
          }
       }
       
+      // Apply color/transparency adjustments specifically for print
+      if (settings.printBrightness !== 0 || settings.printTransparency !== 0) {
+        try {
+          setProgress("APPLYING COLOR FIXES...");
+          imageToPrint = await applyPrintAdjustments(imageToPrint, settings.printBrightness || 0, settings.printTransparency || 0);
+        } catch(e) {
+          console.error("Failed to apply color adjustments prior to print", e);
+        }
+      }
+
       if (settings.printMethod === 'server') {
         // Send broadcast to print server
         const channel = supabase.channel(`print_server_${settings.activeEventId}`);

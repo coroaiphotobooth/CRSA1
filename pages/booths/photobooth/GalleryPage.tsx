@@ -3,7 +3,7 @@ import { GalleryItem, Concept, PhotoboothSettings, ProcessNotification } from '.
 import { fetchGallery, fetchImageBase64, deletePhotoFromGas, deleteAllPhotosFromGas, queueVideoTask } from '../../../lib/appsScript';
 import { supabase, decrementCredits } from '../../../lib/supabase';
 import { printImage } from '../../../lib/printUtils'; // Import Print Utils
-import { createDoublePrintLayout, createMergedPrintLayout, processPrintOrientation } from '../../../lib/imageUtils';
+import { createDoublePrintLayout, createMergedPrintLayout, processPrintOrientation, applyPrintAdjustments } from '../../../lib/imageUtils';
 import { useDialog } from '../../../components/DialogProvider';
 
 interface GalleryPageProps {
@@ -423,6 +423,15 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
         }
       }
       
+      // Apply color/transparency adjustments specifically for print
+      if (settings?.printBrightness !== 0 || settings?.printTransparency !== 0) {
+        try {
+          printUrl = await applyPrintAdjustments(printUrl, settings?.printBrightness || 0, settings?.printTransparency || 0);
+        } catch(e) {
+          console.error("Failed to apply color adjustments prior to gallery print", e);
+        }
+      }
+
       if (settings?.printMethod === 'server') {
         const channel = supabase.channel(`print_server_${settings?.activeEventId}`);
         await channel.send({
