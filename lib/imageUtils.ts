@@ -139,63 +139,42 @@ export const createMergedPrintLayout = async (
   try {
     const img1 = await preloadImage(base64Image1, true);
     const img2 = await preloadImage(base64Image2, true);
-    const isPortrait = originalHeight > originalWidth;
     
     const canvas = document.createElement('canvas');
     
-    // Force output to be exactly 4R ratio (3:2 or 2:3)
+    // Always use Portrait 4R (2:3) layout
     const longestSide = Math.max(originalWidth, originalHeight);
-    
-    if (isPortrait) {
-      // Output Landscape 4R (3:2)
-      canvas.width = longestSide;
-      canvas.height = Math.round(longestSide * (2 / 3));
-    } else {
-      // Output Portrait 4R (2:3)
-      canvas.width = Math.round(longestSide * (2 / 3));
-      canvas.height = longestSide;
-    }
+    canvas.width = Math.round(longestSide * (2 / 3));
+    canvas.height = longestSide;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       throw new Error("Canvas context unavailable");
     }
 
-    // Fill white background
+    // Fill white background (leaves right side blank)
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (isPortrait) {
-      // Canvas is Landscape (3:2)
-      const halfWidth = canvas.width / 2;
-      const scale = Math.min(halfWidth / originalWidth, canvas.height / originalHeight);
-      const scaledWidth = originalWidth * scale;
-      const scaledHeight = originalHeight * scale;
-      
-      const x1 = (halfWidth - scaledWidth) / 2;
-      const y1 = (canvas.height - scaledHeight) / 2;
-      const x2 = halfWidth + x1;
-      const y2 = y1;
-      
-      // Draw first image left, second image right
-      ctx.drawImage(img1, x1, y1, scaledWidth, scaledHeight);
-      ctx.drawImage(img2, x2, y2, scaledWidth, scaledHeight);
-    } else {
-      // Canvas is Portrait (2:3)
-      const halfHeight = canvas.height / 2;
-      const scale = Math.min(canvas.width / originalWidth, halfHeight / originalHeight);
-      const scaledWidth = originalWidth * scale;
-      const scaledHeight = originalHeight * scale;
-      
-      const x1 = (canvas.width - scaledWidth) / 2;
-      const y1 = (halfHeight - scaledHeight) / 2;
-      const x2 = x1;
-      const y2 = halfHeight + y1;
-      
-      // Draw first image top, second image bottom
-      ctx.drawImage(img1, x1, y1, scaledWidth, scaledHeight);
-      ctx.drawImage(img2, x2, y2, scaledWidth, scaledHeight);
-    }
+    const halfHeight = canvas.height / 2;
+    
+    // Scale photo to fit half the height, limit width not to exceed canvas just in case
+    const scale1 = Math.min(canvas.width / img1.width, halfHeight / img1.height);
+    const scale2 = Math.min(canvas.width / img2.width, halfHeight / img2.height);
+    
+    const scaledWidth1 = img1.width * scale1;
+    const scaledHeight1 = img1.height * scale1;
+    
+    const scaledWidth2 = img2.width * scale2;
+    const scaledHeight2 = img2.height * scale2;
+    
+    // Center vertically as a touching group
+    const totalGroupHeight = scaledHeight1 + scaledHeight2;
+    const startY = (canvas.height - totalGroupHeight) / 2;
+    
+    // Draw stacked vertically on the left (x=0) and touching each other in the Y axis
+    ctx.drawImage(img1, 0, startY, scaledWidth1, scaledHeight1);
+    ctx.drawImage(img2, 0, startY + scaledHeight1, scaledWidth2, scaledHeight2);
 
     // High quality JPEG
     return canvas.toDataURL('image/jpeg', 0.95);
@@ -212,23 +191,13 @@ export const createDoublePrintLayout = async (
 ): Promise<string> => {
   try {
     const img = await preloadImage(base64Image, true);
-    const isPortrait = originalHeight > originalWidth;
     
     const canvas = document.createElement('canvas');
     
-    // Force output to be exactly 4R ratio (3:2 or 2:3)
-    // Use the longest side of the original image to maintain high resolution
+    // Always use Portrait 4R (2:3) layout
     const longestSide = Math.max(originalWidth, originalHeight);
-    
-    if (isPortrait) {
-      // Output Landscape 4R (3:2)
-      canvas.width = longestSide;
-      canvas.height = Math.round(longestSide * (2 / 3));
-    } else {
-      // Output Portrait 4R (2:3)
-      canvas.width = Math.round(longestSide * (2 / 3));
-      canvas.height = longestSide;
-    }
+    canvas.width = Math.round(longestSide * (2 / 3));
+    canvas.height = longestSide;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) {
@@ -239,49 +208,21 @@ export const createDoublePrintLayout = async (
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (isPortrait) {
-      // Canvas is Landscape (3:2)
-      // Divide into left and right halves
-      const halfWidth = canvas.width / 2;
-      
-      // Scale image to fit within the half width/height
-      const scale = Math.min(halfWidth / originalWidth, canvas.height / originalHeight);
-      
-      const scaledWidth = originalWidth * scale;
-      const scaledHeight = originalHeight * scale;
-      
-      // Center in left half
-      const x1 = (halfWidth - scaledWidth) / 2;
-      const y1 = (canvas.height - scaledHeight) / 2;
-      
-      // Center in right half
-      const x2 = halfWidth + x1;
-      const y2 = y1;
-      
-      ctx.drawImage(img, x1, y1, scaledWidth, scaledHeight);
-      ctx.drawImage(img, x2, y2, scaledWidth, scaledHeight);
-    } else {
-      // Canvas is Portrait (2:3)
-      // Divide into top and bottom halves
-      const halfHeight = canvas.height / 2;
-      
-      // Scale image to fit within the half width/height
-      const scale = Math.min(canvas.width / originalWidth, halfHeight / originalHeight);
-      
-      const scaledWidth = originalWidth * scale;
-      const scaledHeight = originalHeight * scale;
-      
-      // Center in top half
-      const x1 = (canvas.width - scaledWidth) / 2;
-      const y1 = (halfHeight - scaledHeight) / 2;
-      
-      // Center in bottom half
-      const x2 = x1;
-      const y2 = halfHeight + y1;
-      
-      ctx.drawImage(img, x1, y1, scaledWidth, scaledHeight);
-      ctx.drawImage(img, x2, y2, scaledWidth, scaledHeight);
-    }
+    const halfHeight = canvas.height / 2;
+    
+    // Scale to fit half height
+    const scale = Math.min(canvas.width / img.width, halfHeight / img.height);
+    
+    const scaledWidth = img.width * scale;
+    const scaledHeight = img.height * scale;
+    
+    // Center vertically as a touching group
+    const totalGroupHeight = scaledHeight * 2;
+    const startY = (canvas.height - totalGroupHeight) / 2;
+    
+    // Draw left (x=0), stacked vertically, touching
+    ctx.drawImage(img, 0, startY, scaledWidth, scaledHeight);
+    ctx.drawImage(img, 0, startY + scaledHeight, scaledWidth, scaledHeight);
 
     return canvas.toDataURL('image/jpeg', 0.95);
   } catch (err) {
