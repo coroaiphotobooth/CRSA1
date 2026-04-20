@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { PhotoboothSettings, AspectRatio, MonitorTheme } from '../../../../types';
 import { 
   uploadOverlayToGas, 
@@ -25,6 +25,7 @@ interface AdminSettingsTabProps {
 const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(({ settings, onSaveSettings, gasUrl }, ref) => {
   const [localSettings, setLocalSettings] = useState(settings);
   const { eventId } = useParams<{ eventId: string }>();
+  const navigate = useNavigate();
   const [isUploadingOverlay, setIsUploadingOverlay] = useState(false);
   const [isUploadingBackground, setIsUploadingBackground] = useState(false);
   const [isUploadingBackgroundVideo, setIsUploadingBackgroundVideo] = useState(false);
@@ -356,7 +357,7 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                          <li>Leave the Print Server page open on that laptop.</li>
                        </ol>
                        <button 
-                         onClick={() => window.open(`/print-server/${eventId}`, '_blank')}
+                         onClick={() => navigate(`/print-server/${eventId}`)}
                          className="w-full py-2 bg-cyan-900/50 hover:bg-cyan-800/50 text-cyan-300 border border-cyan-500/30 rounded uppercase tracking-widest font-bold transition-colors flex items-center justify-center gap-2"
                        >
                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>

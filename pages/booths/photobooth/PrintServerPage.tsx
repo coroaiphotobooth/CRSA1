@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../../lib/supabase';
 import { printImage } from '../../../lib/printUtils';
 
 const PrintServerPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
+  const navigate = useNavigate();
   const [status, setStatus] = useState<'idle' | 'printing'>('idle');
   const [lastPrintTime, setLastPrintTime] = useState<string | null>(null);
   const [printQueue, setPrintQueue] = useState<string[]>([]);
@@ -65,6 +66,18 @@ const PrintServerPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 font-mono">
+      <div className="max-w-md w-full mb-6 flex justify-start">
+        <button 
+          onClick={() => navigate(`/admin/${eventId}`)}
+          className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors uppercase tracking-widest font-bold text-xs"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Event
+        </button>
+      </div>
+
       <div className="max-w-md w-full bg-white/5 border border-white/10 rounded-2xl p-8 flex flex-col items-center text-center shadow-2xl">
         <div className="w-20 h-20 bg-cyan-900/30 rounded-full flex items-center justify-center mb-6 border border-cyan-500/30">
           <svg className={`w-10 h-10 text-cyan-400 ${status === 'printing' ? 'animate-pulse' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
