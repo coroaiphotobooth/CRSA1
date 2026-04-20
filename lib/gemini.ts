@@ -305,7 +305,9 @@ Instruction: ${finalPrompt}`;
         }
       };
 
-      if (promptMode === 'booth' && (concept.reference_image_split || concept.reference_image_bg)) {
+      const isConceptStudio = concept.concept_id?.startsWith('concept_studio_') || concept.id?.startsWith('concept_studio_');
+
+      if (promptMode === 'booth' && isConceptStudio && (concept.reference_image_split || concept.reference_image_bg)) {
         // MATCH CONCEPT STUDIO EXACTLY
         const textPrompt = `Redraw the people in the main photo.
 CRITICAL INSTRUCTION:
@@ -330,28 +332,50 @@ Additional instructions: ${finalPrompt}`;
           parts.push({ inlineData: img });
         }
       } else {
-        // OLD LOGIC FOR OTHER MODES
+        // LOGIC FOR CUSTOM CONCEPTS OR OTHER MODES
         // 2. Add Text Prompt (First)
         parts.push({ text: "MAIN PHOTO (People to redraw):" });
 
         // 3. Add Person Image (Image 1)
         parts.push({ inlineData: { data: cleanBase64, mimeType: mimeType } });
 
-        if ((concept.refImage && concept.refImage.trim() !== '') || (concept.refImage2 && concept.refImage2.trim() !== '')) {
+        const hasAnyReference = concept.refImage || concept.reference_image_split || concept.reference_image_bg || concept.refImage2;
+        
+        if (hasAnyReference) {
+           let refCount = 1;
            
            if (concept.refImage && concept.refImage.trim() !== '') {
-             parts.push({ text: "REFERENCE IMAGE 1 (Style/Pose):" });
+             parts.push({ text: `REFERENCE IMAGE ${refCount} (Style/Pose):` });
              const img = await fetchImageAsBase64(concept.refImage);
              parts.push({ inlineData: img });
+             refCount++;
            }
 
+           // Legacy support for refImage2 if it still exists
            if (concept.refImage2 && concept.refImage2.trim() !== '') {
-             parts.push({ text: "REFERENCE IMAGE 2 (Clothing/Background/Extra):" });
+             parts.push({ text: `REFERENCE IMAGE ${refCount} (Clothing/Background):` });
              const img = await fetchImageAsBase64(concept.refImage2);
              parts.push({ inlineData: img });
+             refCount++;
+           }
+
+           if (concept.reference_image_split && concept.reference_image_split.trim() !== '') {
+             parts.push({ text: `REFERENCE IMAGE ${refCount} (Outfit/Clothing):` });
+             const img = await fetchImageAsBase64(concept.reference_image_split);
+             parts.push({ inlineData: img });
+             refCount++;
            }
            
-           parts.push({ text: executionPrompt + `\n\n[IMPORTANT]: The REFERENCE IMAGES provided are VISUAL REFERENCES for the style, background, or clothing. Combine the person from the MAIN PHOTO with the style/aesthetics of the REFERENCE IMAGES. If there is a second reference image, use it strongly for clothing and background.\nStyle: ${finalStyle}.` });
+           if (concept.reference_image_bg && concept.reference_image_bg.trim() !== '') {
+             parts.push({ text: `REFERENCE IMAGE ${refCount} (Background/Environment):` });
+             const img = await fetchImageAsBase64(concept.reference_image_bg);
+             parts.push({ inlineData: img });
+             refCount++;
+           }
+           
+           let refInstruction = `\n\n[IMPORTANT]: The REFERENCE IMAGES provided are VISUAL REFERENCES for the style, background, or clothing. Combine the person from the MAIN PHOTO with the style/aesthetics of the REFERENCE IMAGES. Pay attention to the label of each reference image (Outfit, Background, Style) and apply it accordingly.`;
+           
+           parts.push({ text: executionPrompt + refInstruction + `\nStyle: ${finalStyle}.` });
         } else {
            parts.push({ text: executionPrompt + `\nStyle: ${finalStyle}.` });
         }

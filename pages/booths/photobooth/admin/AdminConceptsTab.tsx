@@ -33,6 +33,9 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
   // Creation Selection Modal
   const [showCreationSelectionModal, setShowCreationSelectionModal] = useState(false);
 
+  // Visible Reference Slots logic
+  const [visibleRefSlots, setVisibleRefSlots] = useState<number>(1);
+
   // Create from Image State
   const [showCreateFromImageModal, setShowCreateFromImageModal] = useState(false);
   const [createFromImageName, setCreateFromImageName] = useState('');
@@ -424,14 +427,24 @@ Output ONLY the enhanced prompt text, nothing else.`;
   const handleRemoveRefImage2 = (index: number) => {
     setLocalConcepts(prev => prev.map((c, i) => {
        if (i === index) {
-          const { refImage2, ...rest } = c;
+          const { reference_image_split, ...rest } = c;
           return rest as Concept;
        }
        return c;
     }));
   };
 
-  const handleUploadAsset = async (file: File, type: 'thumbnail' | 'refImage' | 'refImage2', index: number) => {
+  const handleRemoveRefImage3 = (index: number) => {
+    setLocalConcepts(prev => prev.map((c, i) => {
+       if (i === index) {
+          const { reference_image_bg, ...rest } = c;
+          return rest as Concept;
+       }
+       return c;
+    }));
+  };
+
+  const handleUploadAsset = async (file: File, type: 'thumbnail' | 'refImage' | 'reference_image_split' | 'reference_image_bg', index: number) => {
     if (eventId) {
       try {
         const fileExt = file.name.split('.').pop();
@@ -452,8 +465,10 @@ Output ONLY the enhanced prompt text, nothing else.`;
           handleThumbChange(index, publicUrl);
         } else if (type === 'refImage') {
           handleRefImageChange(index, publicUrl);
-        } else if (type === 'refImage2') {
-          handleRefImageChange2(index, publicUrl);
+        } else if (type === 'reference_image_split') {
+          handleConceptChange(index, 'reference_image_split', publicUrl);
+        } else if (type === 'reference_image_bg') {
+          handleConceptChange(index, 'reference_image_bg', publicUrl);
         }
       } catch (err) {
         console.error(`Error uploading ${type}:`, err);
@@ -467,8 +482,10 @@ Output ONLY the enhanced prompt text, nothing else.`;
           handleThumbChange(index, reader.result as string);
         } else if (type === 'refImage') {
           handleRefImageChange(index, reader.result as string);
-        } else if (type === 'refImage2') {
-          handleRefImageChange2(index, reader.result as string);
+        } else if (type === 'reference_image_split') {
+          handleConceptChange(index, 'reference_image_split', reader.result as string);
+        } else if (type === 'reference_image_bg') {
+          handleConceptChange(index, 'reference_image_bg', reader.result as string);
         }
       };
       reader.readAsDataURL(file);
@@ -534,7 +551,6 @@ Output ONLY the enhanced prompt text, nothing else.`;
             prompt: c.prompt,
             thumbnail: c.thumbnail,
             ref_image: c.refImage || (c as any).ref_image || null,
-            ref_image_2: c.refImage2 || (c as any).ref_image_2 || null,
             reference_image_split: c.reference_image_split || null,
             reference_image_bg: c.reference_image_bg || null,
             style_preset: c.style_preset || null
@@ -579,7 +595,6 @@ Output ONLY the enhanced prompt text, nothing else.`;
             prompt: c.prompt,
             thumbnail: c.thumbnail,
             refImage: c.ref_image || undefined,
-            refImage2: c.ref_image_2 || undefined,
             reference_image_split: c.reference_image_split || undefined,
             reference_image_bg: c.reference_image_bg || undefined,
             style_preset: c.style_preset || undefined
@@ -620,7 +635,13 @@ Output ONLY the enhanced prompt text, nothing else.`;
                                     concept.id.startsWith('concept_studio_');
 
           return (
-          <div key={concept.id} onClick={() => setEditingConceptIndex(index)} className={`glass-card relative group rounded-xl overflow-hidden border border-white/10 aspect-[3/4] flex flex-col cursor-pointer hover:border-[#bc13fe]/50 hover:shadow-[0_0_20px_rgba(188,19,254,0.2)] transition-all ${index === localConcepts.length - 1 ? 'tour-thumbnail' : ''}`}>
+          <div key={concept.id} onClick={() => {
+              let slots = 1;
+              if (concept.reference_image_bg) slots = 3;
+              else if (concept.reference_image_split) slots = 2;
+              setVisibleRefSlots(Math.max(1, slots));
+              setEditingConceptIndex(index);
+          }} className={`glass-card relative group rounded-xl overflow-hidden border border-white/10 aspect-[3/4] flex flex-col cursor-pointer hover:border-[#bc13fe]/50 hover:shadow-[0_0_20px_rgba(188,19,254,0.2)] transition-all ${index === localConcepts.length - 1 ? 'tour-thumbnail' : ''}`}>
                <img src={concept.thumbnail} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                
@@ -669,21 +690,26 @@ Output ONLY the enhanced prompt text, nothing else.`;
 
         return (
          <div className="fixed inset-0 z-[10005] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setEditingConceptIndex(null)}></div>
-            <div className="relative bg-[#111]/90 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
-               <div className="p-4 border-b border-white/10 flex justify-between items-center bg-[#111]/80 backdrop-blur-md z-10 shrink-0">
-                  <h2 className="text-lg font-bold">Edit Concept</h2>
-                  <button onClick={() => setEditingConceptIndex(null)} className="text-gray-400 hover:text-white transition-colors">
-                     <X className="w-5 h-5" />
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setEditingConceptIndex(null)}></div>
+            <div className="relative bg-black/40 backdrop-blur-3xl border border-white/10 ring-1 ring-white/5 rounded-3xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(188,19,254,0.15)]">
+               
+               {/* Modal Header */}
+               <div className="p-4 border-b border-white/5 flex justify-between items-center bg-transparent z-10 shrink-0">
+                  <div className="flex items-center gap-2">
+                     <div className="w-2 h-2 rounded-full bg-[#bc13fe] shadow-[0_0_10px_#bc13fe animate-pulse"></div>
+                     <h2 className="text-lg font-heading tracking-wider font-bold text-white/90 uppercase">Edit Concept</h2>
+                  </div>
+                  <button onClick={() => setEditingConceptIndex(null)} className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-all">
+                     <X className="w-4 h-4" />
                   </button>
                </div>
                
-               <div className="p-4 overflow-y-auto custom-scrollbar flex flex-col gap-6 flex-1">
+               <div className="p-5 overflow-y-auto custom-scrollbar flex flex-col gap-6 flex-1">
                  {/* TITLE & TEXT INPUTS */}
                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-gray-400">CONCEPT NAME</label>
+                    <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase">Concept Name</label>
                     <input 
-                       className="bg-black/50 border border-white/10 p-3 rounded-lg font-heading text-base font-bold text-white outline-none focus:border-[#bc13fe] w-full transition-colors" 
+                       className="bg-black/40 border border-white/10 p-3 rounded-xl font-heading text-base font-bold text-white outline-none focus:border-[#bc13fe] focus:ring-1 focus:ring-[#bc13fe]/50 shadow-inner w-full transition-all" 
                        value={concept.name} 
                        onChange={e => handleConceptChange(index, 'name', e.target.value)} 
                        placeholder="E.g. Neon Cyberpunk"
@@ -692,18 +718,18 @@ Output ONLY the enhanced prompt text, nothing else.`;
 
                  <div className="flex flex-col sm:flex-row gap-6">
                     {/* THUMBNAIL */}
-                    <div className={`flex flex-col gap-2 w-full sm:w-[120px] shrink-0 ${index === localConcepts.length - 1 ? 'tour-thumbnail' : ''}`}>
-                      <label className="text-xs font-bold text-gray-400">THUMBNAIL</label>
-                      <div className="w-full sm:w-[120px] aspect-[3/4] bg-black/50 border border-dashed border-white/20 rounded-lg overflow-hidden relative group/thumb shadow-lg">
+                    <div className={`flex flex-col gap-2 w-full sm:w-[100px] shrink-0 ${index === localConcepts.length - 1 ? 'tour-thumbnail' : ''}`}>
+                      <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase truncate">Thumbnail</label>
+                      <div className="w-full sm:w-[100px] aspect-[3/4] bg-white/5 backdrop-blur-md border border-dashed border-white/20 rounded-xl overflow-hidden relative group/thumb shadow-lg transition-all hover:border-[#bc13fe]/50">
                          {concept.thumbnail ? (
                            <img src={concept.thumbnail} className="w-full h-full object-cover" />
                          ) : (
-                           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500">
+                           <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 group-hover:text-[#bc13fe] transition-colors">
                              <Plus className="w-6 h-6 mb-1" />
-                             <span className="text-[10px]">Upload</span>
+                             <span className="text-[10px] tracking-wider uppercase font-bold">Upload</span>
                            </div>
                          )}
-                         <label className="absolute inset-0 bg-[#bc13fe]/80 opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-2">
+                         <label className="absolute inset-0 bg-[#bc13fe]/90 backdrop-blur-sm opacity-0 group-hover/thumb:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-2">
                             UPLOAD
                             <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                                const file = e.target.files?.[0];
@@ -723,80 +749,135 @@ Output ONLY the enhanced prompt text, nothing else.`;
 
                     {/* REFERENCE IMAGES (NEW) - HIDDEN FOR TEMPLATES/SMART */}
                     {!isTemplateOrSmart ? (
-                      <div className={`flex flex-col gap-2 flex-1 ${index === localConcepts.length - 1 ? 'tour-reference' : ''}`}>
-                        <label className="text-xs font-bold text-gray-400">REFERENCES (OPTIONAL)</label>
-                        <div className="flex gap-3">
-                          <div className="flex flex-col gap-1.5 flex-1">
-                            <span className="text-[9px] text-gray-400 font-bold uppercase">Image 1 (Style/Pose)</span>
-                            <div className="w-full aspect-square bg-black/50 border border-dashed border-white/20 rounded-lg overflow-hidden relative group/ref shadow-lg flex items-center justify-center">
-                               {concept.refImage ? (
-                                  <>
-                                     <img src={concept.refImage} className="w-full h-full object-cover" />
-                                     <button 
-                                        onClick={() => handleRemoveRefImage(index)}
-                                        className="absolute top-1 right-1 bg-red-600 rounded-full p-1 flex items-center justify-center text-white z-20 hover:scale-110"
-                                     >
-                                        <X className="w-3 h-3" />
-                                     </button>
-                                  </>
-                               ) : (
-                                  <span className="text-[10px] text-white/30 text-center px-2">Ref 1</span>
-                               )}
-                               
-                               <label className="absolute inset-0 bg-blue-600/80 opacity-0 group-hover/ref:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
-                                  UPLOAD
-                                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                                     const file = e.target.files?.[0];
-                                     if (file) {
-                                        if (file.size > 2 * 1024 * 1024) {
-                                           await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
-                                           return;
-                                        }
-                                        setIsSavingConcepts(true);
-                                        await handleUploadAsset(file, 'refImage', index);
-                                        setIsSavingConcepts(false);
-                                     }
-                                  }} />
-                               </label>
-                            </div>
-                          </div>
+                      <div className={`flex flex-col gap-2 flex-1 items-start ${index === localConcepts.length - 1 ? 'tour-reference' : ''}`}>
+                         <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase truncate">References (Optional)</label>
+                         <div className="flex flex-wrap gap-3">
+                           {/* REF 1 */}
+                           <div className="flex flex-col gap-1 w-[80px]">
+                             <span className="text-[8px] text-gray-500 font-bold uppercase truncate tracking-wider text-center" title="Image Reference 1">Ref 1</span>
+                             <div className="w-full aspect-square bg-white/5 backdrop-blur-md border border-dashed border-white/20 rounded-xl overflow-hidden relative group/ref shadow-lg flex items-center justify-center transition-all hover:border-blue-500/50">
+                                {concept.refImage ? (
+                                   <>
+                                      <img src={concept.refImage} className="w-full h-full object-cover" />
+                                      <button 
+                                         onClick={() => handleRemoveRefImage(index)}
+                                         className="absolute top-1 right-1 bg-red-600/90 backdrop-blur-sm rounded-full p-1 flex items-center justify-center text-white z-20 hover:scale-110 shadow-lg"
+                                      >
+                                         <X className="w-2 h-2" />
+                                      </button>
+                                   </>
+                                ) : (
+                                   <span className="text-[8px] text-white/30 text-center px-1 font-bold tracking-wider uppercase">Upload</span>
+                                )}
+                                
+                                <label className="absolute inset-0 bg-blue-600/90 backdrop-blur-sm opacity-0 group-hover/ref:opacity-100 flex items-center justify-center cursor-pointer text-[8px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
+                                   UPLOAD
+                                   <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                         if (file.size > 2 * 1024 * 1024) {
+                                            await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
+                                            return;
+                                         }
+                                         setIsSavingConcepts(true);
+                                         await handleUploadAsset(file, 'refImage', index);
+                                         setIsSavingConcepts(false);
+                                      }
+                                   }} />
+                                </label>
+                             </div>
+                           </div>
 
-                          <div className="flex flex-col gap-1.5 flex-1">
-                            <span className="text-[9px] text-gray-400 font-bold uppercase">Image 2 (Clothes/BG)</span>
-                            <div className="w-full aspect-square bg-black/50 border border-dashed border-white/20 rounded-lg overflow-hidden relative group/ref2 shadow-lg flex items-center justify-center">
-                               {concept.refImage2 ? (
-                                  <>
-                                     <img src={concept.refImage2} className="w-full h-full object-cover" />
-                                     <button 
-                                        onClick={() => handleRemoveRefImage2(index)}
-                                        className="absolute top-1 right-1 bg-red-600 rounded-full p-1 flex items-center justify-center text-white z-20 hover:scale-110"
-                                     >
-                                        <X className="w-3 h-3" />
-                                     </button>
-                                  </>
-                               ) : (
-                                  <span className="text-[10px] text-white/30 text-center px-2">Ref 2</span>
-                               )}
-                               
-                               <label className="absolute inset-0 bg-blue-600/80 opacity-0 group-hover/ref2:opacity-100 flex items-center justify-center cursor-pointer text-[10px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
-                                  UPLOAD
-                                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                                     const file = e.target.files?.[0];
-                                     if (file) {
-                                        if (file.size > 2 * 1024 * 1024) {
-                                           await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
-                                           return;
+                           {/* REF 2 */}
+                           {visibleRefSlots >= 2 && (
+                             <div className="flex flex-col gap-1 w-[80px]">
+                               <span className="text-[8px] text-gray-500 font-bold uppercase truncate tracking-wider text-center" title="Image Reference 2">Ref 2</span>
+                               <div className="w-full aspect-square bg-white/5 backdrop-blur-md border border-dashed border-white/20 rounded-xl overflow-hidden relative group/ref2 shadow-lg flex items-center justify-center transition-all hover:border-blue-500/50">
+                                  {concept.reference_image_split ? (
+                                     <>
+                                        <img src={concept.reference_image_split} className="w-full h-full object-cover" />
+                                        <button 
+                                           onClick={() => handleRemoveRefImage2(index)}
+                                           className="absolute top-1 right-1 bg-red-600/90 backdrop-blur-sm rounded-full p-1 flex items-center justify-center text-white z-20 hover:scale-110 shadow-lg"
+                                        >
+                                           <X className="w-2 h-2" />
+                                        </button>
+                                     </>
+                                  ) : (
+                                     <span className="text-[8px] text-white/30 text-center px-1 font-bold tracking-wider uppercase">Upload</span>
+                                  )}
+                                  
+                                  <label className="absolute inset-0 bg-blue-600/90 backdrop-blur-sm opacity-0 group-hover/ref2:opacity-100 flex items-center justify-center cursor-pointer text-[8px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
+                                     UPLOAD
+                                     <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                           if (file.size > 2 * 1024 * 1024) {
+                                              await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
+                                              return;
+                                           }
+                                           setIsSavingConcepts(true);
+                                           await handleUploadAsset(file, 'reference_image_split', index);
+                                           setIsSavingConcepts(false);
                                         }
-                                        setIsSavingConcepts(true);
-                                        await handleUploadAsset(file, 'refImage2', index);
-                                        setIsSavingConcepts(false);
-                                     }
-                                  }} />
-                               </label>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                                     }} />
+                                  </label>
+                               </div>
+                             </div>
+                           )}
+
+                           {/* REF 3 */}
+                           {visibleRefSlots >= 3 && (
+                             <div className="flex flex-col gap-1 w-[80px]">
+                               <span className="text-[8px] text-gray-500 font-bold uppercase truncate tracking-wider text-center" title="Image Reference 3">Ref 3</span>
+                               <div className="w-full aspect-square bg-white/5 backdrop-blur-md border border-dashed border-white/20 rounded-xl overflow-hidden relative group/ref3 shadow-lg flex items-center justify-center transition-all hover:border-blue-500/50">
+                                  {concept.reference_image_bg ? (
+                                     <>
+                                        <img src={concept.reference_image_bg} className="w-full h-full object-cover" />
+                                        <button 
+                                           onClick={() => handleRemoveRefImage3(index)}
+                                           className="absolute top-1 right-1 bg-red-600/90 backdrop-blur-sm rounded-full p-1 flex items-center justify-center text-white z-20 hover:scale-110 shadow-lg"
+                                        >
+                                           <X className="w-2 h-2" />
+                                        </button>
+                                     </>
+                                  ) : (
+                                     <span className="text-[8px] text-white/30 text-center px-1 font-bold tracking-wider uppercase">Upload</span>
+                                  )}
+                                  
+                                  <label className="absolute inset-0 bg-blue-600/90 backdrop-blur-sm opacity-0 group-hover/ref3:opacity-100 flex items-center justify-center cursor-pointer text-[8px] uppercase font-bold text-white transition-opacity text-center px-1 z-10">
+                                     UPLOAD
+                                     <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                           if (file.size > 2 * 1024 * 1024) {
+                                              await showDialog('alert', 'Error', "File too large! Max size is 2MB.");
+                                              return;
+                                           }
+                                           setIsSavingConcepts(true);
+                                           await handleUploadAsset(file, 'reference_image_bg', index);
+                                           setIsSavingConcepts(false);
+                                        }
+                                     }} />
+                                  </label>
+                               </div>
+                             </div>
+                           )}
+
+                           {/* PLUS BUTTON */}
+                           {visibleRefSlots < 3 && (
+                             <div className="flex flex-col gap-1 w-[80px]">
+                               <span className="text-[8px] text-transparent text-center">Add</span>
+                               <button 
+                                 onClick={() => setVisibleRefSlots(prev => prev + 1)}
+                                 className="w-full aspect-square border border-dashed border-white/20 hover:border-[#bc13fe] bg-white/5 hover:bg-[#bc13fe]/20 backdrop-blur-sm rounded-xl flex items-center justify-center transition-all text-white/50 hover:text-[#bc13fe] shadow-inner"
+                               >
+                                 <Plus className="w-6 h-6" />
+                               </button>
+                             </div>
+                           )}
+                         </div>
+                       </div>
                     ) : (
                       <div className="flex-1 bg-black/40 border border-white/10 rounded-lg flex flex-col items-center justify-center p-4 text-center min-h-[140px]">
                          <Sparkles className="w-8 h-8 text-[#bc13fe]/50 mb-2" />
@@ -810,28 +891,28 @@ Output ONLY the enhanced prompt text, nothing else.`;
                   
                  {/* PROMPT OR TEMPLATE PLACEHOLDER */}
                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold text-gray-400">PROMPT</label>
+                    <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase">Prompt Instructions</label>
                     {!isTemplateOrSmart && (
                       <div className={`w-full flex flex-col gap-2 ${index === localConcepts.length - 1 ? 'tour-prompt' : ''}`}>
                         <textarea 
-                           className="bg-black/50 border border-white/10 p-3 text-[11px] font-mono h-28 text-white outline-none focus:border-white/30 resize-y w-full rounded-lg custom-scrollbar" 
+                           className="bg-black/40 border border-white/10 p-4 text-[11px] font-mono h-28 text-white outline-none focus:border-[#bc13fe] focus:ring-1 focus:ring-[#bc13fe]/50 resize-y w-full rounded-xl shadow-inner custom-scrollbar transition-all" 
                            value={concept.prompt} 
                            onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
                            placeholder="Describe the aesthetic, background, mood, lighting..."
                         />
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-1">
-                          <span className="text-[10px] text-gray-500">Click to optimize -&gt;</span>
+                          <span className="text-[10px] text-gray-400 font-bold tracking-wider uppercase">Auto-Enhance Prompt</span>
                           <button
                             onClick={() => handleEnhancePrompt(index)}
                             disabled={isEnhancing === index || !concept.prompt.trim()}
-                            className={`bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${index === localConcepts.length - 1 ? 'tour-optimize-prompt' : ''}`}
+                            className={`bg-gradient-to-r from-blue-600/80 to-[#bc13fe]/80 hover:from-blue-500 hover:to-[#bc13fe] text-white rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:grayscale shadow-[0_0_15px_rgba(188,19,254,0.3)] hover:shadow-[0_0_25px_rgba(188,19,254,0.5)] border border-white/10 ${index === localConcepts.length - 1 ? 'tour-optimize-prompt' : ''}`}
                           >
                             {isEnhancing === index ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                               <Sparkles className="w-4 h-4" />
                             )}
-                            AUTO OPTIMIZE
+                            OPTIMIZE
                           </button>
                         </div>
                       </div>
@@ -839,10 +920,10 @@ Output ONLY the enhanced prompt text, nothing else.`;
                  </div>
 
                  {/* SAVE/CLOSE MODAL ACTION */}
-                 <div className="border-t border-white/10 pt-4 mt-2">
+                 <div className="border-t border-white/5 pt-4 mt-2">
                     <button 
                        onClick={() => setEditingConceptIndex(null)}
-                       className="w-full py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                       className="w-full py-4 bg-white/5 hover:bg-white/10 text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-all backdrop-blur-md shadow-inner"
                     >
                        Done Editing
                     </button>
@@ -856,11 +937,14 @@ Output ONLY the enhanced prompt text, nothing else.`;
       {/* CREATION SELECTION MODAL */}
       {showCreationSelectionModal && (
         <div className="fixed inset-0 z-[10002] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowCreationSelectionModal(false)}></div>
-          <div className="relative bg-[#111]/90 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-lg flex flex-col overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#111]/80 backdrop-blur-md z-10 shrink-0">
-               <h2 className="text-xl font-bold">Add Concept</h2>
-               <button onClick={() => setShowCreationSelectionModal(false)} className="text-gray-400 hover:text-white transition-colors">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowCreationSelectionModal(false)}></div>
+          <div className="relative bg-black/40 backdrop-blur-3xl border border-white/10 ring-1 ring-white/5 rounded-3xl w-full max-w-lg flex flex-col overflow-hidden shadow-[0_0_50px_rgba(188,19,254,0.15)]">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-transparent z-10 shrink-0">
+               <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#bc13fe] shadow-[0_0_10px_#bc13fe animate-pulse"></div>
+                  <h2 className="text-xl font-heading tracking-wider font-bold text-white/90 uppercase">Add Concept</h2>
+               </div>
+               <button onClick={() => setShowCreationSelectionModal(false)} className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-all">
                   <X className="w-5 h-5" />
                </button>
             </div>
@@ -872,14 +956,14 @@ Output ONLY the enhanced prompt text, nothing else.`;
                      setShowCreationSelectionModal(false);
                      handleAddConcept();
                   }}
-                  className="w-full text-left bg-black/40 hover:bg-[#bc13fe]/20 border border-white/5 hover:border-[#bc13fe]/50 p-4 rounded-xl transition-all group flex items-start gap-4"
+                  className="w-full text-left bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 hover:border-[#bc13fe]/50 p-4 rounded-2xl transition-all duration-300 group flex items-start gap-4 shadow-inner"
                >
-                  <div className="bg-white/10 group-hover:bg-[#bc13fe]/30 rounded-lg p-3 text-white group-hover:text-[#bc13fe] transition-colors">
+                  <div className="bg-white/5 group-hover:bg-[#bc13fe]/20 rounded-xl p-3 text-white group-hover:text-[#bc13fe] transition-all shadow-inner">
                      <Plus className="w-6 h-6" />
                   </div>
                   <div>
-                     <h3 className="font-bold text-base text-white group-hover:text-[#bc13fe] transition-colors">Create Your Own Concept</h3>
-                     <p className="text-xs text-gray-500 mt-1">Start from scratch with your own prompt, style, and reference images.</p>
+                     <h3 className="font-bold text-base text-white group-hover:text-[#bc13fe] transition-colors uppercase tracking-wide">Create Your Own Concept</h3>
+                     <p className="text-xs text-white/50 mt-1">Start from scratch with your own prompt, style, and optional reference images.</p>
                   </div>
                </button>
 
@@ -889,14 +973,14 @@ Output ONLY the enhanced prompt text, nothing else.`;
                      setShowCreationSelectionModal(false);
                      setShowCreateFromImageModal(true);
                   }}
-                  className="w-full text-left bg-black/40 hover:bg-blue-500/20 border border-white/5 hover:border-blue-500/50 p-4 rounded-xl transition-all group flex items-start gap-4"
+                  className="w-full text-left bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 hover:border-blue-500/50 p-4 rounded-2xl transition-all duration-300 group flex items-start gap-4 shadow-inner"
                >
-                  <div className="bg-white/10 group-hover:bg-blue-500/30 rounded-lg p-3 text-white group-hover:text-blue-400 transition-colors">
+                  <div className="bg-white/5 group-hover:bg-blue-500/20 rounded-xl p-3 text-white group-hover:text-blue-400 transition-all shadow-inner">
                      <Sparkles className="w-6 h-6" />
                   </div>
                   <div>
-                     <h3 className="font-bold text-base text-white group-hover:text-blue-400 transition-colors">Create by AI Image</h3>
-                     <p className="text-xs text-gray-500 mt-1">Upload a reference, and let Gemini AI write the perfect prompt for you.</p>
+                     <h3 className="font-bold text-base text-white group-hover:text-blue-400 transition-colors uppercase tracking-wide">Create by AI Image</h3>
+                     <p className="text-xs text-white/50 mt-1">Upload a reference, and let Gemini AI write the perfect prompt for you.</p>
                   </div>
                </button>
 
@@ -906,14 +990,14 @@ Output ONLY the enhanced prompt text, nothing else.`;
                      setShowCreationSelectionModal(false);
                      navigate('/dashboard?tab=studio');
                   }}
-                  className="w-full text-left bg-black/40 hover:bg-amber-500/20 border border-white/5 hover:border-amber-500/50 p-4 rounded-xl transition-all group flex items-start gap-4"
+                  className="w-full text-left bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 hover:border-amber-500/50 p-4 rounded-2xl transition-all duration-300 group flex items-start gap-4 shadow-inner"
                >
-                  <div className="bg-white/10 group-hover:bg-amber-500/30 rounded-lg p-3 text-white group-hover:text-amber-400 transition-colors">
+                  <div className="bg-white/5 group-hover:bg-amber-500/20 rounded-xl p-3 text-white group-hover:text-amber-400 transition-all shadow-inner">
                      <Edit className="w-6 h-6" />
                   </div>
                   <div>
-                     <h3 className="font-bold text-base text-white group-hover:text-amber-400 transition-colors">Create in Concept Studio</h3>
-                     <p className="text-xs text-gray-500 mt-1">Go to the Studio to experiment, test generation, and save templates.</p>
+                     <h3 className="font-bold text-base text-white group-hover:text-amber-400 transition-colors uppercase tracking-wide">Create in Concept Studio</h3>
+                     <p className="text-xs text-white/50 mt-1">Go to the Studio to experiment, test generation, and save templates.</p>
                   </div>
                </button>
 
@@ -923,14 +1007,14 @@ Output ONLY the enhanced prompt text, nothing else.`;
                      setShowCreationSelectionModal(false);
                      handleOpenTemplateModal();
                   }}
-                  className="w-full text-left bg-black/40 hover:bg-[#bc13fe]/20 border border-white/5 hover:border-[#bc13fe]/50 p-4 rounded-xl transition-all group flex items-start gap-4"
+                  className="w-full text-left bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 hover:border-[#bc13fe]/50 p-4 rounded-2xl transition-all duration-300 group flex items-start gap-4 shadow-inner"
                >
-                  <div className="bg-white/10 group-hover:bg-[#bc13fe]/30 rounded-lg p-3 text-white group-hover:text-[#bc13fe] transition-colors">
+                  <div className="bg-white/5 group-hover:bg-[#bc13fe]/20 rounded-xl p-3 text-white group-hover:text-[#bc13fe] transition-all shadow-inner">
                      <Palette className="w-6 h-6" />
                   </div>
                   <div>
-                     <h3 className="font-bold text-base text-white group-hover:text-[#bc13fe] transition-colors">Select by Template</h3>
-                     <p className="text-xs text-gray-500 mt-1">Load ready-to-use concepts from the global or your personal gallery.</p>
+                     <h3 className="font-bold text-base text-white group-hover:text-[#bc13fe] transition-colors uppercase tracking-wide">Select by Template</h3>
+                     <p className="text-xs text-white/50 mt-1">Load ready-to-use concepts from the global or your personal gallery.</p>
                   </div>
                </button>
             </div>
@@ -941,41 +1025,44 @@ Output ONLY the enhanced prompt text, nothing else.`;
       {/* Create From Image Modal */}
       {showCreateFromImageModal && (
         <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowCreateFromImageModal(false)}></div>
-          <div className="relative bg-[#111]/80 backdrop-blur-md border border-white/10 rounded-2xl w-full max-w-md flex flex-col overflow-hidden">
-            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#111]/80 backdrop-blur-md z-10">
-              <h2 className="text-xl font-bold">Create from AI Image</h2>
-              <button onClick={() => setShowCreateFromImageModal(false)} className="text-gray-400 hover:text-white transition-colors">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowCreateFromImageModal(false)}></div>
+          <div className="relative bg-black/40 backdrop-blur-3xl border border-white/10 ring-1 ring-white/5 rounded-3xl w-full max-w-md flex flex-col overflow-hidden shadow-[0_0_50px_rgba(188,19,254,0.15)]">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-transparent z-10">
+              <div className="flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_#3b82f6 animate-pulse"></div>
+                 <h2 className="text-xl font-heading tracking-wider font-bold text-white/90 uppercase">AI Image Concept</h2>
+              </div>
+              <button onClick={() => setShowCreateFromImageModal(false)} className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-all">
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="p-6 overflow-y-auto custom-scrollbar flex flex-col gap-4">
+            <div className="p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Concept Name</label>
+                <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-2">Concept Name</label>
                 <input 
                   type="text" 
                   value={createFromImageName}
                   onChange={(e) => setCreateFromImageName(e.target.value)}
                   placeholder="E.g. Cyberpunk Neon"
-                  className="w-full bg-black/50 border border-white/10 rounded-lg p-3 text-white outline-none focus:border-[#bc13fe]/50 transition-colors"
+                  className="w-full bg-black/40 border border-white/10 p-4 rounded-xl font-heading text-base font-bold text-white outline-none focus:border-[#bc13fe] focus:ring-1 focus:ring-[#bc13fe]/50 shadow-inner transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Upload AI Image</label>
-                <div className="w-full aspect-video bg-black/50 border-2 border-dashed border-white/10 rounded-lg flex flex-col items-center justify-center relative overflow-hidden group">
+                <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-2">Upload AI Image</label>
+                <div className="w-full aspect-video bg-white/5 backdrop-blur-md border border-dashed border-white/20 hover:border-blue-500/50 rounded-2xl flex flex-col items-center justify-center relative overflow-hidden group shadow-lg transition-all">
                   {createFromImagePreview ? (
                     <>
                       <img src={createFromImagePreview} alt="Preview" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="text-white text-sm font-bold">Change Image</span>
+                      <div className="absolute inset-0 bg-blue-900/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-sm font-bold uppercase tracking-widest bg-black/50 px-4 py-2 rounded-lg backdrop-blur-md">Change Image</span>
                       </div>
                     </>
                   ) : (
-                    <div className="flex flex-col items-center text-gray-400">
+                    <div className="flex flex-col items-center text-gray-400 group-hover:text-blue-400 transition-colors">
                       <Plus className="w-8 h-8 mb-2" />
-                      <span className="text-sm">Click to upload</span>
+                      <span className="text-[10px] tracking-widest uppercase font-bold">Click to upload</span>
                     </div>
                   )}
                   <input 
@@ -998,7 +1085,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
               <button 
                 onClick={handleCreateFromImage}
                 disabled={isCreatingFromImage || !createFromImageName.trim() || !createFromImageFile}
-                className="w-full py-4 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+                className="w-full py-4 bg-gradient-to-r from-blue-600/80 to-[#bc13fe]/80 hover:from-blue-500 hover:to-[#bc13fe] text-white rounded-xl text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 mt-2 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] border border-white/10"
               >
                 {isCreatingFromImage ? (
                   <>
@@ -1020,37 +1107,40 @@ Output ONLY the enhanced prompt text, nothing else.`;
       {/* Template Concept Modal */}
       {showTemplateModal && (
         <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => {
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => {
             setShowTemplateModal(false);
             if (isActive && tourType === 'concept' && stepIndex === 1) {
               setTourState({ stepIndex: 2 });
             }
           }}></div>
-          <div className="relative bg-[#111]/80 backdrop-blur-md border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden tour-template-modal">
-            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#111]/80 backdrop-blur-md z-10">
-              <h2 className="text-xl font-bold">Load Template Concept</h2>
+          <div className="relative bg-black/40 backdrop-blur-3xl border border-white/10 ring-1 ring-white/5 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(188,19,254,0.15)] tour-template-modal">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-transparent z-10 shrink-0">
+              <div className="flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-[#bc13fe] shadow-[0_0_10px_#bc13fe animate-pulse"></div>
+                 <h2 className="text-xl font-heading tracking-wider font-bold text-white/90 uppercase">Load Templates</h2>
+              </div>
               <button onClick={() => {
                 setShowTemplateModal(false);
                 if (isActive && tourType === 'concept' && stepIndex === 1) {
                   setTourState({ stepIndex: 2 });
                 }
-              }} className="text-gray-400 hover:text-white transition-colors">
+              }} className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-all">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex border-b border-white/10">
+            <div className="flex border-b border-white/5 bg-white/5 backdrop-blur-sm">
               <button
-                className={`flex-1 py-3 text-sm font-bold transition-colors ${templateTab === 'superadmin' ? 'text-[#bc13fe] border-b-2 border-[#bc13fe]' : 'text-gray-400 hover:text-white'}`}
+                className={`flex-1 py-4 text-xs tracking-widest uppercase font-bold transition-all ${templateTab === 'superadmin' ? 'text-white bg-white/10 shadow-inner' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
                 onClick={() => setTemplateTab('superadmin')}
               >
-                Coroai Templates
+                Global Pre-Ready Concepts
               </button>
               <button
-                className={`flex-1 py-3 text-sm font-bold transition-colors ${templateTab === 'mine' ? 'text-[#bc13fe] border-b-2 border-[#bc13fe]' : 'text-gray-400 hover:text-white'}`}
+                className={`flex-1 py-4 text-xs tracking-widest uppercase font-bold transition-all ${templateTab === 'mine' ? 'text-white bg-white/10 shadow-inner' : 'text-white/50 hover:text-white hover:bg-white/5'}`}
                 onClick={() => setTemplateTab('mine')}
               >
-                My Templates
+                My Saved Concepts
               </button>
             </div>
             
@@ -1062,7 +1152,7 @@ Output ONLY the enhanced prompt text, nothing else.`;
               ) : templateTab === 'superadmin' ? (
                 templateConcepts.length === 0 ? (
                   <div 
-                    className="text-center py-12 text-gray-500 tour-load-template cursor-pointer"
+                    className="text-center py-12 text-white/40 tour-load-template cursor-pointer"
                     onClick={() => {
                       setShowTemplateModal(false);
                       if (isActive && tourType === 'concept' && stepIndex === 1) {
@@ -1070,28 +1160,29 @@ Output ONLY the enhanced prompt text, nothing else.`;
                       }
                     }}
                   >
-                    <p>No superadmin templates available.</p>
-                    <p className="text-sm mt-2">Super Admin can create templates in their dashboard.</p>
-                    <p className="text-xs mt-4 text-[#bc13fe]">Click here to close and continue tour</p>
+                    <p className="font-heading tracking-wider uppercase text-sm">No global templates available.</p>
+                    <p className="text-[10px] mt-2 uppercase tracking-widest">Super Admin can create templates in their dashboard.</p>
+                    <p className="text-[10px] mt-4 text-[#bc13fe] tracking-widest font-bold">Click here to close and continue tour</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {templateConcepts.map(template => (
-                      <div key={template.id} className="bg-black/30 border border-white/5 rounded-xl overflow-hidden group hover:border-[#bc13fe]/50 transition-colors flex flex-col">
-                        <div className="aspect-square relative">
-                          <img src={template.thumbnail} alt={template.name} className="w-full h-full object-cover" />
+                      <div key={template.id} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden group hover:border-[#bc13fe]/50 transition-all flex flex-col shadow-lg">
+                        <div className="aspect-square relative overflow-hidden">
+                          <img src={template.thumbnail} alt={template.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           {template.ref_image && (
-                            <div className="absolute top-2 right-2 bg-black/80 text-[9px] px-1.5 py-0.5 rounded border border-white/10">
+                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-[9px] px-2 py-1 rounded-md border border-white/20 font-bold tracking-widest uppercase text-white">
                               + Ref
                             </div>
                           )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </div>
-                        <div className="p-3 flex flex-col flex-1">
-                          <h3 className="font-bold text-xs mb-1 truncate" title={template.name}>{template.name}</h3>
-                          <p className="text-[9px] text-gray-500 mb-3 flex-1 italic">TEMPLATE</p>
+                        <div className="p-4 flex flex-col flex-1">
+                          <h3 className="font-bold font-heading text-xs mb-1 truncate text-white" title={template.name}>{template.name}</h3>
+                          <p className="text-[9px] text-[#bc13fe] mb-3 flex-1 uppercase tracking-widest font-bold">Concept</p>
                           <button
                             onClick={() => handleUseTemplate(template, 'old')}
-                            className="w-full py-1.5 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-md text-[10px] font-bold transition-colors tour-load-template"
+                            className="w-full py-2 bg-white/10 hover:bg-[#bc13fe] hover:shadow-[0_0_15px_rgba(188,19,254,0.5)] border border-white/10 hover:border-transparent text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all tour-load-template"
                           >
                             LOAD
                           </button>
@@ -1102,28 +1193,29 @@ Output ONLY the enhanced prompt text, nothing else.`;
                 )
               ) : (
                 conceptTemplates.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <p>No templates found.</p>
-                    <p className="text-sm mt-2">Create your own templates in the Concept Studio.</p>
+                  <div className="text-center py-12 text-white/40">
+                    <p className="font-heading tracking-wider uppercase text-sm">No templates found.</p>
+                    <p className="text-[10px] mt-2 uppercase tracking-widest">Create your own templates in the Concept Studio.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {conceptTemplates.map(template => (
-                      <div key={template.id} className="bg-black/30 border border-white/5 rounded-xl overflow-hidden group hover:border-[#bc13fe]/50 transition-colors flex flex-col">
-                        <div className="aspect-square relative">
-                          <img src={template.reference_image_split || template.reference_image_bg || 'https://picsum.photos/seed/concept/300/500'} alt={template.name} className="w-full h-full object-cover" />
+                      <div key={template.id} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden group hover:border-[#bc13fe]/50 transition-all flex flex-col shadow-lg">
+                        <div className="aspect-square relative overflow-hidden">
+                          <img src={template.reference_image_split || template.reference_image_bg || 'https://picsum.photos/seed/concept/300/500'} alt={template.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                           {(template.reference_image_split || template.reference_image_bg) && (
-                            <div className="absolute top-2 right-2 bg-black/80 text-[9px] px-1.5 py-0.5 rounded border border-white/10">
+                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-[9px] px-2 py-1 rounded-md border border-white/20 font-bold tracking-widest uppercase text-white">
                               + Ref
                             </div>
                           )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                         </div>
-                        <div className="p-3 flex flex-col flex-1">
-                          <h3 className="font-bold text-xs mb-1 truncate" title={template.name}>{template.name}</h3>
-                          <p className="text-[9px] text-gray-500 mb-3 flex-1 italic">{template.style_preset || 'TEMPLATE'}</p>
+                        <div className="p-4 flex flex-col flex-1">
+                          <h3 className="font-bold font-heading text-xs mb-1 truncate text-white" title={template.name}>{template.name}</h3>
+                          <p className="text-[9px] text-[#bc13fe] mb-3 flex-1 uppercase tracking-widest font-bold truncate">{template.style_preset || 'TEMPLATE'}</p>
                           <button
                             onClick={() => handleUseTemplate(template, 'new')}
-                            className="w-full py-1.5 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-md text-[10px] font-bold transition-colors"
+                            className="w-full py-2 bg-white/10 hover:bg-[#bc13fe] hover:shadow-[0_0_15px_rgba(188,19,254,0.5)] border border-white/10 hover:border-transparent text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all"
                           >
                             LOAD
                           </button>
