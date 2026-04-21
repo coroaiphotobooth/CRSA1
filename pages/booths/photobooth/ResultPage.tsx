@@ -316,6 +316,10 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   
   const executeRegeneration = () => {
     if (selectedRegenConcept) {
+        hasProcessed.current = false; // Clear lock to allow re-processing
+        setResultImage(null);
+        setPrintLayoutImage(null);
+        setError(null);
         setCurrentQuality(pendingQuality);
         setConcept(selectedRegenConcept);
         setShowConceptSelector(false);
