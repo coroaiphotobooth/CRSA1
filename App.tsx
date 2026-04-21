@@ -474,7 +474,9 @@ const PhotoboothFlow: React.FC = () => {
                 }
             }}
             onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }}
+            onGallery={() => setCurrentPage(AppState.GALLERY)}
             settings={settings}
+            isVIPAdmin={isVIPAdmin}
           />
         );
       case AppState.CAMERA:

@@ -1,24 +1,64 @@
 
 import React, { useState } from 'react';
 import { Concept, PhotoboothSettings } from '../../../types';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Settings, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ThemesPageProps {
   concepts: Concept[];
   onSelect: (concept: Concept) => void;
   onBack: () => void;
   onAdmin?: (tab?: 'settings' | 'concepts' | 'display' | 'vip') => void;
+  onGallery?: () => void;
   settings?: PhotoboothSettings;
+  isVIPAdmin?: boolean;
 }
 
-const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onAdmin, settings }) => {
+const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onAdmin, onGallery, settings, isVIPAdmin = false }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = React.useRef<HTMLDivElement>(null);
   
   const layoutStyle = settings?.uiSettings?.conceptLayout || 'grid';
   const photoboothFlow = settings?.uiSettings?.photoboothFlow;
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.log(`Error attempting to enable full-screen mode: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
   
-  const handlePrev = () => setActiveIndex(prev => Math.max(0, prev - 1));
-  const handleNext = () => setActiveIndex(prev => Math.min(concepts.length - 1, prev + 1));
+  const handlePrev = () => {
+    setActiveIndex(prev => {
+      if (concepts.length <= 2) return Math.max(0, prev - 1);
+      return (prev - 1 + concepts.length) % concepts.length;
+    });
+  };
+
+  const handleNext = () => {
+    setActiveIndex(prev => {
+      if (concepts.length <= 2) return Math.min(concepts.length - 1, prev + 1);
+      return (prev + 1) % concepts.length;
+    });
+  };
+
+  const navigate = useNavigate();
 
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
@@ -40,8 +80,75 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center p-6 md:p-10 bg-transparent font-sans">
+    <div className="w-full min-h-screen flex flex-col items-center p-6 md:p-10 bg-transparent font-sans relative">
       
+      {/* Top Right Controls Group - Only shown if skipping launch page */}
+      {photoboothFlow === 'no_launch_concept_photo' && (
+        <div className="absolute top-6 right-6 z-50 flex items-center gap-6">
+          <button 
+            onClick={toggleFullScreen} 
+            className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
+          >
+            FULL SCREEN
+          </button>
+
+          {onGallery && (
+            <button 
+              onClick={onGallery} 
+              className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest border px-2 py-1 rounded"
+            >
+              GALLERY
+            </button>
+          )}
+          
+          <div className="relative" ref={menuRef}>
+            <button 
+              onClick={() => setIsMenuOpen(!isMenuOpen)} 
+              className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
+            >
+              <Settings className="w-5 h-5" /> <ChevronDown className={`w-4 h-4 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isMenuOpen && (
+              <div className="absolute right-0 mt-4 w-48 bg-black/90 border border-white/10 rounded-lg shadow-2xl overflow-hidden backdrop-blur-md flex flex-col">
+                <button 
+                  onClick={() => { setIsMenuOpen(false); navigate('/dashboard'); }}
+                  className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors border-b border-white/5"
+                >
+                  Dashboard
+                </button>
+                <button 
+                  onClick={() => { setIsMenuOpen(false); onAdmin?.('settings'); }}
+                  className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors border-b border-white/5"
+                >
+                  Settings Event
+                </button>
+                <button 
+                  onClick={() => { setIsMenuOpen(false); onAdmin?.('concepts'); }}
+                  className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors border-b border-white/5"
+                >
+                  Settings Concept
+                </button>
+                <button 
+                  onClick={() => { setIsMenuOpen(false); onAdmin?.('display'); }}
+                  className={`px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors ${isVIPAdmin ? 'border-b border-white/5' : ''}`}
+                >
+                  Settings UI Display
+                </button>
+                {isVIPAdmin && (
+                  <button 
+                    onClick={() => { setIsMenuOpen(false); onAdmin?.('vip'); }}
+                    className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors"
+                  >
+                    VIP Import
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* HEADER SECTION - Fixed at Top */}
       <div className="flex justify-between items-center w-full mb-4 max-w-6xl shrink-0 z-20">
         <div className="w-24 md:w-32">
@@ -76,7 +183,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
         ) : (
           layoutStyle === 'carousel' ? (
             <div className="relative w-full h-[60vh] md:h-[70vh] flex items-center justify-center">
-                {activeIndex > 0 && (
+                { (concepts.length > 2 || activeIndex > 0) && (
                     <button onClick={handlePrev} className="absolute left-2 md:left-4 z-40 p-3 md:p-4 bg-black/50 hover:bg-black/80 rounded-full text-white backdrop-blur-md border border-white/20 transition-all">
                         <ChevronLeft className="w-6 h-6 md:w-8 md:h-8" />
                     </button>
@@ -88,10 +195,20 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
                   onTouchEnd={handleTouchEnd}
                 >
                     {concepts.map((concept, index) => {
-                        const isCenter = index === activeIndex;
-                        const isLeft = index === activeIndex - 1;
-                        const isRight = index === activeIndex + 1;
+                        let isCenter = false;
+                        let isLeft = false;
+                        let isRight = false;
                         
+                        if (concepts.length <= 2) {
+                           isCenter = index === activeIndex;
+                           isLeft = index === activeIndex - 1;
+                           isRight = index === activeIndex + 1;
+                        } else {
+                           isCenter = index === activeIndex;
+                           isLeft = index === (activeIndex - 1 + concepts.length) % concepts.length;
+                           isRight = index === (activeIndex + 1) % concepts.length;
+                        }
+
                         if (!isCenter && !isLeft && !isRight) return null;
                         
                         let baseClasses = "absolute top-0 bottom-0 my-auto cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-500 shadow-2xl flex flex-col justify-end bg-black";
@@ -117,14 +234,14 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
                                 <img src={concept.thumbnail} alt={concept.name} className="absolute inset-0 w-full h-full object-cover" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent opacity-90" />
                                 <div className="relative z-10 p-6 md:p-8 w-full flex flex-col items-center text-center">
-                                    <h3 className="text-white font-heading text-2xl md:text-5xl uppercase tracking-wider drop-shadow-lg font-black italic">{concept.name}</h3>
+                                    <h3 className="text-white font-heading text-lg md:text-3xl uppercase tracking-wider drop-shadow-lg font-black italic">{concept.name}</h3>
                                 </div>
                             </div>
                         )
                     })}
                 </div>
 
-                {activeIndex < concepts.length - 1 && (
+                { (concepts.length > 2 || activeIndex < concepts.length - 1) && (
                     <button onClick={handleNext} className="absolute right-2 md:right-4 z-40 p-3 md:p-4 bg-black/50 hover:bg-black/80 rounded-full text-white backdrop-blur-md border border-white/20 transition-all">
                         <ChevronRight className="w-6 h-6 md:w-8 md:h-8" />
                     </button>
