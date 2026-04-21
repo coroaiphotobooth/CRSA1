@@ -149,6 +149,18 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
         </div>
       )}
 
+      {/* Event Info TOP */}
+      {photoboothFlow === 'no_launch_concept_photo' && settings?.uiSettings?.themeEventInfoPosition === 'top' && (
+        <div className="w-full max-w-6xl text-center mb-6 z-20 animate-[popIn_0.5s_ease-out]">
+          <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-2 uppercase`}>
+            {settings.eventName}
+          </h1>
+          <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-lg'} tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase`}>
+            {settings.eventDescription}
+          </h2>
+        </div>
+      )}
+
       {/* HEADER SECTION - Fixed at Top */}
       <div className="flex justify-between items-center w-full mb-4 max-w-6xl shrink-0 z-20">
         <div className="w-24 md:w-32">
@@ -253,7 +265,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
               <div 
                 key={concept.id}
                 onClick={() => onSelect(concept)}
-                className="group relative h-[200px] md:h-[280px] cursor-pointer overflow-hidden rounded-xl border-2 border-white/10 hover:border-purple-500 transition-all duration-300 shadow-2xl hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:-translate-y-2 bg-black/40 backdrop-blur-sm"
+                className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl border-2 border-white/10 hover:border-purple-500 transition-all duration-300 shadow-2xl hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:-translate-y-2 bg-black/40 backdrop-blur-sm"
               >
                 <img 
                   src={concept.thumbnail} 
@@ -280,6 +292,18 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
           )
         )}
       </div>
+
+      {/* Event Info BOTTOM */}
+      {photoboothFlow === 'no_launch_concept_photo' && settings?.uiSettings?.themeEventInfoPosition === 'bottom' && (
+        <div className="w-full max-w-6xl text-center mt-6 z-20 animate-[popIn_0.5s_ease-out]">
+          <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-2 uppercase`}>
+            {settings.eventName}
+          </h1>
+          <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-lg'} tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase`}>
+            {settings.eventDescription}
+          </h2>
+        </div>
+      )}
       
     </div>
   );

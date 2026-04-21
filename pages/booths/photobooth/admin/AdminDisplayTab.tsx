@@ -127,6 +127,20 @@ export const AdminDisplayTab = forwardRef<AdminDisplayTabRef, AdminDisplayTabPro
               <option value="no_launch_concept_photo">3. Skip Launch &rarr; Concept &rarr; Photo &rarr; Result</option>
             </select>
           </div>
+          {localUI.photoboothFlow === 'no_launch_concept_photo' && (
+             <div className="md:col-span-1">
+               <label className={UI_LABEL}>Show Name Event & Description in Themes</label>
+               <select 
+                 value={localUI.themeEventInfoPosition || 'none'}
+                 onChange={(e) => handleChange('themeEventInfoPosition', e.target.value)}
+                 className="w-full bg-black/50 border border-white/20 rounded p-2 text-white"
+               >
+                 <option value="none">Hidden (Default)</option>
+                 <option value="top">Top</option>
+                 <option value="bottom">Bottom</option>
+               </select>
+             </div>
+          )}
           <div>
             <label className={UI_LABEL}>Concept Selector Style</label>
             <select 

@@ -69,6 +69,7 @@ export interface UIDisplaySettings {
   captureButtonPosition: 'bottom' | 'top_right';
   resultButtonsPosition: 'bottom' | 'right' | 'top';
   confirmPhotoBeforeGenerate?: boolean;
+  themeEventInfoPosition?: 'none' | 'top' | 'bottom';
 }
 
 export interface PhotoboothSettings {
