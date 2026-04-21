@@ -207,30 +207,49 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
                   onTouchEnd={handleTouchEnd}
                 >
                     {concepts.map((concept, index) => {
+                        const len = concepts.length;
                         let isCenter = false;
                         let isLeft = false;
                         let isRight = false;
+                        let isLeft2 = false;
+                        let isRight2 = false;
                         
-                        if (concepts.length <= 2) {
+                        if (len === 1) {
                            isCenter = index === activeIndex;
-                           isLeft = index === activeIndex - 1;
-                           isRight = index === activeIndex + 1;
+                        } else if (len === 2) {
+                           isCenter = index === activeIndex;
+                           isRight = index !== activeIndex;
+                        } else if (len === 3) {
+                           isCenter = index === activeIndex;
+                           isLeft = index === (activeIndex - 1 + len) % len;
+                           isRight = index === (activeIndex + 1) % len;
+                        } else if (len === 4) {
+                           isCenter = index === activeIndex;
+                           isLeft = index === (activeIndex - 1 + len) % len;
+                           isRight = index === (activeIndex + 1) % len;
+                           isRight2 = index === (activeIndex + 2) % len;
                         } else {
                            isCenter = index === activeIndex;
-                           isLeft = index === (activeIndex - 1 + concepts.length) % concepts.length;
-                           isRight = index === (activeIndex + 1) % concepts.length;
+                           isLeft = index === (activeIndex - 1 + len) % len;
+                           isRight = index === (activeIndex + 1) % len;
+                           isLeft2 = index === (activeIndex - 2 + len) % len;
+                           isRight2 = index === (activeIndex + 2) % len;
                         }
 
-                        if (!isCenter && !isLeft && !isRight) return null;
+                        if (!isCenter && !isLeft && !isRight && !isLeft2 && !isRight2) return null;
                         
                         let baseClasses = "absolute top-0 bottom-0 my-auto cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-500 shadow-2xl flex flex-col justify-end bg-black";
                         
                         if (isCenter) {
-                          baseClasses += " z-30 scale-100 opacity-100 border-purple-500 shadow-[0_0_50px_rgba(168,85,247,0.5)] h-[90%] md:h-full aspect-[2/3] left-1/2 -translate-x-1/2";
+                          baseClasses += " z-30 scale-100 opacity-100 border-purple-500 shadow-[0_0_50px_rgba(168,85,247,0.5)] h-[90%] md:h-[95%] aspect-[2/3] left-1/2 -translate-x-1/2";
                         } else if (isLeft) {
-                          baseClasses += " z-20 scale-[0.85] opacity-50 blur-[2px] border-white/10 h-[75%] md:h-[80%] aspect-[2/3] left-[15%] md:left-[30%] -translate-x-1/2 hover:opacity-80";
+                          baseClasses += " z-20 scale-[0.85] opacity-80 border-white/20 h-[75%] md:h-[80%] aspect-[2/3] left-[20%] md:left-[28%] -translate-x-1/2 hover:opacity-100";
                         } else if (isRight) {
-                          baseClasses += " z-20 scale-[0.85] opacity-50 blur-[2px] border-white/10 h-[75%] md:h-[80%] aspect-[2/3] right-[15%] md:right-[30%] translate-x-1/2 hover:opacity-80";
+                          baseClasses += " z-20 scale-[0.85] opacity-80 border-white/20 h-[75%] md:h-[80%] aspect-[2/3] right-[20%] md:right-[28%] translate-x-1/2 hover:opacity-100";
+                        } else if (isLeft2) {
+                          baseClasses += " z-10 scale-[0.70] opacity-40 blur-[1px] border-white/10 h-[60%] md:h-[65%] aspect-[2/3] left-[5%] md:left-[12%] -translate-x-1/2 hover:opacity-60";
+                        } else if (isRight2) {
+                          baseClasses += " z-10 scale-[0.70] opacity-40 blur-[1px] border-white/10 h-[60%] md:h-[65%] aspect-[2/3] right-[5%] md:right-[12%] translate-x-1/2 hover:opacity-60";
                         }
                         
                         return (
@@ -238,8 +257,8 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
                                 key={concept.id}
                                 onClick={() => {
                                     if (isCenter) onSelect(concept);
-                                    else if (isLeft) handlePrev();
-                                    else if (isRight) handleNext();
+                                    else if (isLeft || isLeft2) handlePrev();
+                                    else if (isRight || isRight2) handleNext();
                                 }}
                                 className={baseClasses}
                             >
