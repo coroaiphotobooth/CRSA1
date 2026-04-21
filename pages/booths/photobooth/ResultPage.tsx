@@ -442,29 +442,45 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
          <div className="flex-1 w-full min-h-0 flex items-center justify-center">
             <div className="relative border-4 border-white/5 shadow-2xl bg-black/50 backdrop-blur-sm rounded-xl overflow-hidden" style={{ aspectRatio: displayAspectRatio, maxHeight: '100%', maxWidth: '100%' }}>
                 <img src={viewMode === 'result' ? resultImage! : capturedImage} className="w-full h-full object-contain" />
-                <div className="absolute top-4 right-4 z-40">
+                <div className="absolute top-4 left-4 z-40">
                     <button onClick={() => setViewMode(prev => prev === 'result' ? 'original' : 'result')} className={`backdrop-blur border px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all ${viewMode === 'result' ? 'bg-purple-900/50 border-purple-500 text-purple-200' : 'bg-green-900/50 border-green-500 text-green-200'}`}>
                       {viewMode === 'result' ? '👁 VIEW ORIGINAL' : '✨ VIEW RESULT'}
                     </button>
                 </div>
-                <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center gap-3 z-30 px-2 flex-wrap">
-                   <button onClick={() => setShowQR(true)} disabled={!sessionFolder} className={`backdrop-blur-md border px-5 py-4 rounded-full font-heading text-[10px] tracking-[0.2em] uppercase italic flex items-center gap-2 transition-all ${!sessionFolder ? 'bg-gray-800/50 border-gray-600 text-gray-400 cursor-wait' : 'bg-purple-900/30 border-purple-500/50 text-purple-100 hover:bg-purple-600/40'}`}>
-                      {!sessionFolder ? "SAVING..." : "SESSION QR"}
-                   </button>
-                   {settings.enablePrint && (
-                       <button onClick={handlePrint} className="backdrop-blur-md bg-cyan-900/30 border border-cyan-500/50 text-cyan-100 px-5 py-4 rounded-full font-heading text-[10px] tracking-[0.2em] uppercase italic flex items-center gap-2 hover:bg-cyan-600/40 shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all">
-                          PRINT
+                
+                {(() => {
+                  const position = settings.uiSettings?.resultButtonsPosition || 'bottom';
+                  let containerClasses = "absolute z-30 flex gap-3 flex-wrap items-center px-4 ";
+                  
+                  if (position === 'bottom') {
+                     containerClasses += "bottom-4 left-0 right-0 justify-center";
+                  } else if (position === 'top') {
+                     containerClasses += "top-4 right-4 justify-end";
+                  } else if (position === 'right') {
+                     containerClasses += "right-4 top-1/2 -translate-y-1/2 flex-col justify-center";
+                  }
+
+                  return (
+                    <div className={containerClasses}>
+                       <button onClick={() => setShowQR(true)} disabled={!sessionFolder} className={`backdrop-blur-md border px-5 py-4 rounded-full font-heading text-[10px] tracking-[0.2em] uppercase italic flex items-center gap-2 transition-all ${!sessionFolder ? 'bg-gray-800/50 border-gray-600 text-gray-400 cursor-wait' : 'bg-purple-900/30 border-purple-500/50 text-purple-100 hover:bg-purple-600/40'}`}>
+                          {!sessionFolder ? "SAVING..." : "SESSION QR"}
                        </button>
-                   )}
-                   <button onClick={handleRegenerateClick} className="backdrop-blur-md bg-orange-900/30 border border-orange-500/50 text-orange-100 px-5 py-4 rounded-full font-heading text-[10px] tracking-[0.2em] uppercase italic flex items-center gap-2 hover:bg-orange-600/40 transition-all">
-                      REGENERATE
-                   </button>
-                   {settings.boothMode === 'video' && (
-                      <button onClick={handleGenerateVideo} disabled={!photoId} className={`backdrop-blur-md border px-5 py-4 rounded-full font-heading text-[10px] tracking-[0.2em] uppercase italic flex items-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.4)] ${!photoId ? 'bg-gray-800/50 border-gray-600 text-gray-400 cursor-wait' : 'bg-blue-900/30 border-blue-500/50 text-blue-100 hover:bg-blue-600/40 animate-pulse'}`}>
-                         {!photoId ? "SYNCING..." : "GENERATE VIDEO"}
-                      </button>
-                   )}
-                </div>
+                       {settings.enablePrint && (
+                           <button onClick={handlePrint} className="backdrop-blur-md bg-cyan-900/30 border border-cyan-500/50 text-cyan-100 px-5 py-4 rounded-full font-heading text-[10px] tracking-[0.2em] uppercase italic flex items-center gap-2 hover:bg-cyan-600/40 shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all">
+                              PRINT
+                           </button>
+                       )}
+                       <button onClick={handleRegenerateClick} className="backdrop-blur-md bg-orange-900/30 border border-orange-500/50 text-orange-100 px-5 py-4 rounded-full font-heading text-[10px] tracking-[0.2em] uppercase italic flex items-center gap-2 hover:bg-orange-600/40 transition-all">
+                          REGENERATE
+                       </button>
+                       {settings.boothMode === 'video' && (
+                          <button onClick={handleGenerateVideo} disabled={!photoId} className={`backdrop-blur-md border px-5 py-4 rounded-full font-heading text-[10px] tracking-[0.2em] uppercase italic flex items-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.4)] ${!photoId ? 'bg-gray-800/50 border-gray-600 text-gray-400 cursor-wait' : 'bg-blue-900/30 border-blue-500/50 text-blue-100 hover:bg-blue-600/40 animate-pulse'}`}>
+                             {!photoId ? "SYNCING..." : "GENERATE VIDEO"}
+                          </button>
+                       )}
+                    </div>
+                  );
+                })()}
             </div>
          </div>
          <div className="relative z-10 flex flex-col items-center gap-2 pb-6">

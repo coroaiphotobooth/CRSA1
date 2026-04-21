@@ -9,6 +9,7 @@ import AdminSettingsTab, { AdminSettingsTabRef } from './AdminSettingsTab';
 import AdminConceptsTab, { AdminConceptsTabRef } from './AdminConceptsTab';
 import AdminMonitorTab from './AdminMonitorTab';
 import AdminVipTab, { AdminVipTabRef } from './AdminVipTab';
+import { AdminDisplayTab, AdminDisplayTabRef } from './AdminDisplayTab';
 import { useDialog } from '../../../../components/DialogProvider';
 
 interface AdminPageProps {
@@ -18,7 +19,7 @@ interface AdminPageProps {
   onSaveConcepts: (concepts: Concept[]) => void;
   onBack: () => void;
   onLaunchMonitor?: () => void;
-  initialTab?: 'settings' | 'concepts' | 'vip';
+  initialTab?: 'settings' | 'concepts' | 'display' | 'vip';
   isVIPAdmin?: boolean;
 }
 
@@ -28,12 +29,13 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
   const queryParams = new URLSearchParams(location.search);
   const urlTab = queryParams.get('tab') === 'concept' ? 'concepts' : 'settings';
   const initialTab = propInitialTab || urlTab;
-  const [activeTab, setActiveTab] = useState<'settings' | 'concepts' | 'vip'>(initialTab as any);
+  const [activeTab, setActiveTab] = useState<'settings' | 'concepts' | 'display' | 'vip'>(initialTab as any);
   const [unsavedModal, setUnsavedModal] = useState<{ isOpen: boolean; action?: () => void }>({ isOpen: false });
   const { showDialog } = useDialog();
   const adminSettingsRef = useRef<AdminSettingsTabRef>(null);
   const adminConceptsRef = useRef<AdminConceptsTabRef>(null);
   const adminVipRef = useRef<AdminVipTabRef>(null);
+  const adminDisplayRef = useRef<AdminDisplayTabRef>(null);
 
   // Initialize GAS URL
   useEffect(() => {
@@ -41,14 +43,15 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
     setGasUrl(savedUrl);
   }, []);
 
-  const handleTabChange = async (newTab: 'settings' | 'concepts' | 'vip') => {
+  const handleTabChange = async (newTab: 'settings' | 'concepts' | 'display' | 'vip') => {
     if (newTab === activeTab) return;
 
     const settingsDirty = activeTab === 'settings' && (adminSettingsRef.current?.hasUnsavedChanges?.() || false);
     const conceptsDirty = activeTab === 'concepts' && (adminConceptsRef.current?.hasUnsavedChanges?.() || false);
     const vipDirty = activeTab === 'vip' && (adminVipRef.current?.hasUnsavedChanges?.() || false);
+    const displayDirty = activeTab === 'display' && (adminDisplayRef.current?.hasUnsavedChanges?.() || false);
 
-    if (settingsDirty || conceptsDirty || vipDirty) {
+    if (settingsDirty || conceptsDirty || vipDirty || displayDirty) {
       setUnsavedModal({
         isOpen: true,
         action: () => setActiveTab(newTab)
@@ -62,8 +65,9 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
     const settingsDirty = adminSettingsRef.current?.hasUnsavedChanges?.() || false;
     const conceptsDirty = adminConceptsRef.current?.hasUnsavedChanges?.() || false;
     const vipDirty = adminVipRef.current?.hasUnsavedChanges?.() || false;
+    const displayDirty = adminDisplayRef.current?.hasUnsavedChanges?.() || false;
 
-    if (settingsDirty || conceptsDirty || vipDirty) {
+    if (settingsDirty || conceptsDirty || vipDirty || displayDirty) {
       setUnsavedModal({
         isOpen: true,
         action: () => onBack()
@@ -78,7 +82,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
       <div className="sticky top-0 z-50 flex flex-col md:flex-row justify-between items-center mb-10 w-full border-b border-white/10 bg-black/90 backdrop-blur-md px-6 py-4 md:px-10 shadow-2xl">
         <h2 className="text-xl md:text-2xl font-heading text-white neon-text italic uppercase">SYSTEM_ROOT</h2>
         <div className="flex bg-white/5 p-1 rounded-xl my-4 md:my-0">
-          {(isVIPAdmin ? ['settings', 'concepts', 'vip'] : ['settings', 'concepts']).map(tab => (
+          {(isVIPAdmin ? ['settings', 'concepts', 'display', 'vip'] : ['settings', 'concepts', 'display']).map(tab => (
             <button 
               key={tab}
               onClick={() => handleTabChange(tab as any)}
@@ -103,6 +107,14 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
               className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white font-heading tracking-widest uppercase italic transition-all rounded-lg shadow-xl text-xs tour-save-concept"
             >
               SAVE CONCEPT
+            </button>
+          )}
+          {activeTab === 'display' && (
+            <button 
+              onClick={() => adminDisplayRef.current?.saveSettings()} 
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-heading tracking-widest uppercase italic transition-all rounded-lg shadow-xl text-xs"
+            >
+              SAVE DISPLAY
             </button>
           )}
           {activeTab === 'vip' && (
@@ -140,6 +152,15 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
             onSaveConcepts={onSaveConcepts} 
             adminPin={settings.adminPin} 
             settings={settings}
+          />
+        )}
+
+        {/* Display UI Tab */}
+        {activeTab === 'display' && (
+          <AdminDisplayTab 
+            ref={adminDisplayRef}
+            settings={settings}
+            onSaveSettings={onSaveSettings}
           />
         )}
 

@@ -2,6 +2,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { AspectRatio, PhotoboothSettings } from '../../../types';
 import { useWebViewCamera } from '../../../hooks/useWebViewCamera';
+import { getGoogleDriveDirectLink } from '../../../lib/imageUtils';
 
 interface CameraPageProps {
   onCapture: (image: string) => void;
@@ -195,8 +196,12 @@ const CameraPage: React.FC<CameraPageProps> = ({
         if (base64Photo) {
           // Ensure it's a data URL
           const dataUrl = base64Photo.startsWith('data:') ? base64Photo : `data:image/jpeg;base64,${base64Photo}`;
-          onCapture(dataUrl);
-          onGenerate();
+          if (settings?.uiSettings?.confirmPhotoBeforeGenerate) {
+             setLocalCapturedImage(dataUrl);
+          } else {
+             onCapture(dataUrl);
+             onGenerate();
+          }
         }
       } catch (err) {
         console.error("DSLR capture failed", err);
@@ -279,11 +284,15 @@ const CameraPage: React.FC<CameraPageProps> = ({
          stopCamera();
          
          // Pass data up
-         onCapture(dataUrl);
-         onGenerate();
+         if (settings?.uiSettings?.confirmPhotoBeforeGenerate) {
+           setLocalCapturedImage(dataUrl);
+         } else {
+           onCapture(dataUrl);
+           onGenerate();
+         }
       }
     }
-  }, [onCapture, onGenerate, cameraRotation, targetRatioValue, stopCamera, settings?.mirrorCamera, settings?.useDslr, isWrapper, fallbackToWebcam, captureDslrPhoto, startCamera]);
+  }, [onCapture, onGenerate, cameraRotation, targetRatioValue, stopCamera, settings?.mirrorCamera, settings?.useDslr, isWrapper, fallbackToWebcam, captureDslrPhoto, startCamera, settings?.uiSettings?.confirmPhotoBeforeGenerate]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -319,8 +328,13 @@ const CameraPage: React.FC<CameraPageProps> = ({
           if (ctx) {
             ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, dW, dH);
             const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-            onCapture(dataUrl);
-            onGenerate();
+
+            if (settings?.uiSettings?.confirmPhotoBeforeGenerate) {
+               setLocalCapturedImage(dataUrl);
+            } else {
+               onCapture(dataUrl);
+               onGenerate();
+            }
           }
         }
       };
@@ -371,7 +385,8 @@ const CameraPage: React.FC<CameraPageProps> = ({
       onUpdateSettings({ ...settings, selectedModel: newModel });
   };
 
-  // Convert "9:16" -> "9/16" for CSS
+  const [localCapturedImage, setLocalCapturedImage] = useState<string | null>(null);
+
   const cssAspectRatio = aspectRatio.replace(':', '/');
   const isSideways = cameraRotation === 90 || cameraRotation === 270;
   
@@ -413,13 +428,13 @@ const CameraPage: React.FC<CameraPageProps> = ({
         )}
 
         {/* LOADING SPINNER (While Video Init) */}
-        {!isVideoReady && !capturedImage && !cameraError && (
+        {!isVideoReady && !capturedImage && !localCapturedImage && !cameraError && (
             <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
                 <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
         )}
 
-        {!capturedImage ? (
+        {(!capturedImage && !localCapturedImage) ? (
            // CAMERA PREVIEW
            <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden p-4 md:p-8">
               
@@ -465,6 +480,17 @@ const CameraPage: React.FC<CameraPageProps> = ({
                   <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-purple-500 rounded-tr-lg z-30 pointer-events-none" />
                   <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-purple-500 rounded-bl-lg z-30 pointer-events-none" />
                   <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-purple-500 rounded-br-lg z-30 pointer-events-none" />
+                  
+                  {/* PNG Frame Guide Overlay */}
+                  {settings?.uiSettings?.showFrameDuringCapture && settings?.overlayImage && (
+                      <div className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center">
+                          <img 
+                              src={getGoogleDriveDirectLink(settings.overlayImage)} 
+                              alt="Frame Guide" 
+                              className="w-full h-full object-contain opacity-70" 
+                          />
+                      </div>
+                  )}
               </div>
 
               {/* Countdown Overlay */}
@@ -478,16 +504,41 @@ const CameraPage: React.FC<CameraPageProps> = ({
            // Result Preview (Same 100% sizing for consistency)
            <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden p-4 md:p-8">
                <div className="relative overflow-hidden border-2 border-white/20 rounded-xl flex items-center justify-center bg-zinc-900 w-full h-full">
-                  
-                  <img src={capturedImage} alt="Capture" className="absolute inset-0 w-full h-full object-contain" />
+                  <img src={capturedImage || localCapturedImage || ''} alt="Capture" className="absolute inset-0 w-full h-full object-contain" />
                </div>
            </div>
         )}
       </div>
 
       {/* CONTROLS */}
-      {!countdown && !capturedImage && (
-        <div className="absolute bottom-10 left-0 right-0 flex justify-center items-center z-50 px-6 gap-8 pointer-events-none">
+      {localCapturedImage && (
+         <div className="absolute bottom-10 left-0 right-0 flex items-center justify-center gap-6 z-50 px-6 pointer-events-auto">
+             <button 
+                onClick={() => {
+                   setLocalCapturedImage(null);
+                   setCountdown(null);
+                   startCamera();
+                }}
+                className="px-6 py-3 md:py-4 bg-black/60 border border-white/20 hover:bg-black text-white rounded-full uppercase tracking-widest font-bold text-[10px] md:text-sm backdrop-blur-md transition-all shadow-lg flex items-center gap-2"
+             >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                RETAKE
+             </button>
+             <button 
+                onClick={() => {
+                   onCapture(localCapturedImage);
+                   onGenerate();
+                }}
+                className="px-8 py-3 md:py-4 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-full uppercase tracking-widest font-bold text-[10px] md:text-sm shadow-[0_0_20px_rgba(188,19,254,0.4)] transition-all flex items-center gap-2 border border-white/10"
+             >
+                PROCESS NOW
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+             </button>
+         </div>
+      )}
+
+      {!countdown && !capturedImage && !localCapturedImage && (
+        <div className={`absolute ${settings?.uiSettings?.captureButtonPosition === 'top_right' ? 'top-1/2 -translate-y-1/2 right-4 flex-col' : 'bottom-10 left-0 right-0 justify-center flex-row'} flex items-center z-50 px-6 gap-8 pointer-events-none`}>
                 
                 {/* QUICK MODEL SHORTCUT TOGGLE (LEFT) */}
                 <div className="w-16 h-16 md:flex items-center justify-center pointer-events-auto">

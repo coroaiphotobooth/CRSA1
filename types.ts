@@ -57,9 +57,24 @@ export interface BartenderMenuItem {
   imageUrl?: string;
 }
 
+export interface UIDisplaySettings {
+  eventNameSize: string;
+  eventDescSize: string;
+  fontFamily: string;
+  buttonColor: string;
+  conceptLayout: 'grid' | 'carousel';
+  photoboothFlow: 'launch_concept_photo' | 'launch_photo_concept' | 'no_launch_concept_photo';
+  launchLayout: 'split_left_right' | 'top_bottom';
+  showFrameDuringCapture: boolean;
+  captureButtonPosition: 'bottom' | 'top_right';
+  resultButtonsPosition: 'bottom' | 'right' | 'top';
+  confirmPhotoBeforeGenerate?: boolean;
+}
+
 export interface PhotoboothSettings {
   eventName: string;
   eventDescription: string;
+  uiSettings?: UIDisplaySettings;
   vendor_id?: string;
   folderId: string;
   originalFolderId?: string; 

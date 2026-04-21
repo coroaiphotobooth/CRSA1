@@ -52,7 +52,7 @@ const PhotoboothFlow: React.FC = () => {
     : location.pathname.startsWith('/admin') ? AppState.ADMIN : AppState.LANDING;
 
   const [currentPage, setCurrentPage] = useState<AppState>(initialPage);
-  const [adminTab, setAdminTab] = useState<'settings' | 'concepts' | 'vip'>('settings');
+  const [adminTab, setAdminTab] = useState<'settings' | 'concepts' | 'vip' | 'display'>('settings');
   const [selectedConcept, setSelectedConcept] = useState<Concept | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [settings, setSettings] = useState<PhotoboothSettings>(DEFAULT_SETTINGS);
@@ -321,6 +321,11 @@ const PhotoboothFlow: React.FC = () => {
     setRegenUltraQuality(false); 
     setCurrentSession(null); 
     
+    if (settings.uiSettings?.photoboothFlow === 'launch_photo_concept') {
+        setCurrentPage(AppState.THEMES);
+        return;
+    }
+
     if (settings.processingMode === 'fast') {
       processInBackground(image, selectedConcept!);
       setCurrentPage(AppState.FAST_THANKS);
@@ -426,10 +431,14 @@ const PhotoboothFlow: React.FC = () => {
   const renderPage = () => {
     switch (currentPage) {
       case AppState.LANDING:
+        if (settings.uiSettings?.photoboothFlow === 'no_launch_concept_photo') {
+            setCurrentPage(AppState.THEMES);
+            return null;
+        }
         if (settings.enableVipMode) {
           return (
             <VipLandingPage 
-               onStart={() => setCurrentPage(AppState.THEMES)} 
+               onStart={() => setCurrentPage(settings.uiSettings?.photoboothFlow === 'launch_photo_concept' ? AppState.CAMERA : AppState.THEMES)} 
                onGallery={() => setCurrentPage(AppState.GALLERY)}
                onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} 
                settings={settings} 
@@ -437,21 +446,48 @@ const PhotoboothFlow: React.FC = () => {
             />
           );
         }
-        return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} isVIPAdmin={isVIPAdmin} />;
+        return <LandingPage onStart={() => setCurrentPage(settings.uiSettings?.photoboothFlow === 'launch_photo_concept' ? AppState.CAMERA : AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} isVIPAdmin={isVIPAdmin} />;
       case AppState.THEMES:
         return (
           <ThemesPage 
             concepts={concepts} 
-            onSelect={(c) => { setSelectedConcept(c); setCurrentPage(AppState.CAMERA); }} 
-            onBack={() => setCurrentPage(AppState.LANDING)}
+            onSelect={(c) => { 
+                setSelectedConcept(c); 
+                if (settings.uiSettings?.photoboothFlow === 'launch_photo_concept' && capturedImage) {
+                    if (settings.processingMode === 'fast') {
+                        processInBackground(capturedImage, c);
+                        setCurrentPage(AppState.FAST_THANKS);
+                    } else {
+                        setCurrentPage(AppState.GENERATING);
+                    }
+                } else {
+                    setCurrentPage(AppState.CAMERA); 
+                }
+            }} 
+            onBack={() => {
+                if (settings.uiSettings?.photoboothFlow === 'launch_photo_concept') {
+                    setCurrentPage(AppState.CAMERA);
+                } else if (settings.uiSettings?.photoboothFlow === 'no_launch_concept_photo') {
+                    // Do nothing or maybe show a toast? Usually disabled inside ThemesPage
+                } else {
+                    setCurrentPage(AppState.LANDING);
+                }
+            }}
             onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }}
+            settings={settings}
           />
         );
       case AppState.CAMERA:
         return <CameraPage 
             onCapture={handleCapture} 
             onGenerate={() => {/* Handled in onCapture */}} 
-            onBack={() => setCurrentPage(AppState.THEMES)} 
+            onBack={() => {
+                if (settings.uiSettings?.photoboothFlow === 'launch_photo_concept') {
+                    setCurrentPage(AppState.LANDING);
+                } else {
+                    setCurrentPage(AppState.THEMES);
+                }
+            }} 
             capturedImage={capturedImage} 
             orientation={settings.orientation} 
             cameraRotation={settings.cameraRotation}
@@ -495,7 +531,7 @@ const PhotoboothFlow: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full min-h-screen bg-[#050505] flex flex-col items-center justify-start font-sans">
+    <div className={`relative w-full min-h-screen bg-[#050505] flex flex-col items-center justify-start ${settings.uiSettings?.fontFamily || 'font-sans'}`}>
       
       {/* --- GLOBAL BACKGROUND VIDEO --- */}
       {settings.backgroundVideoUrl && settings.backgroundVideoUrl.trim() !== '' && (

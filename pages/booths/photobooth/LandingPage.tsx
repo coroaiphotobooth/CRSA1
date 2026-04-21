@@ -8,7 +8,7 @@ import { useDialog } from '../../../components/DialogProvider';
 interface LandingPageProps {
   onStart: () => void;
   onGallery: () => void;
-  onAdmin: (tab?: 'settings' | 'concepts' | 'vip') => void;
+  onAdmin: (tab?: 'settings' | 'concepts' | 'vip' | 'display') => void;
   settings: PhotoboothSettings;
   notifications?: ProcessNotification[]; 
   isVIPAdmin?: boolean;
@@ -77,9 +77,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
               </button>
               <button 
                 onClick={() => { setIsMenuOpen(false); onAdmin('concepts'); }}
-                className={`px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors ${isVIPAdmin ? 'border-b border-white/5' : ''}`}
+                className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors border-b border-white/5"
               >
                 Settings Concept
+              </button>
+              <button 
+                onClick={() => { setIsMenuOpen(false); onAdmin('display'); }}
+                className={`px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors ${isVIPAdmin ? 'border-b border-white/5' : ''}`}
+              >
+                Settings UI Display
               </button>
               {isVIPAdmin && (
                 <button 
@@ -95,19 +101,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       </div>
 
       <div className="relative z-10 mb-12 md:mb-16 animate-pulse px-4">
-        <h1 className="text-4xl md:text-7xl font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-4 uppercase">
+        <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-7xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-4 uppercase`}>
           {settings.eventName}
         </h1>
-        <h2 className="text-sm md:text-xl tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase">
+        <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-xl'} tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase`}>
           {settings.eventDescription}
         </h2>
       </div>
 
       <div className="relative z-10 flex flex-col items-center gap-4 md:gap-8 w-full max-w-md md:max-w-none">
-          <div className="flex flex-col md:flex-row gap-4 md:gap-8 justify-center">
+          <div className={`flex gap-4 md:gap-8 justify-center ${settings.uiSettings?.launchLayout === 'top_bottom' ? 'flex-col items-center' : 'flex-col md:flex-row'}`}>
             <button 
               onClick={onStart}
-              className="group relative px-8 md:px-12 py-5 md:py-6 bg-[#bc13fe] hover:bg-[#a010d8] transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden"
+              style={settings.uiSettings?.buttonColor ? { backgroundColor: settings.uiSettings.buttonColor } : { backgroundColor: '#bc13fe' }}
+              className={`group relative py-5 md:py-6 transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden ${settings.uiSettings?.launchLayout === 'top_bottom' ? 'w-64 px-4' : 'px-8 md:px-12'}`}
             >
               <span className="relative z-10 italic">LAUNCH</span>
               <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
@@ -115,7 +122,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
 
             <button 
               onClick={onGallery}
-              className="group relative px-8 md:px-12 py-5 md:py-6 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest overflow-hidden"
+              className={`group relative py-3 md:py-4 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-sm md:text-lg tracking-widest overflow-hidden ${settings.uiSettings?.launchLayout === 'top_bottom' ? 'w-48 px-4 opacity-70 hover:opacity-100' : 'px-8 md:px-12 py-5 md:py-6 text-lg md:text-2xl'}`}
             >
               <span className="relative z-10 italic">GALLERY</span>
             </button>

@@ -8,7 +8,7 @@ import { DEFAULT_SETTINGS } from '../../../constants';
 interface VipLandingPageProps {
   onStart: () => void;
   onGallery: () => void;
-  onAdmin: (tab?: 'settings' | 'concepts' | 'vip') => void;
+  onAdmin: (tab?: 'settings' | 'concepts' | 'vip' | 'display') => void;
   settings: PhotoboothSettings;
   isVIPAdmin?: boolean;
 }
@@ -269,9 +269,15 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
               </button>
               <button 
                 onClick={() => { setIsMenuOpen(false); onAdmin('concepts'); }}
-                className={`px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors ${isVIPAdmin ? 'border-b border-white/5' : ''}`}
+                className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors border-b border-white/5"
               >
                 Settings Concept
+              </button>
+              <button 
+                onClick={() => { setIsMenuOpen(false); onAdmin('display'); }}
+                className={`px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors ${isVIPAdmin ? 'border-b border-white/5' : ''}`}
+              >
+                Settings UI Display
               </button>
               {isVIPAdmin && (
                 <button 
