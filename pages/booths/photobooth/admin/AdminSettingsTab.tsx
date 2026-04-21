@@ -27,15 +27,11 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const [isUploadingOverlay, setIsUploadingOverlay] = useState(false);
-  const [isUploadingBackground, setIsUploadingBackground] = useState(false);
-  const [isUploadingBackgroundVideo, setIsUploadingBackgroundVideo] = useState(false);
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const [isScanningCameras, setIsScanningCameras] = useState(false);
   const { showDialog } = useDialog();
 
   const overlayInputRef = useRef<HTMLInputElement>(null);
-  const backgroundInputRef = useRef<HTMLInputElement>(null);
-  const backgroundVideoInputRef = useRef<HTMLInputElement>(null);
 
   const { 
     isWrapper, 
@@ -101,17 +97,6 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
     },
     hasUnsavedChanges: () => isDirty
   }));
-
-  const PREDEFINED_VIDEOS = [
-    "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO%20BACKGROUND/VIDEO%201.mp4",
-    "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO%20BACKGROUND/VIDEO%202.mp4",
-    "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO%20BACKGROUND/VIDEO%203.mp4",
-    "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO%20BACKGROUND/VIDEO%204.mp4",
-    "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO%20BACKGROUND/VIDEO%205.mp4",
-    "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO%20BACKGROUND/VIDEO%206.mp4",
-    "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO%20BACKGROUND/VIDEO%207.mp4",
-    "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO%20BACKGROUND/VIDEO%208.mp4"
-  ];
 
   useEffect(() => {
     setLocalSettings(prev => {
@@ -635,159 +620,6 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
               {localSettings.overlayImage && (
                 <button onClick={() => setLocalSettings({...localSettings, overlayImage: null})} className="w-full py-3 border border-red-500/30 text-red-400 hover:bg-red-500/10 text-[10px] tracking-widest font-bold uppercase bg-transparent rounded-lg transition-colors">
                   REMOVE OVERLAY
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Background Asset (Image/Video) */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit text-center backdrop-blur-md bg-black/60 rounded-xl tour-background">
-            <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Background</h3>
-            
-            {/* Video Templates */}
-            <div className="flex flex-col gap-2 bg-white/5 p-3 rounded border border-white/10">
-              <label className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Video Templates</label>
-              <div className="grid grid-cols-4 gap-2 mt-2">
-                {PREDEFINED_VIDEOS.map((url, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setLocalSettings({...localSettings, backgroundVideoUrl: url})}
-                    className={`aspect-video rounded overflow-hidden border-2 transition-colors ${localSettings.backgroundVideoUrl === url ? 'border-[#bc13fe]' : 'border-transparent hover:border-white/30'}`}
-                  >
-                    <video src={url} className="w-full h-full object-cover" muted playsInline />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-6">
-              <div className="w-full aspect-video bg-white/5 border border-white/10 rounded-lg flex items-center justify-center overflow-hidden mx-auto shadow-2xl relative">
-                {localSettings.backgroundVideoUrl ? (
-                   <video src={localSettings.backgroundVideoUrl} className="w-full h-full object-cover opacity-70" autoPlay loop muted playsInline />
-                ) : localSettings.backgroundImage ? (
-                  <img src={getGoogleDriveDirectLink(localSettings.backgroundImage)} className="w-full h-full object-cover" alt="Background" />
-                ) : <span className="text-[10px] text-gray-700 font-mono">DEFAULT_DARK</span>}
-                
-                {localSettings.backgroundVideoUrl && <div className="absolute top-2 right-2 bg-[#bc13fe] px-2 py-1 rounded text-[8px] font-bold">VIDEO MODE</div>}
-              </div>
-              
-              {/* Image Upload */}
-              <input type="file" accept="image/jpeg,image/png" className="hidden" ref={backgroundInputRef} onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                
-                // Max 2MB for image
-                if (file.size > 2 * 1024 * 1024) {
-                  await showDialog('alert', 'Error', 'Image file size exceeds 2MB limit.');
-                  return;
-                }
-
-                setIsUploadingBackground(true);
-                
-                if (eventId) {
-                  const fileExt = file.name.split('.').pop();
-                  const folderName = localSettings.storage_folder || eventId;
-                  const fileName = `${folderName}/assets/background-${Date.now()}.${fileExt}`;
-                  
-                  const { data, error } = await supabase.storage
-                    .from('photobooth')
-                    .upload(fileName, file, { upsert: true });
-                    
-                  if (error) {
-                    console.error("Error uploading background:", error);
-                    await showDialog('alert', 'Error', 'Failed to upload background to Database.');
-                  } else {
-                    const { data: { publicUrl } } = supabase.storage
-                      .from('photobooth')
-                      .getPublicUrl(fileName);
-                    setLocalSettings({...localSettings, backgroundImage: publicUrl, backgroundVideoUrl: null});
-                    await showDialog('alert', 'Success', 'Background Image updated');
-                  }
-                  setIsUploadingBackground(false);
-                } else {
-                  const reader = new FileReader();
-                  reader.onload = async () => {
-                    const res = await uploadBackgroundToGas(reader.result as string, settings.adminPin);
-                    if (res.ok) {
-                      setLocalSettings({...localSettings, backgroundImage: res.url, backgroundVideoUrl: null});
-                      await showDialog('alert', 'Success', 'Background Image updated');
-                    } else {
-                      await showDialog('alert', 'Error', 'Failed to upload background to GAS.');
-                    }
-                    setIsUploadingBackground(false);
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }} />
-
-              {/* Video Upload */}
-              <input type="file" accept="video/mp4,video/webm" className="hidden" ref={backgroundVideoInputRef} onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                
-                // Max 8MB for video
-                if (file.size > 8 * 1024 * 1024) {
-                  await showDialog('alert', 'Error', 'Video file size exceeds 8MB limit.');
-                  return;
-                }
-
-                // Check duration
-                const videoElement = document.createElement('video');
-                videoElement.preload = 'metadata';
-                videoElement.onloadedmetadata = async () => {
-                  window.URL.revokeObjectURL(videoElement.src);
-                  if (videoElement.duration > 15) {
-                    await showDialog('alert', 'Error', 'Video duration exceeds 15 seconds limit.');
-                    return;
-                  }
-
-                  setIsUploadingBackgroundVideo(true);
-                  
-                  if (eventId) {
-                    const fileExt = file.name.split('.').pop();
-                    const folderName = localSettings.storage_folder || eventId;
-                    const fileName = `${folderName}/assets/background-video-${Date.now()}.${fileExt}`;
-                    
-                    const { data, error } = await supabase.storage
-                      .from('photobooth')
-                      .upload(fileName, file, { upsert: true });
-                      
-                    if (error) {
-                      console.error("Error uploading background video:", error);
-                      await showDialog('alert', 'Error', 'Failed to upload background video to Database.');
-                    } else {
-                      const { data: { publicUrl } } = supabase.storage
-                        .from('photobooth')
-                        .getPublicUrl(fileName);
-                      setLocalSettings({...localSettings, backgroundVideoUrl: publicUrl});
-                      await showDialog('alert', 'Success', 'Background Video updated');
-                    }
-                    setIsUploadingBackgroundVideo(false);
-                  } else {
-                    await showDialog('alert', 'Error', 'Video upload requires an active event.');
-                    setIsUploadingBackgroundVideo(false);
-                  }
-                };
-                videoElement.src = URL.createObjectURL(file);
-              }} />
-
-              <div className="flex flex-col gap-2">
-                <button onClick={() => backgroundInputRef.current?.click()} disabled={isUploadingBackground || isUploadingBackgroundVideo} className="w-full py-4 border-2 border-white/10 hover:border-[#bc13fe] text-[10px] tracking-widest font-bold uppercase bg-white/5 rounded-lg transition-colors">
-                  {isUploadingBackground ? 'UPLOADING IMAGE...' : 'UPLOAD IMAGE BACKGROUND (MAX 2MB)'}
-                </button>
-                <button onClick={() => backgroundVideoInputRef.current?.click()} disabled={isUploadingBackground || isUploadingBackgroundVideo} className="w-full py-4 border-2 border-white/10 hover:border-[#bc13fe] text-[10px] tracking-widest font-bold uppercase bg-white/5 rounded-lg transition-colors">
-                  {isUploadingBackgroundVideo ? 'UPLOADING VIDEO...' : 'UPLOAD VIDEO BACKGROUND (MAX 8MB, 15s)'}
-                </button>
-              </div>
-
-              {localSettings.backgroundImage && !localSettings.backgroundVideoUrl && (
-                <button onClick={() => setLocalSettings({...localSettings, backgroundImage: null})} className="w-full py-3 border border-red-500/30 text-red-400 hover:bg-red-500/10 text-[10px] tracking-widest font-bold uppercase bg-transparent rounded-lg transition-colors">
-                  REMOVE IMAGE BACKGROUND
-                </button>
-              )}
-              {localSettings.backgroundVideoUrl && (
-                <button onClick={() => setLocalSettings({...localSettings, backgroundVideoUrl: null})} className="w-full py-3 border border-red-500/30 text-red-400 hover:bg-red-500/10 text-[10px] tracking-widest font-bold uppercase bg-transparent rounded-lg transition-colors">
-                  REMOVE VIDEO BACKGROUND
                 </button>
               )}
             </div>
