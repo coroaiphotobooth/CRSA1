@@ -149,18 +149,6 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
         </div>
       )}
 
-      {/* Event Info TOP */}
-      {photoboothFlow === 'no_launch_concept_photo' && settings?.uiSettings?.themeEventInfoPosition === 'top' && (
-        <div className="w-full max-w-6xl text-center mb-6 z-20 animate-[popIn_0.5s_ease-out]">
-          <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-2 uppercase`}>
-            {settings.eventName}
-          </h1>
-          <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-lg'} tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase`}>
-            {settings.eventDescription}
-          </h2>
-        </div>
-      )}
-
       {/* HEADER SECTION - Fixed at Top */}
       <div className="flex justify-between items-center w-full mb-4 max-w-6xl shrink-0 z-20">
         <div className="w-24 md:w-32">
@@ -179,7 +167,20 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
       </div>
 
       {/* CENTERED GRID WRAPPER - Takes remaining height and centers content */}
-      <div className="flex-1 w-full max-w-6xl flex items-center justify-center py-4">
+      <div className="flex-1 w-full max-w-6xl flex flex-col items-center justify-center py-4">
+        
+        {/* Event Info TOP (Inside wrapper to center above grid) */}
+        {photoboothFlow === 'no_launch_concept_photo' && settings?.uiSettings?.themeEventInfoPosition === 'top' && (
+          <div className="w-full text-center mb-6 md:mb-10 z-20 animate-[popIn_0.5s_ease-out]">
+            <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-2 uppercase`}>
+              {settings.eventName}
+            </h1>
+            <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-lg'} tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase`}>
+              {settings.eventDescription}
+            </h2>
+          </div>
+        )}
+
         {concepts.length === 0 ? (
           <div className="text-center bg-black/50 p-8 rounded-2xl border border-white/10 backdrop-blur-md flex flex-col items-center">
             <h3 className="text-xl font-bold text-white mb-6">No Concepts Available</h3>
@@ -194,7 +195,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
           </div>
         ) : (
           layoutStyle === 'carousel' ? (
-            <div className="relative w-full h-[60vh] md:h-[70vh] flex items-center justify-center">
+            <div className="relative w-full flex items-center justify-center">
                 { (concepts.length > 2 || activeIndex > 0) && (
                     <button onClick={handlePrev} className="absolute left-2 md:left-4 z-40 p-3 md:p-4 bg-black/50 hover:bg-black/80 rounded-full text-white backdrop-blur-md border border-white/20 transition-all">
                         <ChevronLeft className="w-6 h-6 md:w-8 md:h-8" />
@@ -310,20 +311,20 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
           </div>
           )
         )}
+
+        {/* Event Info BOTTOM (Inside wrapper to center below grid) */}
+        {photoboothFlow === 'no_launch_concept_photo' && settings?.uiSettings?.themeEventInfoPosition === 'bottom' && (
+          <div className="w-full text-center mt-6 md:mt-10 z-20 animate-[popIn_0.5s_ease-out]">
+            <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-2 uppercase`}>
+              {settings.eventName}
+            </h1>
+            <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-lg'} tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase`}>
+              {settings.eventDescription}
+            </h2>
+          </div>
+        )}
       </div>
 
-      {/* Event Info BOTTOM */}
-      {photoboothFlow === 'no_launch_concept_photo' && settings?.uiSettings?.themeEventInfoPosition === 'bottom' && (
-        <div className="w-full max-w-6xl text-center mt-6 z-20 animate-[popIn_0.5s_ease-out]">
-          <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-2 uppercase`}>
-            {settings.eventName}
-          </h1>
-          <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-lg'} tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase`}>
-            {settings.eventDescription}
-          </h2>
-        </div>
-      )}
-      
     </div>
   );
 };

@@ -202,100 +202,29 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
               />
             </div>
 
-            {/* BOOTH MODE & PROCESSING MODE */}
+            {/* ENABLE VIDEO GENERATION */}
             <div className="flex flex-col gap-4 bg-[#bc13fe]/10 p-5 rounded-lg border border-[#bc13fe]/20">
-              
-              {/* Booth Mode Selector */}
-              <div className="flex flex-col gap-2">
-                 <label className="text-[10px] text-[#bc13fe] uppercase tracking-widest font-bold">BOOTH MODE</label>
-                 <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setLocalSettings({...localSettings, boothMode: 'photo'})}
-                      className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.boothMode === 'photo' ? 'bg-pink-600 text-white shadow-lg border-pink-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-                    >
-                      <span className="font-bold">PHOTOBOOTH MODE</span>
-                      <span className="text-[8px] opacity-60">Photos Only</span>
-                    </button>
-                    <button
-                      onClick={() => setLocalSettings({...localSettings, boothMode: 'video'})}
-                      className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.boothMode === 'video' ? 'bg-blue-600 text-white shadow-lg border-blue-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-                    >
-                      <span className="font-bold">VIDEOBOOTH MODE</span>
-                      <span className="text-[8px] opacity-60">Photos + Video</span>
-                    </button>
-                 </div>
-              </div>
-
-              <div className="h-px bg-white/10 w-full my-1"></div>
-
-              {/* Processing Mode Toggle */}
-              <div className="flex flex-col gap-2">
-                <label className="text-[10px] text-[#bc13fe] uppercase tracking-widest font-bold">Kiosk Processing Mode</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setLocalSettings({...localSettings, processingMode: 'normal'})}
-                    className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.processingMode === 'normal' ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-                  >
-                     <span className="font-bold">NORMAL MODE</span>
-                     <span className="text-[8px] opacity-60">Instant Preview</span>
-                  </button>
-                  <button
-                    onClick={() => setLocalSettings({...localSettings, processingMode: 'fast'})}
-                    className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.processingMode === 'fast' ? 'bg-green-600 text-white shadow-lg border-green-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-                  >
-                     <span className="font-bold">FAST MODE</span>
-                     <span className="text-[8px] opacity-60">Background Queue</span>
-                  </button>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col">
+                   <label className="text-[10px] text-[#bc13fe] uppercase tracking-widest font-bold">ENABLE VIDEO GENERATION</label>
+                   <span className="text-[8px] text-gray-500">Allow AI to generate short animated videos</span>
                 </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={localSettings.boothMode === 'video'}
+                    onChange={(e) => setLocalSettings({...localSettings, boothMode: e.target.checked ? 'video' : 'photo'})}
+                  />
+                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#bc13fe]"></div>
+                </label>
               </div>
-              
-              <p className="text-[9px] text-gray-400 mt-1 italic leading-relaxed">
-                * <strong>Photobooth Mode:</strong> No video generation buttons.<br/>
-                * <strong>Videobooth Mode (Fast):</strong> "Generate Video" button moves to Gallery.
-              </p>
             </div>
           </div>
 
           {/* AI Model Config */}
           <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10 tour-ai-model">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">AI Model Configuration</h3>
-            
-            {/* Prompt Mode Selector */}
-            <div className="flex flex-col gap-2 bg-[#bc13fe]/10 p-4 rounded border border-[#bc13fe]/20">
-                 <label className="text-[10px] text-[#bc13fe] uppercase tracking-widest font-bold">Prompt Mode</label>
-                 <div className="grid grid-cols-3 gap-3">
-                    <button
-                      onClick={() => setLocalSettings({...localSettings, promptMode: 'wrapped'})}
-                      className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.promptMode === 'wrapped' ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-                    >
-                      <span className="font-bold">OPTIMAL</span>
-                      <span className="text-[8px] opacity-60 text-center">Face lock<br/>using simple prompt</span>
-                    </button>
-                    <button
-                      onClick={() => setLocalSettings({...localSettings, promptMode: 'booth'})}
-                      className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.promptMode === 'booth' ? 'bg-pink-600 text-white shadow-lg border-pink-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-                    >
-                      <span className="font-bold">BOOTH</span>
-                      <span className="text-[8px] opacity-60">Outfit Swap</span>
-                    </button>
-                    <button
-                      onClick={() => setLocalSettings({...localSettings, promptMode: 'raw'})}
-                      className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.promptMode === 'raw' ? 'bg-orange-600 text-white shadow-lg border-orange-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-                    >
-                      <span className="font-bold">RAW</span>
-                      <span className="text-[8px] opacity-60">Creative</span>
-                    </button>
-                 </div>
-                 <p className="text-[9px] text-gray-500 mt-1 italic">
-                    * <strong>Optimal:</strong> Face lock using simple prompt. <br/>
-                    * <strong>Booth:</strong> Force outfit swap + face lock (Best for Ref Image). <br/>
-                    * <strong>Raw:</strong> Direct prompt (Riskier).
-                 </p>
-            </div>
-
-            {/* Quick Model Shortcut Toggle (NEW) */}
-            <div className="flex items-center justify-between bg-white/5 p-4 rounded border border-white/10">
-             </div>
 
              {/* Print Feature Toggle (NEW) */}
              <div className="flex flex-col gap-4 bg-white/5 p-4 rounded border border-white/10">
@@ -734,6 +663,29 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                 ))}
               </div>
             </div>
+
+            {/* Countdown Duration Setting */}
+            <div className="flex items-center justify-between bg-white/5 p-4 rounded border border-white/10">
+               <div className="flex flex-col">
+                   <label className="text-[10px] text-orange-400 uppercase tracking-widest font-bold">Capture Countdown Timer</label>
+                   <span className="text-[8px] text-gray-500">Timer before taking photo</span>
+               </div>
+               <div className="flex bg-black/50 rounded-lg p-1 border border-white/10">
+                   <button 
+                     onClick={() => setLocalSettings({...localSettings, countdownDuration: 3})}
+                     className={`px-4 py-1.5 rounded text-xs font-bold transition-all ${(!localSettings.countdownDuration || localSettings.countdownDuration === 3) ? 'bg-[#bc13fe] text-white' : 'text-gray-400 hover:text-white'}`}
+                   >
+                     3 SEC
+                   </button>
+                   <button 
+                     onClick={() => setLocalSettings({...localSettings, countdownDuration: 5})}
+                     className={`px-4 py-1.5 rounded text-xs font-bold transition-all ${localSettings.countdownDuration === 5 ? 'bg-[#bc13fe] text-white' : 'text-gray-400 hover:text-white'}`}
+                   >
+                     5 SEC
+                   </button>
+               </div>
+            </div>
+
             <div className="flex items-center justify-between bg-white/5 p-4 rounded border border-white/10">
                <div className="flex flex-col">
                    <label className="text-[10px] text-orange-400 uppercase tracking-widest font-bold">Mirror Preview Camera</label>

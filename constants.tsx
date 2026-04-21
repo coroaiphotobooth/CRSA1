@@ -33,6 +33,7 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   outputRatio: '9:16',
   cameraRotation: 0,
   mirrorCamera: true, // Default to mirrored preview
+  countdownDuration: 3, // Default 3 seconds
   promptMode: 'wrapped', // Default: Wrapped (Safe/Strict)
   enableModelShortcut: false, // Default off
   enablePrint: false, // Default off

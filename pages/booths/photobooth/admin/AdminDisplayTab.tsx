@@ -4,11 +4,12 @@ import { PhotoboothSettings, UIDisplaySettings } from '../../../../types';
 import { uploadBackgroundToGas } from '../../../../lib/appsScript';
 import { getGoogleDriveDirectLink } from '../../../../lib/imageUtils';
 import { supabase } from '../../../../lib/supabase';
+import { saveSettingsToGas } from '../../../../lib/appsScript';
 import { useDialog } from '../../../../components/DialogProvider';
 
 export interface AdminDisplayTabRef {
   hasUnsavedChanges: () => boolean;
-  saveSettings: () => void;
+  saveSettings: () => Promise<void>;
 }
 
 interface AdminDisplayTabProps {
@@ -70,13 +71,40 @@ export const AdminDisplayTab = forwardRef<AdminDisplayTabRef, AdminDisplayTabPro
 
   useImperativeHandle(ref, () => ({
     hasUnsavedChanges: () => hasChanges,
-    saveSettings: () => {
-      onSaveSettings({ 
+    saveSettings: async () => {
+      const mergedSettings = { 
         ...settings, 
         uiSettings: localUI,
         backgroundImage: localBackgroundImage,
         backgroundVideoUrl: localBackgroundVideoUrl
-      });
+      };
+      
+      // Save locally via props
+      onSaveSettings(mergedSettings);
+      
+      // Save to Cloud/DB and Show Notification Popup
+      if (eventId) {
+        try {
+          const { error } = await supabase
+            .from('events')
+            .update({ settings: mergedSettings })
+            .eq('id', eventId);
+            
+          if (error) throw error;
+          await showDialog('alert', 'Success', 'Display Settings saved locally and synced to Database.');
+        } catch (err) {
+          console.error("Supabase display sync error:", err);
+          await showDialog('alert', 'Warning', 'Display Settings saved LOCALLY. Supabase sync failed.');
+        }
+      } else {
+        const ok = await saveSettingsToGas(mergedSettings, settings.adminPin);
+        if (ok) {
+          await showDialog('alert', 'Success', 'Display Settings saved locally and synced to Cloud.');
+        } else {
+          await showDialog('alert', 'Warning', 'Display Settings saved LOCALLY. Cloud sync failed.');
+        }
+      }
+      
       setHasChanges(false);
     }
   }));
@@ -150,66 +178,221 @@ export const AdminDisplayTab = forwardRef<AdminDisplayTabRef, AdminDisplayTabPro
 
       <div className={UI_GRID_BOX}>
         <h3 className={UI_SECTION_TITLE}>Page Layouts & Flows</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-          <div className={UI_CONTAINER}>
-            <label className={UI_LABEL}>Photobooth Flow</label>
-            <select 
-              value={localUI.photoboothFlow}
-              onChange={(e) => handleChange('photoboothFlow', e.target.value)}
-              className={UI_INPUT}
-            >
-              <option value="launch_concept_photo">1. Launch &rarr; Concept &rarr; Photo &rarr; Result (Default)</option>
-              <option value="launch_photo_concept">2. Launch &rarr; Photo &rarr; Concept &rarr; Result</option>
-              <option value="no_launch_concept_photo">3. Skip Launch &rarr; Concept &rarr; Photo &rarr; Result</option>
-            </select>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          
+          {/* Column 1: Flows and Sequencing */}
+          <div className="flex flex-col gap-6">
+            <div className={UI_CONTAINER}>
+              <label className={UI_LABEL}>Photobooth Flow</label>
+              <div className="flex flex-col gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => handleChange('photoboothFlow', 'launch_concept_photo')}
+                  className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all duration-300
+                    ${localUI.photoboothFlow === 'launch_concept_photo' || !localUI.photoboothFlow ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}
+                  `}
+                >
+                  <div className="font-bold text-gray-500 uppercase text-[10px] mb-1 tracking-widest">Flow 1 (Default)</div>
+                  <div className="text-sm font-bold text-white tracking-wide">Launch &rarr; Concept &rarr; Photo &rarr; Result</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => handleChange('photoboothFlow', 'launch_photo_concept')}
+                  className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all duration-300
+                    ${localUI.photoboothFlow === 'launch_photo_concept' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}
+                  `}
+                >
+                  <div className="font-bold text-gray-500 uppercase text-[10px] mb-1 tracking-widest">Flow 2</div>
+                  <div className="text-sm font-bold text-white tracking-wide">Launch &rarr; Photo &rarr; Concept &rarr; Result</div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => handleChange('photoboothFlow', 'no_launch_concept_photo')}
+                  className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all duration-300
+                    ${localUI.photoboothFlow === 'no_launch_concept_photo' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}
+                  `}
+                >
+                  <div className="font-bold text-gray-500 uppercase text-[10px] mb-1 tracking-widest">Flow 3 (Skip Launch)</div>
+                  <div className="text-sm font-bold text-white tracking-wide">Concept &rarr; Photo &rarr; Result</div>
+                </button>
+              </div>
+            </div>
+            
+            {localUI.photoboothFlow === 'no_launch_concept_photo' && (
+               <div className={UI_CONTAINER}>
+                 <label className={UI_LABEL}>Show Name Event & Description in Themes</label>
+                 <div className="flex flex-wrap gap-2 mt-2">
+                   <button
+                     type="button"
+                     onClick={() => handleChange('themeEventInfoPosition', 'none')}
+                     className={`flex-1 py-1.5 px-3 rounded-lg border-2 font-bold uppercase text-[10px] transition-all duration-300
+                       ${localUI.themeEventInfoPosition === 'none' || !localUI.themeEventInfoPosition ? 'border-[#bc13fe] bg-[#bc13fe]/20 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30 hover:text-white'}
+                     `}
+                   >
+                     Hidden
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => handleChange('themeEventInfoPosition', 'top')}
+                     className={`flex-1 py-1.5 px-3 rounded-lg border-2 font-bold uppercase text-[10px] transition-all duration-300
+                       ${localUI.themeEventInfoPosition === 'top' ? 'border-[#bc13fe] bg-[#bc13fe]/20 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30 hover:text-white'}
+                     `}
+                   >
+                     Top Position
+                   </button>
+                   <button
+                     type="button"
+                     onClick={() => handleChange('themeEventInfoPosition', 'bottom')}
+                     className={`flex-1 py-1.5 px-3 rounded-lg border-2 font-bold uppercase text-[10px] transition-all duration-300
+                       ${localUI.themeEventInfoPosition === 'bottom' ? 'border-[#bc13fe] bg-[#bc13fe]/20 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30 hover:text-white'}
+                     `}
+                   >
+                     Bottom Position
+                   </button>
+                 </div>
+               </div>
+            )}
+
+            {localUI.photoboothFlow !== 'no_launch_concept_photo' && (
+              <div className={UI_CONTAINER}>
+                <label className={UI_LABEL}>Launch Page Layout</label>
+                <div className="flex flex-col gap-3 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleChange('launchLayout', 'split_left_right')}
+                    className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all duration-300 flex items-center justify-between
+                      ${localUI.launchLayout === 'split_left_right' || !localUI.launchLayout ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}
+                    `}
+                  >
+                    <div>
+                      <div className="font-bold text-white uppercase text-xs mb-0.5">Split View (Default)</div>
+                      <div className="text-[10px] text-gray-400">Launch Left | Gallery Right</div>
+                    </div>
+                    <div className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center bg-black/50">
+                      <div className="w-3 h-3 flex gap-0.5">
+                        <div className="w-1/2 h-full bg-[#bc13fe] rounded-[2px]" />
+                        <div className="w-1/2 h-full bg-white/50 rounded-[2px]" />
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => handleChange('launchLayout', 'top_bottom')}
+                    className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all duration-300 flex items-center justify-between
+                      ${localUI.launchLayout === 'top_bottom' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}
+                    `}
+                  >
+                    <div>
+                      <div className="font-bold text-white uppercase text-xs mb-0.5">Stacked View</div>
+                      <div className="text-[10px] text-gray-400">Launch Top | Gallery Bottom</div>
+                    </div>
+                    <div className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center bg-black/50">
+                      <div className="w-3 h-3 flex flex-col gap-0.5">
+                        <div className="w-full h-1/2 bg-[#bc13fe] rounded-[2px]" />
+                        <div className="w-full h-1/2 bg-white/50 rounded-[2px]" />
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => handleChange('launchLayout', 'background_only')}
+                    className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all duration-300 flex items-center justify-between
+                      ${localUI.launchLayout === 'background_only' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}
+                    `}
+                  >
+                    <div>
+                      <div className="font-bold text-white uppercase text-xs mb-0.5">Only Background</div>
+                      <div className="text-[10px] text-gray-400">Hidden UI | Click Anywhere to Start</div>
+                    </div>
+                    <div className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center bg-black/50">
+                      <div className="w-3 h-3 bg-white/20 rounded-[2px]" />
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-          {localUI.photoboothFlow === 'no_launch_concept_photo' && (
-             <div className={`md:col-span-1 ${UI_CONTAINER}`}>
-               <label className={UI_LABEL}>Show Name Event & Description in Themes</label>
-               <select 
-                 value={localUI.themeEventInfoPosition || 'none'}
-                 onChange={(e) => handleChange('themeEventInfoPosition', e.target.value)}
-                 className={UI_INPUT}
-               >
-                 <option value="none">Hidden (Default)</option>
-                 <option value="top">Top</option>
-                 <option value="bottom">Bottom</option>
-               </select>
-             </div>
-          )}
-          <div className={UI_CONTAINER}>
-            <label className={UI_LABEL}>Concept Selector Style</label>
-            <select 
-              value={localUI.conceptLayout}
-              onChange={(e) => handleChange('conceptLayout', e.target.value)}
-              className={UI_INPUT}
-            >
-              <option value="grid">Grid Layout (Default)</option>
-              <option value="carousel">Slide / Carousel (Big Center)</option>
-            </select>
-          </div>
-          <div className={UI_CONTAINER}>
-            <label className={UI_LABEL}>Launch Page Layout</label>
-            <select 
-              value={localUI.launchLayout}
-              onChange={(e) => handleChange('launchLayout', e.target.value)}
-              className={UI_INPUT}
-            >
-              <option value="split_left_right">Split: Launch Left, Gallery Right (Default)</option>
-              <option value="top_bottom">Stacked: Launch Top, Gallery Bottom</option>
-            </select>
-          </div>
-          <div className={UI_CONTAINER}>
-            <label className={UI_LABEL}>Result Buttons Position</label>
-            <select 
-              value={localUI.resultButtonsPosition}
-              onChange={(e) => handleChange('resultButtonsPosition', e.target.value)}
-              className={UI_INPUT}
-            >
-              <option value="bottom">Bottom (Default)</option>
-              <option value="right">Right Side</option>
-              <option value="top">Top</option>
-            </select>
+
+          {/* Column 2: Specific Component Styles */}
+          <div className="flex flex-col gap-6">
+            <div className={UI_CONTAINER}>
+              <label className={UI_LABEL}>Concept Selector Style</label>
+              <div className="grid grid-cols-2 gap-4 mt-2">
+                <button
+                  type="button"
+                  onClick={() => handleChange('conceptLayout', 'grid')}
+                  className={`relative rounded-xl overflow-hidden border-2 transition-all duration-300 aspect-square 
+                    ${localUI.conceptLayout === 'grid' || !localUI.conceptLayout ? 'border-[#bc13fe] ring-4 ring-[#bc13fe]/30 shadow-[0_0_20px_rgba(188,19,254,0.4)] scale-[1.02]' : 'border-white/10 hover:border-white/30 opacity-70 hover:opacity-100'}
+                  `}
+                >
+                  <img 
+                    src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOGO/GRID.jpg" 
+                    alt="Grid Layout" 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-black/80 backdrop-blur-sm p-2 text-center text-white text-xs font-bold uppercase tracking-widest border-t border-white/10">
+                    GRID LAYOUT
+                  </div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => handleChange('conceptLayout', 'carousel')}
+                  className={`relative rounded-xl overflow-hidden border-2 transition-all duration-300 aspect-square 
+                    ${localUI.conceptLayout === 'carousel' ? 'border-[#bc13fe] ring-4 ring-[#bc13fe]/30 shadow-[0_0_20px_rgba(188,19,254,0.4)] scale-[1.02]' : 'border-white/10 hover:border-white/30 opacity-70 hover:opacity-100'}
+                  `}
+                >
+                  <img 
+                    src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOGO/SLIDE.jpg" 
+                    alt="Slide Layout" 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-x-0 bottom-0 bg-black/80 backdrop-blur-sm p-2 text-center text-white text-xs font-bold uppercase tracking-widest border-t border-white/10">
+                    SLIDE / CAROUSEL
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <div className={UI_CONTAINER}>
+              <label className={UI_LABEL}>Result Buttons Position</label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                 <button
+                   type="button"
+                   onClick={() => handleChange('resultButtonsPosition', 'bottom')}
+                   className={`flex-1 py-1.5 px-3 rounded-lg border-2 font-bold uppercase text-[10px] transition-all duration-300
+                     ${localUI.resultButtonsPosition === 'bottom' || !localUI.resultButtonsPosition ? 'border-[#bc13fe] bg-[#bc13fe]/20 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30 hover:text-white'}
+                   `}
+                 >
+                   Bottom (Default)
+                 </button>
+                 <button
+                   type="button"
+                   onClick={() => handleChange('resultButtonsPosition', 'right')}
+                   className={`flex-1 py-1.5 px-3 rounded-lg border-2 font-bold uppercase text-[10px] transition-all duration-300
+                     ${localUI.resultButtonsPosition === 'right' ? 'border-[#bc13fe] bg-[#bc13fe]/20 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30 hover:text-white'}
+                   `}
+                 >
+                   Right Side
+                 </button>
+                 <button
+                   type="button"
+                   onClick={() => handleChange('resultButtonsPosition', 'top')}
+                   className={`flex-1 py-1.5 px-3 rounded-lg border-2 font-bold uppercase text-[10px] transition-all duration-300
+                     ${localUI.resultButtonsPosition === 'top' ? 'border-[#bc13fe] bg-[#bc13fe]/20 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30 hover:text-white'}
+                   `}
+                 >
+                   Top
+                 </button>
+              </div>
+            </div>
+            
           </div>
         </div>
       </div>
@@ -239,14 +422,26 @@ export const AdminDisplayTab = forwardRef<AdminDisplayTabRef, AdminDisplayTabPro
           </div>
           <div className={UI_CONTAINER}>
             <label className={UI_LABEL}>Capture Button Position</label>
-            <select 
-              value={localUI.captureButtonPosition}
-              onChange={(e) => handleChange('captureButtonPosition', e.target.value)}
-              className={UI_INPUT}
-            >
-              <option value="bottom">Bottom (Default)</option>
-              <option value="top_right">Top Right</option>
-            </select>
+            <div className="flex flex-wrap gap-2 mt-2">
+               <button
+                 type="button"
+                 onClick={() => handleChange('captureButtonPosition', 'bottom')}
+                 className={`flex-1 py-1.5 px-3 rounded-lg border-2 font-bold uppercase text-[10px] transition-all duration-300
+                   ${localUI.captureButtonPosition === 'bottom' || !localUI.captureButtonPosition ? 'border-[#bc13fe] bg-[#bc13fe]/20 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30 hover:text-white'}
+                 `}
+               >
+                 Bottom (Default)
+               </button>
+               <button
+                 type="button"
+                 onClick={() => handleChange('captureButtonPosition', 'top_right')}
+                 className={`flex-1 py-1.5 px-3 rounded-lg border-2 font-bold uppercase text-[10px] transition-all duration-300
+                   ${localUI.captureButtonPosition === 'top_right' ? 'border-[#bc13fe] bg-[#bc13fe]/20 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30 hover:text-white'}
+                 `}
+               >
+                 Top Right
+               </button>
+            </div>
           </div>
         </div>
       </div>

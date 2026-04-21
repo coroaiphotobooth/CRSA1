@@ -64,7 +64,7 @@ export interface UIDisplaySettings {
   buttonColor: string;
   conceptLayout: 'grid' | 'carousel';
   photoboothFlow: 'launch_concept_photo' | 'launch_photo_concept' | 'no_launch_concept_photo';
-  launchLayout: 'split_left_right' | 'top_bottom';
+  launchLayout: 'split_left_right' | 'top_bottom' | 'background_only';
   showFrameDuringCapture: boolean;
   captureButtonPosition: 'bottom' | 'top_right';
   resultButtonsPosition: 'bottom' | 'right' | 'top';
@@ -107,6 +107,7 @@ export interface PhotoboothSettings {
   activeEventId?: string;
   cameraRotation: number;
   mirrorCamera?: boolean; // New Setting: Toggle mirror effect on camera preview
+  countdownDuration?: 3 | 5; // New Setting: Camera countdown timer (3 or 5 seconds)
   promptMode?: 'raw' | 'wrapped' | 'booth'; // New Setting: 'raw' = free transform, 'wrapped' = strict face lock, 'booth' = outfit swap
   enableModelShortcut?: boolean; // New Setting: Show Quick Model Toggle on Camera
   enablePrint?: boolean; // New Setting: Enable Direct Printing Feature
