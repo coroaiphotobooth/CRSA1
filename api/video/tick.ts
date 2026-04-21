@@ -230,7 +230,16 @@ export default async function handler(req: any, res: any) {
 
              // PATCH B: FORCE PROMPT FLAGS
              const duration = 5;
-             const basePrompt = task.videoPrompt || "Apply slow camera movement (push-in, push-out, pan, or parallax depth effect). Add subtle natural motion to the subject such as blinking, breathing, and micro expressions. Keep the face sharp, realistic, and undistorted.";
+             let basePrompt = task.videoPrompt || "Apply slow camera movement (push-in, push-out, pan, or parallax depth effect). Add subtle natural motion to the subject such as blinking, breathing, and micro expressions. Keep the face sharp, realistic, and undistorted.";
+             
+             // INTERCEPT FRAME_URL FOR ASPECT RATIO FIX (2:3 PADDING)
+             const frameMatch = basePrompt.match(/\[FRAME_URL:\s*(.*?)\]/);
+             if (frameMatch && frameMatch[1]) {
+                 driveInputUrl = frameMatch[1];
+                 basePrompt = basePrompt.replace(frameMatch[0], '').trim();
+                 console.log(`[TICK] Extracted Padded Frame URL overriding default.`);
+             }
+
              const forcedPrompt = `${basePrompt} --rs ${finalRes} --dur ${duration}`;
 
              const payload = {

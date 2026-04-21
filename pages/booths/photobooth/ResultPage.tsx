@@ -216,30 +216,31 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
     setIsVideoRequested(true);
     setVideoStatusText("CONNECTING TO SERVER...");
 
+    let finalVideoPrompt = settings.videoPrompt || '';
+    let finalFallbackBase64 = resultImage;
+
     try {
-       // PADDING LOGIC:
-       // We pad the original resultImage to match 544x736 so Seedance doesn't crop it
-       setVideoStatusText("PREPARING IMAGE...");
-       const paddedImageUrl = await padImageForVideo(resultImage, 544, 736);
+       // PADDING LOGIC KHUSUS 2:3
+       if (outputRatio === '2:3') {
+           setVideoStatusText("PREPARING IMAGE...");
+           finalFallbackBase64 = await padImageForVideo(resultImage, 544, 736);
+           
+           if (settings.activeEventId && sessionFolder?.id) {
+               setVideoStatusText("UPLOADING VIDEO FRAME...");
+               const uploadRes = await uploadToDrive(finalFallbackBase64, {
+                   conceptName: "VIDEO_PREP",
+                   eventName: settings.eventName,
+                   eventId: settings.activeEventId,
+                   folderId: sessionFolder.id, 
+                   storage_folder: settings.storage_folder,
+                   sessionFolderId: sessionFolder.id
+               });
 
-       let videoReadyPhotoId = photoId;
-       
-       if (settings.activeEventId && sessionFolder?.id) {
-           setVideoStatusText("UPLOADING VIDEO FRAME...");
-           const uploadRes = await uploadToDrive(paddedImageUrl, {
-               conceptName: "VIDEO_PREP",
-               eventName: settings.eventName,
-               eventId: settings.activeEventId,
-               folderId: sessionFolder.id, 
-               storage_folder: settings.storage_folder,
-               sessionFolderId: sessionFolder.id
-           });
-
-           if (uploadRes.ok && uploadRes.id) {
-               videoReadyPhotoId = uploadRes.id;
-               
-               // Optionally update the session row so the padded image is tracked
-               await supabase.from('sessions').update({ original_image_url: uploadRes.id }).eq('id', sessionFolder.id);
+               if (uploadRes.ok && uploadRes.id) {
+                   // Inject the secret tag into the prompt for the backend queue worker to catch
+                   finalVideoPrompt += ` [FRAME_URL: ${uploadRes.id}]`;
+                   console.log("Padded video frame uploaded and tag injected");
+               }
            }
        }
 
@@ -249,13 +250,13 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
            sessionId: sessionFolder.id,
            eventId: settings.activeEventId,
            isVideoRequested: true,
-           videoPrompt: settings.videoPrompt
+           videoPrompt: finalVideoPrompt // Saving injected prompt
          });
        }
 
        // Explicitly pass settings to avoid missing parameters in backend
-       const res = await queueVideoTask(videoReadyPhotoId, {
-           prompt: settings.videoPrompt,
+       const res = await queueVideoTask(photoId, {
+           prompt: finalVideoPrompt,
            resolution: settings.videoResolution || '480p',
            model: settings.videoModel || 'seedance-1-0-pro-fast-251015',
            eventId: settings.activeEventId,
@@ -275,15 +276,14 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
        
        // Fallback: Direct API Call if Sheet Queue fails
        try {
-           const paddedImageUrl = await padImageForVideo(resultImage, 544, 736);
            await fetch('/api/video/start', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                  driveFileId: (sessionFolder?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionFolder.id)) ? sessionFolder.id : photoId, 
                  imageUrl: null, 
-                 imageBase64: paddedImageUrl, // Pass directly via base64 for fallback
-                 prompt: settings.videoPrompt,
+                 imageBase64: finalFallbackBase64, // Pass directly via base64 for fallback
+                 prompt: settings.videoPrompt, // Use base prompt since base64 overrides URL
                  resolution: settings.videoResolution || '480p',
                  model: settings.videoModel 
               })

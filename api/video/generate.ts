@@ -106,7 +106,16 @@ export default async function handler(req: any, res: any) {
 
     // PATCH B: FORCE RESOLUTION IN PROMPT
     const duration = 5;
-    const basePrompt = prompt || "Cinematic movement";
+    let basePrompt = prompt || "Cinematic movement";
+    
+    // INTERCEPT FRAME_URL FOR ASPECT RATIO FIX (2:3 PADDING)
+    const frameMatch = basePrompt.match(/\[FRAME_URL:\s*(.*?)\]/);
+    if (frameMatch && frameMatch[1]) {
+        inputImageUrl = frameMatch[1];
+        basePrompt = basePrompt.replace(frameMatch[0], '').trim();
+        console.log(`[API Video] Extracted Padded Frame URL overriding default.`);
+    }
+
     const forcedPrompt = `${basePrompt} --rs ${videoResolution} --dur ${duration}`;
 
     // 3. START TASK
