@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Concept, PhotoboothSettings, AspectRatio } from '../../../types';
 import { generateAIImage } from '../../../lib/gemini';
 import { uploadToDrive, createSessionFolder, queueVideoTask, saveSessionToCloud } from '../../../lib/appsScript';
-import { applyOverlay, getGoogleDriveDirectLink, createDoublePrintLayout, createMergedPrintLayout, processPrintOrientation, applyPrintAdjustments } from '../../../lib/imageUtils';
+import { applyOverlay, getGoogleDriveDirectLink, createDoublePrintLayout, createMergedPrintLayout, processPrintOrientation, applyPrintAdjustments, padImageForVideo } from '../../../lib/imageUtils';
 import { OverlayCache } from '../../../lib/overlayCache'; 
 import { printImage } from '../../../lib/printUtils';
 import { decrementCredits, supabase } from '../../../lib/supabase';
@@ -201,7 +201,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
 
   // FIXED: Trigger queueing instead of direct generate and AWAIT RESPONSE
   const handleGenerateVideo = async () => {
-    if (!photoId) return;
+    if (!photoId || !resultImage) return;
     
     if (settings.activeEventId) {
       const videoRes = settings.videoResolution || '480p';
@@ -217,6 +217,32 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
     setVideoStatusText("CONNECTING TO SERVER...");
 
     try {
+       // PADDING LOGIC:
+       // We pad the original resultImage to match 544x736 so Seedance doesn't crop it
+       setVideoStatusText("PREPARING IMAGE...");
+       const paddedImageUrl = await padImageForVideo(resultImage, 544, 736);
+
+       let videoReadyPhotoId = photoId;
+       
+       if (settings.activeEventId && sessionFolder?.id) {
+           setVideoStatusText("UPLOADING VIDEO FRAME...");
+           const uploadRes = await uploadToDrive(paddedImageUrl, {
+               conceptName: "VIDEO_PREP",
+               eventName: settings.eventName,
+               eventId: settings.activeEventId,
+               folderId: sessionFolder.id, 
+               storage_folder: settings.storage_folder,
+               sessionFolderId: sessionFolder.id
+           });
+
+           if (uploadRes.ok && uploadRes.id) {
+               videoReadyPhotoId = uploadRes.id;
+               
+               // Optionally update the session row so the padded image is tracked
+               await supabase.from('sessions').update({ original_image_url: uploadRes.id }).eq('id', sessionFolder.id);
+           }
+       }
+
        // Save to cloud that video was requested
        if (sessionFolder?.id) {
          await saveSessionToCloud({
@@ -228,7 +254,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
        }
 
        // Explicitly pass settings to avoid missing parameters in backend
-       const res = await queueVideoTask(photoId, {
+       const res = await queueVideoTask(videoReadyPhotoId, {
            prompt: settings.videoPrompt,
            resolution: settings.videoResolution || '480p',
            model: settings.videoModel || 'seedance-1-0-pro-fast-251015',
@@ -248,17 +274,18 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
        setVideoStatusText("TRYING DIRECT RENDER...");
        
        // Fallback: Direct API Call if Sheet Queue fails
-       // AWAIT this fetch to ensure it sends before page unmounts
        try {
+           const paddedImageUrl = await padImageForVideo(resultImage, 544, 736);
            await fetch('/api/video/start', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                 driveFileId: (sessionFolder?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionFolder.id)) ? sessionFolder.id : photoId, // Use sessionId for Supabase, photoId for GAS
-                 imageUrl: photoId, // Pass the image URL directly
+                 driveFileId: (sessionFolder?.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionFolder.id)) ? sessionFolder.id : photoId, 
+                 imageUrl: null, 
+                 imageBase64: paddedImageUrl, // Pass directly via base64 for fallback
                  prompt: settings.videoPrompt,
                  resolution: settings.videoResolution || '480p',
-                 model: settings.videoModel // Ensure model is passed
+                 model: settings.videoModel 
               })
            });
            setVideoStatusText("RENDER STARTED");

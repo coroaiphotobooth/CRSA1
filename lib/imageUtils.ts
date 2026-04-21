@@ -54,6 +54,58 @@ export const resizeImage = (base64Str: string, maxDimension: number = 1024, qual
   });
 };
 
+/**
+ * Memastikan gambar memiliki aspect ratio tertentu (seperti 544x736) 
+ * dengan menambahkan padding hitam agar tidak di-crop oleh API Video (Seedance)
+ */
+export const padImageForVideo = (base64Str: string, targetW: number = 544, targetH: number = 736): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        reject(new Error("Canvas context unavailable"));
+        return;
+      }
+
+      // Fill background with black
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, targetW, targetH);
+
+      const targetRatio = targetW / targetH;
+      const imgRatio = img.width / img.height;
+
+      let drawW, drawH, x, y;
+
+      if (imgRatio > targetRatio) {
+        // Image is wider than target
+        drawW = targetW;
+        drawH = targetW / imgRatio;
+        x = 0;
+        y = (targetH - drawH) / 2;
+      } else {
+        // Image is taller than target
+        drawH = targetH;
+        drawW = targetH * imgRatio;
+        x = (targetW - drawW) / 2;
+        y = 0;
+      }
+
+      // Draw the image centered
+      ctx.drawImage(img, x, y, drawW, drawH);
+      
+      // Seedance specifically works best with JPEG or PNG without alpha
+      resolve(canvas.toDataURL('image/jpeg', 0.95));
+    };
+    img.onerror = (e) => reject(new Error("Image load error for padding"));
+    img.src = base64Str;
+  });
+};
+
 // Cache for preloaded images
 const imageCache: Record<string, HTMLImageElement> = {};
 
