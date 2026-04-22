@@ -254,7 +254,7 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
           </button>
           
           {isMenuOpen && (
-            <div className="absolute right-0 mt-4 w-48 bg-black/90 border border-white/10 rounded-lg shadow-2xl overflow-hidden backdrop-blur-md flex flex-col">
+            <div className="absolute right-0 mt-4 w-48 bg-black/95 border border-white/10 rounded-lg shadow-2xl overflow-hidden flex flex-col">
               <button 
                 onClick={() => { setIsMenuOpen(false); navigate('/dashboard'); }}
                 className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors border-b border-white/5"
@@ -302,9 +302,9 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
                  key="scanning"
                  initial={{ opacity: 0, scale: 0.9 }}
                  animate={{ opacity: 1, scale: 1 }}
-                 exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)' }}
+                 exit={{ opacity: 0, scale: 1.1 }}
                  transition={{ duration: 0.5, ease: "easeInOut" }}
-                 className="flex flex-col items-center justify-center p-12 bg-black/80 backdrop-blur-2xl border border-[#bc13fe]/40 rounded-[2.5rem] shadow-[0_0_60px_rgba(188,19,254,0.25)] w-full relative overflow-hidden"
+                 className="flex flex-col items-center justify-center p-12 bg-black/95 border border-[#bc13fe]/40 rounded-[2.5rem] shadow-[0_0_60px_rgba(188,19,254,0.25)] w-full relative overflow-hidden"
                >
                  {/* Cyberpunk corner accents */}
                  <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-[#bc13fe]/50 rounded-tl-[2.5rem] opacity-70"></div>
@@ -351,12 +351,12 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
                             setVipError(null);
                         }}
                         placeholder="E.g., 69GG"
-                        className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-5 text-center text-3xl font-heading text-white tracking-[0.5em] focus:border-[#bc13fe] focus:outline-none transition-all shadow-xl"
+                        className="w-full bg-white/10 border border-white/20 rounded-2xl px-6 py-5 text-center text-3xl font-heading text-white tracking-[0.5em] focus:border-[#bc13fe] focus:outline-none transition-all shadow-xl"
                         autoComplete="off"
                         disabled={vipLoading}
                      />
                      {vipError && (
-                        <span className="absolute -bottom-8 text-red-400 text-xs tracking-widest block bg-black/80 backdrop-blur-md border border-red-500/30 px-4 py-1.5 rounded-full">{vipError}</span>
+                        <span className="absolute -bottom-8 text-red-400 text-xs tracking-widest block bg-black border border-red-500/30 px-4 py-1.5 rounded-full">{vipError}</span>
                      )}
                   </div>
                   <button 

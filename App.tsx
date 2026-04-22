@@ -546,7 +546,7 @@ const PhotoboothFlow: React.FC = () => {
             playsInline
             className="w-full h-full object-cover" 
           />
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-black/60" />
         </div>
       )}
 
@@ -558,7 +558,7 @@ const PhotoboothFlow: React.FC = () => {
             className="w-full h-full object-cover" 
             alt="Global Background" 
           />
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
+          <div className="absolute inset-0 bg-black/70" />
         </div>
       )}
 

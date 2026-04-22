@@ -66,18 +66,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       {/* Ripple Animation Element */}
       {ripple && (
         <div 
-          className="absolute z-[100] pointer-events-none rounded-full border border-white/40 shadow-[0_0_60px_30px_rgba(188,19,254,0.4)] animate-[ripple-effect_1.5s_cubic-bezier(0.1,0.8,0.3,1)_forwards]"
+          className="absolute z-[100] pointer-events-none rounded-full border-4 border-white/40 shadow-[0_0_60px_30px_rgba(188,19,254,0.4)] animate-[ripple-effect_1.5s_cubic-bezier(0.1,0.8,0.3,1)_forwards]"
           style={{
             left: ripple.x,
             top: ripple.y,
-            transform: 'translate(-50%, -50%)',
+            width: '100px',
+            height: '100px',
+            marginLeft: '-50px',
+            marginTop: '-50px'
           }}
         />
       )}
 
-      {/* Screen Fade and Blur Transition */}
+      {/* Screen Fade Transition (Removed heavy blur for performance) */}
       <div 
-        className={`absolute inset-0 z-[99] transition-all duration-1000 pointer-events-none ${isTransitioning ? 'bg-black/60 backdrop-blur-2xl' : 'bg-transparent backdrop-blur-0'}`} 
+        className={`absolute inset-0 z-[99] transition-all duration-1000 pointer-events-none ${isTransitioning ? 'bg-black/80' : 'bg-transparent'}`} 
       />
       
       {/* Top Right Controls Group */}
@@ -149,7 +152,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
 
       {!isBackgroundOnly && (
         <>
-          <div className="relative z-10 mb-12 md:mb-16 animate-pulse px-4">
+          <div className="relative z-10 mb-12 md:mb-16 px-4">
             <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-7xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-4 uppercase`}>
               {settings.eventName}
             </h1>
@@ -183,7 +186,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       {/* SYSTEM LOGS / NOTIFICATIONS */}
       <div className="absolute bottom-0 left-0 w-full z-20 flex flex-col items-center pb-4 pointer-events-none">
          {notifications.map(n => (
-            <div key={n.id} className="mb-2 bg-black/80 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full flex items-center gap-3 animate-[slideInUp_0.3s_ease-out]">
+            <div key={n.id} className="mb-2 bg-black/90 border border-white/10 px-4 py-2 rounded-full flex items-center gap-3 animate-[slideInUp_0.3s_ease-out]">
                 {n.status === 'processing' && <div className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />}
                 {n.status === 'completed' && <div className="w-2 h-2 rounded-full bg-green-500" />}
                 {n.status === 'failed' && <div className="w-2 h-2 rounded-full bg-red-500" />}
@@ -208,16 +211,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
         }
         @keyframes ripple-effect {
           0% {
-            width: 0px;
-            height: 0px;
+            transform: scale(0);
             opacity: 0.8;
-            border-width: 8px;
           }
           100% {
-            width: 150vmax;
-            height: 150vmax;
+            transform: scale(25);
             opacity: 0;
-            border-width: 0px;
           }
         }
       `}</style>
