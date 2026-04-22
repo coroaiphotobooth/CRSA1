@@ -1922,15 +1922,14 @@ export default function VendorDashboard() {
               )}
             </div>
             
-            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
-              <button
-                onClick={() => setShowBuyCreditsModal(false)}
-                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-bold transition-colors"
-              >
-                {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
-              </button>
-              
-              {buyModalTab === 'free' ? (
+            {buyModalTab === 'free' ? (
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                <button
+                  onClick={() => setShowBuyCreditsModal(false)}
+                  className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-bold transition-colors"
+                >
+                  {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
+                </button>
                 <button
                   onClick={() => {
                     let text = buyCurrency === 'USD' 
@@ -1944,217 +1943,223 @@ export default function VendorDashboard() {
                 >
                   {buyCurrency === 'USD' ? 'CLAIM NOW' : 'KLAIM SEKARANG'}
                 </button>
-              ) : (
-                <div className="flex flex-col gap-2 w-full mt-2">
-                  <button
-                    onClick={async () => {
-                      try {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (!session) throw new Error("Not authenticated");
-                        const amount = getBaseAmountForDoku('credit');
-                        const res = await fetch('/api/payment/create', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'CREDIT', amount, quantity: creditAmount, payment_method: 'CREDIT_CARD' })
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) {
-                          // @ts-ignore
-                          loadJokulCheckout(data.payment_url);
-                        }
-                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
-                    }}
-                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'IDR' ? 'hidden' : ''}`}
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="text-xl">💳</span> 
-                      <span className="flex items-center gap-2">
-                        Pay with Card
-                        <div className="flex items-center gap-1 opacity-90 ml-1">
-                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Visa_Inc._logo_%282005%E2%80%932014%29.png" alt="Visa" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                          </div>
-                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                          </div>
-                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/40/JCB_logo.svg" alt="JCB" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                          </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 w-full mt-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session) throw new Error("Not authenticated");
+                      const amount = getBaseAmountForDoku('credit');
+                      const res = await fetch('/api/payment/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                        body: JSON.stringify({ vendor_id: vendor?.id, type: 'CREDIT', amount, quantity: creditAmount, payment_method: 'CREDIT_CARD' })
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Failed to create payment');
+                      if (data.payment_url) {
+                        // @ts-ignore
+                        loadJokulCheckout(data.payment_url);
+                      }
+                    } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
+                  }}
+                  className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'IDR' ? 'hidden' : ''}`}
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="text-xl">💳</span> 
+                    <span className="flex items-center gap-2">
+                      Pay with Card
+                      <div className="flex items-center gap-1 opacity-90 ml-1">
+                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Visa_Inc._logo_%282005%E2%80%932014%29.png" alt="Visa" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
                         </div>
-                      </span>
-                    </span>
-                    <span className="text-[#bc13fe]">{formatPrice(
-                      Math.ceil(getBaseAmountForDoku('credit') * 1.028 + 2000), 
-                      getCreditPriceUSD(creditAmount) * 1.028 + (2000 / usdToIdrRate)
-                    )}</span>
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      try {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (!session) throw new Error("Not authenticated");
-                        const amount = getBaseAmountForDoku('credit');
-                        const res = await fetch('/api/payment/create', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'CREDIT', amount, quantity: creditAmount, payment_method: 'BANK_TRANSFER' })
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) {
-                          // @ts-ignore
-                          loadJokulCheckout(data.payment_url);
-                        }
-                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
-                    }}
-                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
-                  >
-                    <span className="flex items-center gap-3"><span className="text-xl">🏦</span> Bank Transfer</span>
-                    <span className="text-[#bc13fe]">{formatPrice(
-                      getBaseAmountForDoku('credit') + 4000,
-                      getCreditPriceUSD(creditAmount) + (4000 / usdToIdrRate)
-                    )}</span>
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      try {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (!session) throw new Error("Not authenticated");
-                        const amount = getBaseAmountForDoku('credit');
-                        const res = await fetch('/api/payment/create', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'CREDIT', amount, quantity: creditAmount, payment_method: 'QRIS' })
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) {
-                          // @ts-ignore
-                          loadJokulCheckout(data.payment_url);
-                        }
-                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
-                    }}
-                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="text-xl">📱</span>
-                      <span className="flex items-center gap-2">
-                        Pay with QRIS
-                        <div className="h-4 w-9 bg-white rounded-sm flex items-center justify-center p-0.5 opacity-90 ml-1">
-                          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg" alt="QRIS" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
                         </div>
-                      </span>
-                    </span>
-                    <span className="text-[#bc13fe]">{formatPrice(
-                      Math.ceil(getBaseAmountForDoku('credit') * 1.007),
-                      getCreditPriceUSD(creditAmount) * 1.007
-                    )}</span>
-                  </button>
-
-                  {/* PAYPAL INTEGRATION FOR USD */}
-                  {buyCurrency === 'USD' && (
-                    <div className="w-full relative z-50">
-                      <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
-                        <span>Includes PayPal Fee (4.4% + $0.30)</span>
-                        <span className="font-bold text-[#bc13fe]">
-                          ${((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2)}
-                        </span>
+                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/4/40/JCB_logo.svg" alt="JCB" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                        </div>
                       </div>
-                      <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
-                        <PayPalButtons 
-                          style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
-                          createOrder={async (data, actions) => {
-                            // First, create a pending transaction in Supabase
-                            const { data: { session } } = await supabase.auth.getSession();
-                            if (!session || !vendor?.id) throw new Error("Not authenticated");
-                            
-                            const finalPriceUSD = ((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2);
+                    </span>
+                  </span>
+                  <span className="text-[#bc13fe]">{formatPrice(
+                    Math.ceil(getBaseAmountForDoku('credit') * 1.028 + 2000), 
+                    getCreditPriceUSD(creditAmount) * 1.028 + (2000 / usdToIdrRate)
+                  )}</span>
+                </button>
 
-                            const res = await fetch('/api/payment/create', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                                body: JSON.stringify({ vendor_id: vendor.id, type: 'CREDIT', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: creditAmount, payment_method: 'PAYPAL' })
-                            });
-                            const paymentData = await res.json();
-                            const transactionId = paymentData.transaction_id;
+                <button
+                  onClick={async () => {
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session) throw new Error("Not authenticated");
+                      const amount = getBaseAmountForDoku('credit');
+                      const res = await fetch('/api/payment/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                        body: JSON.stringify({ vendor_id: vendor?.id, type: 'CREDIT', amount, quantity: creditAmount, payment_method: 'BANK_TRANSFER' })
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Failed to create payment');
+                      if (data.payment_url) {
+                        // @ts-ignore
+                        loadJokulCheckout(data.payment_url);
+                      }
+                    } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
+                  }}
+                  className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
+                >
+                  <span className="flex items-center gap-3"><span className="text-xl">🏦</span> Bank Transfer</span>
+                  <span className="text-[#bc13fe]">{formatPrice(
+                    getBaseAmountForDoku('credit') + 4000,
+                    getCreditPriceUSD(creditAmount) + (4000 / usdToIdrRate)
+                  )}</span>
+                </button>
 
-                            return actions.order.create({
-                              intent: "CAPTURE",
-                              purchase_units: [{
-                                description: `${creditAmount} CoroAI Credits`,
-                                custom_id: transactionId,
-                                amount: {
-                                  currency_code: "USD",
-                                  value: finalPriceUSD
-                                }
-                              }]
-                            });
-                          }}
-                          onApprove={async (data, actions) => {
-                            if (!actions.order) return;
-                            
-                            try {
-                              // Retrieve the transaction ID created earlier
-                              const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units[0].custom_id);
+                <button
+                  onClick={async () => {
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session) throw new Error("Not authenticated");
+                      const amount = getBaseAmountForDoku('credit');
+                      const res = await fetch('/api/payment/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                        body: JSON.stringify({ vendor_id: vendor?.id, type: 'CREDIT', amount, quantity: creditAmount, payment_method: 'QRIS' })
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Failed to create payment');
+                      if (data.payment_url) {
+                        // @ts-ignore
+                        loadJokulCheckout(data.payment_url);
+                      }
+                    } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
+                  }}
+                  className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="text-xl">📱</span>
+                    <span className="flex items-center gap-2">
+                      Pay with QRIS
+                      <div className="h-4 w-9 bg-white rounded-sm flex items-center justify-center p-0.5 opacity-90 ml-1">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg" alt="QRIS" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                      </div>
+                    </span>
+                  </span>
+                  <span className="text-[#bc13fe]">{formatPrice(
+                    Math.ceil(getBaseAmountForDoku('credit') * 1.007),
+                    getCreditPriceUSD(creditAmount) * 1.007
+                  )}</span>
+                </button>
 
-                              const details = await actions.order.capture();
-                              
-                              if (details.status === 'COMPLETED') {
-                                  handlePayPalSuccess('CREDIT', creditAmount, txId);
-                              } else if (details.status === 'PENDING') {
-                                  setShowBuyCreditsModal(false);
-                                  showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your credits will be added once PayPal clears the payment.');
-                              } else {
-                                  showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
-                              }
-                            } catch (err: any) {
-                              console.error("PayPal Capture Error:", err);
-                              // PayPal's SDK typically handles INSTRUMENT_DECLINED internally, but just in case:
-                              if (err?.message?.includes('INSTRUMENT_DECLINED')) {
-                                showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
-                              } else {
-                                showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
-                              }
-                            }
-                          }}
-                          onCancel={() => {
-                            // User closed the popup
-                            showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
-                          }}
-                          onError={(err) => {
-                            console.error("PayPal Error:", err);
-                            showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
-                          }}
-                        />
-                      </PayPalScriptProvider>
+                {/* PAYPAL INTEGRATION FOR USD */}
+                {buyCurrency === 'USD' && (
+                  <div className="w-full relative z-50">
+                    <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
+                      <span>Includes PayPal Fee (4.4% + $0.30)</span>
+                      <span className="font-bold text-[#bc13fe]">
+                        ${((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2)}
+                      </span>
                     </div>
-                  )}
+                    <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+                      <PayPalButtons 
+                        style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
+                        createOrder={async (data, actions) => {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (!session || !vendor?.id) throw new Error("Not authenticated");
+                          
+                          const finalPriceUSD = ((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2);
 
-                    <button
-                    onClick={() => {
-                      const baseAmount = getBaseAmountForDoku('credit');
-                      const finalWaPrice = Math.ceil(baseAmount * 1.03);
-                      const finalWaPriceUSD = getCreditPriceUSD(creditAmount) * 1.03;
-                      let text = buyCurrency === 'USD' 
-                        ? `Hi I want to buy Credit\n${vendor?.email || 'Vendor Email'}\nSelected package: ${creditAmount} Credits\nTotal price: ${formatPrice(finalWaPrice, finalWaPriceUSD)}`
-                        : `Hi saya ingin membeli Kredit\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${creditAmount} Kredit\nTotal harga: ${formatPrice(finalWaPrice)}`;
-                      const encodedText = encodeURIComponent(text);
-                      window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
-                    }}
-                    className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
+                          const res = await fetch('/api/payment/create', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                              body: JSON.stringify({ vendor_id: vendor.id, type: 'CREDIT', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: creditAmount, payment_method: 'PAYPAL' })
+                          });
+                          const paymentData = await res.json();
+                          const transactionId = paymentData.transaction_id;
+
+                          return actions.order.create({
+                            intent: "CAPTURE",
+                            purchase_units: [{
+                              description: `${creditAmount} CoroAI Credits`,
+                              custom_id: transactionId,
+                              amount: {
+                                currency_code: "USD",
+                                value: finalPriceUSD
+                              }
+                            }]
+                          });
+                        }}
+                        onApprove={async (data, actions) => {
+                          if (!actions.order) return;
+                          
+                          try {
+                            const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units[0].custom_id);
+
+                            const details = await actions.order.capture();
+                            
+                            if (details.status === 'COMPLETED') {
+                                handlePayPalSuccess('CREDIT', creditAmount, txId);
+                            } else if (details.status === 'PENDING') {
+                                setShowBuyCreditsModal(false);
+                                showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your credits will be added once PayPal clears the payment.');
+                            } else {
+                                showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
+                            }
+                          } catch (err: any) {
+                            console.error("PayPal Capture Error:", err);
+                            if (err?.message?.includes('INSTRUMENT_DECLINED')) {
+                              showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
+                            } else {
+                              showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
+                            }
+                          }
+                        }}
+                        onCancel={() => {
+                          showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
+                        }}
+                        onError={(err) => {
+                          console.error("PayPal Error:", err);
+                          showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
+                        }}
+                      />
+                    </PayPalScriptProvider>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => {
+                    const baseAmount = getBaseAmountForDoku('credit');
+                    const finalWaPrice = Math.ceil(baseAmount * 1.03);
+                    const finalWaPriceUSD = getCreditPriceUSD(creditAmount) * 1.03;
+                    let text = buyCurrency === 'USD' 
+                      ? `Hi I want to buy Credit\n${vendor?.email || 'Vendor Email'}\nSelected package: ${creditAmount} Credits\nTotal price: ${formatPrice(finalWaPrice, finalWaPriceUSD)}`
+                      : `Hi saya ingin membeli Kredit\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${creditAmount} Kredit\nTotal harga: ${formatPrice(finalWaPrice)}`;
+                    const encodedText = encodeURIComponent(text);
+                    window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
+                  }}
+                  className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
+                >
+                  <span className="flex items-center gap-3"><span className="text-xl">💬</span> Pay via WhatsApp</span>
+                  <span className="text-[#25D366]">{formatPrice(
+                    Math.ceil(getCreditPriceIDR(creditAmount) * 1.03),
+                    getCreditPriceUSD(creditAmount) * 1.03
+                  )}</span>
+                </button>
+                
+                {/* Cancel Button below payment options */}
+                <div className="w-full pt-4 mt-2 border-t border-white/10">
+                  <button
+                    onClick={() => setShowBuyCreditsModal(false)}
+                    className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
                   >
-                    <span className="flex items-center gap-3"><span className="text-xl">💬</span> Pay via WhatsApp</span>
-                    <span className="text-[#25D366]">{formatPrice(
-                      Math.ceil(getCreditPriceIDR(creditAmount) * 1.03),
-                      getCreditPriceUSD(creditAmount) * 1.03
-                    )}</span>
+                    {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2253,16 +2258,14 @@ export default function VendorDashboard() {
                 </div>
               )}
             </div>
-            
-            <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
-              <button
-                onClick={() => setShowBuyUnlimitedModal(false)}
-                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-bold transition-colors"
-              >
-                {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
-              </button>
-
-              {buyUnlimitedModalTab === 'rent' ? (
+             {buyUnlimitedModalTab === 'rent' ? (
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                <button
+                  onClick={() => setShowBuyUnlimitedModal(false)}
+                  className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-bold transition-colors"
+                >
+                  {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
+                </button>
                 <button
                   onClick={() => {
                     let text = '';
@@ -2284,214 +2287,224 @@ export default function VendorDashboard() {
                   </svg>
                   {buyCurrency === 'USD' ? 'BUY VIA WHATSAPP' : 'BELI VIA WHATSAPP'}
                 </button>
-              ) : (
-                <div className="flex flex-col gap-2 w-full mt-2">
-                  <button
-                    onClick={async () => {
-                      try {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (!session) throw new Error("Not authenticated");
-                        const amount = getBaseAmountForDoku('unlimited');
-                        const res = await fetch('/api/payment/create', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'CREDIT_CARD' })
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) {
-                          // @ts-ignore
-                          loadJokulCheckout(data.payment_url);
-                        }
-                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
-                    }}
-                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'IDR' ? 'hidden' : ''}`}
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="text-xl">💳</span> 
-                      <span className="flex items-center gap-2">
-                        Pay with Card
-                        <div className="flex items-center gap-1 opacity-90 ml-1">
-                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Visa_Inc._logo_%282005%E2%80%932014%29.png" alt="Visa" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                          </div>
-                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                          </div>
-                          <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/40/JCB_logo.svg" alt="JCB" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                          </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 w-full mt-2">
+                <button
+                  onClick={async () => {
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session) throw new Error("Not authenticated");
+                      const amount = getBaseAmountForDoku('unlimited');
+                      const res = await fetch('/api/payment/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                        body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'CREDIT_CARD' })
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Failed to create payment');
+                      if (data.payment_url) {
+                        // @ts-ignore
+                        loadJokulCheckout(data.payment_url);
+                      }
+                    } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
+                  }}
+                  className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'IDR' ? 'hidden' : ''}`}
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="text-xl">💳</span> 
+                    <span className="flex items-center gap-2">
+                      Pay with Card
+                      <div className="flex items-center gap-1 opacity-90 ml-1">
+                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Visa_Inc._logo_%282005%E2%80%932014%29.png" alt="Visa" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
                         </div>
-                      </span>
-                    </span>
-                    <span className="text-[#bc13fe]">{formatPrice(
-                      Math.ceil(getBaseAmountForDoku('unlimited') * 1.028 + 2000),
-                      (eventPrices[eventDuration] / 15000) * 1.028 + (2000 / usdToIdrRate)
-                    )}</span>
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      try {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (!session) throw new Error("Not authenticated");
-                        const amount = getBaseAmountForDoku('unlimited');
-                        const res = await fetch('/api/payment/create', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'BANK_TRANSFER' })
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) {
-                          // @ts-ignore
-                          loadJokulCheckout(data.payment_url);
-                        }
-                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
-                    }}
-                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
-                  >
-                    <span className="flex items-center gap-3"><span className="text-xl">🏦</span> Bank Transfer</span>
-                    <span className="text-[#bc13fe]">{formatPrice(
-                      getBaseAmountForDoku('unlimited') + 4000,
-                      (eventPrices[eventDuration] / 15000) + (4000 / usdToIdrRate)
-                    )}</span>
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      try {
-                        const { data: { session } } = await supabase.auth.getSession();
-                        if (!session) throw new Error("Not authenticated");
-                        const amount = getBaseAmountForDoku('unlimited');
-                        const res = await fetch('/api/payment/create', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                          body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'QRIS' })
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                        if (data.payment_url) {
-                          // @ts-ignore
-                          loadJokulCheckout(data.payment_url);
-                        }
-                      } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
-                    }}
-                    className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="text-xl">📱</span>
-                      <span className="flex items-center gap-2">
-                        Pay with QRIS
-                        <div className="h-4 w-9 bg-white rounded-sm flex items-center justify-center p-0.5 opacity-90 ml-1">
-                          <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg" alt="QRIS" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
                         </div>
-                      </span>
-                    </span>
-                    <span className="text-[#bc13fe]">{formatPrice(
-                      Math.ceil(getBaseAmountForDoku('unlimited') * 1.007),
-                      (eventPrices[eventDuration] / 15000) * 1.007
-                    )}</span>
-                  </button>
-
-                  {/* PAYPAL INTEGRATION FOR USD */}
-                  {buyCurrency === 'USD' && (
-                    <div className="w-full relative z-50">
-                      <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
-                        <span>Includes PayPal Fee (4.4% + $0.30)</span>
-                        <span className="font-bold text-[#bc13fe]">
-                          ${(((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2)}
-                        </span>
+                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
+                          <img src="https://upload.wikimedia.org/wikipedia/commons/4/40/JCB_logo.svg" alt="JCB" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                        </div>
                       </div>
-                      <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
-                        <PayPalButtons 
-                          style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
-                          createOrder={async (data, actions) => {
-                            const { data: { session } } = await supabase.auth.getSession();
-                            if (!session || !vendor?.id) throw new Error("Not authenticated");
-                            
-                            const finalPriceUSD = (((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2);
+                    </span>
+                  </span>
+                  <span className="text-[#bc13fe]">{formatPrice(
+                    Math.ceil(getBaseAmountForDoku('unlimited') * 1.028 + 2000),
+                    (eventPrices[eventDuration] / 15000) * 1.028 + (2000 / usdToIdrRate)
+                  )}</span>
+                </button>
 
-                            const res = await fetch('/api/payment/create', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                                body: JSON.stringify({ vendor_id: vendor.id, type: 'UNLIMITED', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: eventDuration, payment_method: 'PAYPAL' })
-                            });
-                            const paymentData = await res.json();
-                            const transactionId = paymentData.transaction_id;
+                <button
+                  onClick={async () => {
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session) throw new Error("Not authenticated");
+                      const amount = getBaseAmountForDoku('unlimited');
+                      const res = await fetch('/api/payment/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                        body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'BANK_TRANSFER' })
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Failed to create payment');
+                      if (data.payment_url) {
+                        // @ts-ignore
+                        loadJokulCheckout(data.payment_url);
+                      }
+                    } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
+                  }}
+                  className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
+                >
+                  <span className="flex items-center gap-3"><span className="text-xl">🏦</span> Bank Transfer</span>
+                  <span className="text-[#bc13fe]">{formatPrice(
+                    getBaseAmountForDoku('unlimited') + 4000,
+                    (eventPrices[eventDuration] / 15000) + (4000 / usdToIdrRate)
+                  )}</span>
+                </button>
 
-                            return actions.order.create({
-                              intent: "CAPTURE",
-                              purchase_units: [{
-                                description: `CoroAI Unlimited Event (${eventDuration} Hours)`,
-                                custom_id: transactionId,
-                                amount: {
-                                  currency_code: "USD",
-                                  value: finalPriceUSD
-                                }
-                              }]
-                            });
-                          }}
-                          onApprove={async (data, actions) => {
-                            if (!actions.order) return;
-                            
-                            try {
-                              // Retrieve the transaction ID created earlier
-                              const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units[0].custom_id);
+                <button
+                  onClick={async () => {
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      if (!session) throw new Error("Not authenticated");
+                      const amount = getBaseAmountForDoku('unlimited');
+                      const res = await fetch('/api/payment/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                        body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'QRIS' })
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Failed to create payment');
+                      if (data.payment_url) {
+                        // @ts-ignore
+                        loadJokulCheckout(data.payment_url);
+                      }
+                    } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
+                  }}
+                  className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'USD' ? 'hidden' : ''}`}
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="text-xl">📱</span>
+                    <span className="flex items-center gap-2">
+                      Pay with QRIS
+                      <div className="h-4 w-9 bg-white rounded-sm flex items-center justify-center p-0.5 opacity-90 ml-1">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg" alt="QRIS" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
+                      </div>
+                    </span>
+                  </span>
+                  <span className="text-[#bc13fe]">{formatPrice(
+                    Math.ceil(getBaseAmountForDoku('unlimited') * 1.007),
+                    (eventPrices[eventDuration] / 15000) * 1.007
+                  )}</span>
+                </button>
 
-                              const details = await actions.order.capture();
-                              
-                              if (details.status === 'COMPLETED') {
-                                  handlePayPalSuccess('UNLIMITED', eventDuration, txId);
-                              } else if (details.status === 'PENDING') {
-                                  setShowBuyUnlimitedModal(false);
-                                  showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your quota will be added once PayPal clears the payment.');
-                              } else {
-                                  showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
-                              }
-                            } catch (err: any) {
-                              console.error("PayPal Capture Error:", err);
-                              if (err?.message?.includes('INSTRUMENT_DECLINED')) {
-                                showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
-                              } else {
-                                showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
-                              }
-                            }
-                          }}
-                          onCancel={() => {
-                            showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
-                          }}
-                          onError={(err) => {
-                            console.error("PayPal Error:", err);
-                            showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
-                          }}
-                        />
-                      </PayPalScriptProvider>
+                {/* PAYPAL INTEGRATION FOR USD */}
+                {buyCurrency === 'USD' && (
+                  <div className="w-full relative z-50">
+                    <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
+                      <span>Includes PayPal Fee (4.4% + $0.30)</span>
+                      <span className="font-bold text-[#bc13fe]">
+                        ${(((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2)}
+                      </span>
                     </div>
-                  )}
+                    <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+                      <PayPalButtons 
+                        style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
+                        createOrder={async (data, actions) => {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (!session || !vendor?.id) throw new Error("Not authenticated");
+                          
+                          const finalPriceUSD = (((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2);
 
-                    <button
-                    onClick={() => {
-                      const baseAmount = getBaseAmountForDoku('unlimited');
-                      const finalWaPrice = Math.ceil(baseAmount * 1.03);
-                      const finalWaPriceUSD = (eventPrices[eventDuration] / 15000) * 1.03;
-                      let text = buyCurrency === 'USD' 
-                        ? `Hi I want to buy Buy per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nSelected package: ${eventDuration} hours\nTotal price: ${formatPrice(finalWaPrice, finalWaPriceUSD)}`
-                        : `Hi saya ingin membeli Beli per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${eventDuration} jam\nTotal harga: ${formatPrice(finalWaPrice)}`;
-                      const encodedText = encodeURIComponent(text);
-                      window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
-                    }}
-                    className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
+                          const res = await fetch('/api/payment/create', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                              body: JSON.stringify({ vendor_id: vendor.id, type: 'UNLIMITED', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: eventDuration, payment_method: 'PAYPAL' })
+                          });
+                          const paymentData = await res.json();
+                          const transactionId = paymentData.transaction_id;
+
+                          return actions.order.create({
+                            intent: "CAPTURE",
+                            purchase_units: [{
+                              description: `CoroAI Unlimited Event (${eventDuration} Hours)`,
+                              custom_id: transactionId,
+                              amount: {
+                                currency_code: "USD",
+                                value: finalPriceUSD
+                              }
+                            }]
+                          });
+                        }}
+                        onApprove={async (data, actions) => {
+                          if (!actions.order) return;
+                          
+                          try {
+                            // Retrieve the transaction ID created earlier
+                            const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units[0].custom_id);
+
+                            const details = await actions.order.capture();
+                            
+                            if (details.status === 'COMPLETED') {
+                                handlePayPalSuccess('UNLIMITED', eventDuration, txId);
+                            } else if (details.status === 'PENDING') {
+                                setShowBuyUnlimitedModal(false);
+                                showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your quota will be added once PayPal clears the payment.');
+                            } else {
+                                showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
+                            }
+                          } catch (err: any) {
+                            console.error("PayPal Capture Error:", err);
+                            if (err?.message?.includes('INSTRUMENT_DECLINED')) {
+                              showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
+                            } else {
+                              showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
+                            }
+                          }
+                        }}
+                        onCancel={() => {
+                          showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
+                        }}
+                        onError={(err) => {
+                          console.error("PayPal Error:", err);
+                          showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
+                        }}
+                      />
+                    </PayPalScriptProvider>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => {
+                    const baseAmount = getBaseAmountForDoku('unlimited');
+                    const finalWaPrice = Math.ceil(baseAmount * 1.03);
+                    const finalWaPriceUSD = (eventPrices[eventDuration] / 15000) * 1.03;
+                    let text = buyCurrency === 'USD' 
+                      ? `Hi I want to buy Buy per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nSelected package: ${eventDuration} hours\nTotal price: ${formatPrice(finalWaPrice, finalWaPriceUSD)}`
+                      : `Hi saya ingin membeli Beli per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${eventDuration} jam\nTotal harga: ${formatPrice(finalWaPrice)}`;
+                    const encodedText = encodeURIComponent(text);
+                    window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
+                  }}
+                  className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
+                >
+                  <span className="flex items-center gap-3"><span className="text-xl">💬</span> Pay via WhatsApp</span>
+                  <span className="text-[#25D366]">{formatPrice(
+                    Math.ceil(getBaseAmountForDoku('unlimited') * 1.03),
+                    (eventPrices[eventDuration] / 15000) * 1.03
+                  )}</span>
+                </button>
+                
+                {/* Cancel Button below payment options */}
+                <div className="w-full pt-4 mt-2 border-t border-white/10">
+                  <button
+                    onClick={() => setShowBuyUnlimitedModal(false)}
+                    className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
                   >
-                    <span className="flex items-center gap-3"><span className="text-xl">💬</span> Pay via WhatsApp</span>
-                    <span className="text-[#25D366]">{formatPrice(
-                      Math.ceil(getBaseAmountForDoku('unlimited') * 1.03),
-                      (eventPrices[eventDuration] / 15000) * 1.03
-                    )}</span>
+                    {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
                   </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}

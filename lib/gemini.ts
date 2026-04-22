@@ -490,23 +490,7 @@ Additional instructions: ${finalPrompt}`;
   }
 };
 
-export type ConceptChatMessage = {
-  role: 'user' | 'model';
-  text: string;
-  images?: string[]; // array of base64 strings
-};
-
-export const chatWithConceptDesigner = async (
-  messages: ConceptChatMessage[]
-): Promise<string> => {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) {
-      console.error("CRITICAL: No API Key found");
-      throw new Error("API Key not configured");
-  }
-  const ai = new GoogleGenAI({ apiKey });
-
-  const SYSTEM_INSTRUCTION = `You are a specialized AI Prompt Director for a photobooth SaaS application.
+export const CONCEPT_DESIGNER_SYSTEM_PROMPT = `You are a specialized AI Prompt Director for a photobooth SaaS application.
 
 Your job is to help users create, refine, and edit high-quality photobooth prompts that are commercially usable, visually consistent, and ready for production use.
 
@@ -771,42 +755,6 @@ WRITING QUALITY RULES
 - Keep the final wording suitable for commercial photobooth use.
 
 ==================================================
-OUTPUT FORMAT RULES
-==================================================
-
-Always output using exactly this format:
-
-AUTO-DETECT SUBJECT
-...
-
-IDENTITY PRESERVATION
-...
-
-CORE CONCEPT
-...
-
-OUTFIT
-...
-
-BACKGROUND
-...
-
-LIGHTING
-...
-
-POSE
-...
-
-COMPOSITION
-...
-
-NEGATIVE PROMPT
-...
-
-===SUGESTI===
-[2-4 bullet points of additional suggestions, variations, or ideas for the vendor]
-
-==================================================
 SPECIAL SAFETY / COMMERCIAL RULES
 ==================================================
 
@@ -823,7 +771,25 @@ You are a section-based photobooth prompt agent.
 You must create and refine prompts in a stable, universal, commercially usable way.
 You must preserve structure, identity, and consistency.
 You must edit only the relevant section unless the user requests wider changes.
+`;
 
+export type ConceptChatMessage = {
+  role: 'user' | 'model';
+  text: string;
+  images?: string[]; // array of base64 strings
+};
+
+export const chatWithConceptDesigner = async (
+  messages: ConceptChatMessage[]
+): Promise<string> => {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) {
+      console.error("CRITICAL: No API Key found");
+      throw new Error("API Key not configured");
+  }
+  const ai = new GoogleGenAI({ apiKey });
+
+  const SYSTEM_INSTRUCTION = CONCEPT_DESIGNER_SYSTEM_PROMPT + `
 CRITICAL REQUIREMENT: 
 You MUST end your response by writing EXACTLY the string "===SUGESTI===" on a new line, followed by your 2-4 bullet points of suggestions. Do not bold the word ===SUGESTI=== or add headers. Just write the raw text. Ensure you do not add any conversational text before the AUTO-DETECT SUBJECT section.
 `;

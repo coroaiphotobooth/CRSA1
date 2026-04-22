@@ -6,6 +6,7 @@ import { supabase } from '../../../../lib/supabase';
 import { useDialog } from '../../../../components/DialogProvider';
 import { Loader2, Sparkles, Plus, X, Palette, Trash2, Edit, GripHorizontal } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
+import { CONCEPT_DESIGNER_SYSTEM_PROMPT } from '../../../../lib/gemini';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -262,39 +263,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       }
       const ai = new GoogleGenAI({ apiKey });
       
-      const systemInstruction = `You are an expert AI image prompt engineer. Your task is to analyze the provided image and generate a highly detailed image generation prompt in ENGLISH.
-DO NOT include any conversational filler, greetings, or explanations. Output ONLY the requested sections.
-
-Analyze the image and provide the following sections exactly as formatted below:
-
-WARDROBE / OUTFIT MALE:
-[Describe the male outfit based on the image. If the image only contains a female, invent a matching male outfit in the exact same style/theme. Do not explain your reasoning, just describe the outfit.]
-
-WARDROBE / OUTFIT FEMALE:
-[Describe the female outfit based on the image. If the image only contains a male, invent a matching female outfit in the exact same style/theme. Do not explain your reasoning, just describe the outfit.]
-
-ENVIRONMENT & BACKGROUND:
-[Describe the setting, background elements, and atmosphere]
-
-LIGHTING & COLOR:
-[Describe the lighting setup, color palette, and mood]
-
-STYLE IMAGE:
-[Describe the artistic style, e.g., photorealistic, cinematic, 35mm photography, etc.]
-
-CAMERA & COMPOSITION:
-[Describe the camera angle, shot type, lens, and composition]`;
-
-      const mandatoryPrefix = `AUTO-DETECT SUBJECT (MANDATORY)
-Detect all human subjects automatically (single person, friends, family, or group).
-Apply the transformation evenly.
-
-Ensure:
-All faces are visible
-try to make the image of the face exactly like the original
-keep it if someone is wearing glasses, hijab, or head accessories,s
-
-`;
+      const systemInstruction = CONCEPT_DESIGNER_SYSTEM_PROMPT;
 
       const response = await ai.models.generateContent({
         model: "gemini-3.1-pro-preview",
@@ -305,14 +274,14 @@ keep it if someone is wearing glasses, hijab, or head accessories,s
               mimeType: createFromImageFile.type,
             }
           },
-          "Generate a detailed prompt based on this image following the system instructions. Output ONLY the requested sections in English."
+          "Generate a detailed photobooth concept prompt based on this image following the system instructions. Output ONLY the finalized prompt sections."
         ],
         config: {
           systemInstruction: systemInstruction,
         }
       });
 
-      const generatedPrompt = mandatoryPrefix + (response.text || '').trim();
+      const generatedPrompt = (response.text || '').trim();
 
       const newId = crypto.randomUUID();
       let thumbUrl = 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500';
@@ -416,21 +385,9 @@ keep it if someone is wearing glasses, hijab, or head accessories,s
       const ai = new GoogleGenAI({ apiKey });
       const model = ai.models;
       const hasRefImage = !!concept.refImage;
-      const systemInstruction = `You are an expert prompt engineer for photorealistic AI image generation. 
-Your task is to take a simple user prompt and enhance it into a highly detailed, descriptive, and optimized prompt.
-${hasRefImage ? 'The user has provided a reference image. Ensure the prompt explicitly mentions integrating the subject with the style, clothing, or environment of the reference image.' : ''}
-Keep the core intent of the original prompt but add details about lighting, camera angle, texture, and photorealism.
+      const systemInstruction = CONCEPT_DESIGNER_SYSTEM_PROMPT;
 
-CRITICAL INSTRUCTIONS TO INCLUDE IN THE ENHANCED PROMPT:
-- Deteksi semua subjek manusia dalam foto (1 orang, pasangan, atau grup)
-- Terapkan transformasi ke SELURUH subjek yang terdeteksi. Semua subjek diperlakukan setara.
-- Pertahankan wajah asli setiap subjek 100%. Struktur wajah, warna kulit, usia, gender, dan ekspresi tetap natural.
-- Jika subjek memakai hijab, PERTAHANKAN hijab. Jika subjek TIDAK memakai hijab, JANGAN menambahkan hijab.
-- Jika subjek memakai kacamata, PERTAHANKAN kacamata. Jika subjek TIDAK memakai kacamata, JANGAN menambahkan kacamata.
-
-Output ONLY the enhanced prompt text, nothing else.`;
-
-      let contents: any = concept.prompt;
+      let contents: any = "Please optimize and structure this prompt perfectly:\n" + concept.prompt;
       
       if (hasRefImage && concept.refImage) {
         try {
