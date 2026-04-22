@@ -4,8 +4,11 @@ import { Concept, PhotoboothSettings, TemplateConcept, ConceptTemplate } from '.
 import { saveConceptsToGas } from '../../../../lib/appsScript';
 import { supabase } from '../../../../lib/supabase';
 import { useDialog } from '../../../../components/DialogProvider';
-import { Loader2, Sparkles, Plus, X, Palette, Trash2, Edit } from 'lucide-react';
+import { Loader2, Sparkles, Plus, X, Palette, Trash2, Edit, GripHorizontal } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { useTourState, setTourState } from '../../../../lib/tourState';
 
@@ -20,6 +23,78 @@ interface AdminConceptsTabProps {
   adminPin: string;
   settings: PhotoboothSettings;
 }
+
+// Sortable Concept Card Component
+interface SortableConceptCardProps {
+  concept: Concept;
+  index: number;
+  totalConcepts: number;
+  onEdit: (index: number, slots: number) => void;
+  onDelete: (index: number) => void;
+}
+
+const SortableConceptCard: React.FC<SortableConceptCardProps> = ({ concept, index, totalConcepts, onEdit, onDelete }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: concept.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+  };
+
+  const isTemplateOrSmart = concept.concept_id?.startsWith('template_') || 
+                            concept.id.startsWith('template_') || 
+                            concept.concept_id?.startsWith('smart_') || 
+                            concept.id.startsWith('smart_') ||
+                            concept.concept_id?.startsWith('concept_studio_') ||
+                            concept.id.startsWith('concept_studio_');
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className={`glass-card relative group rounded-xl overflow-hidden border ${isDragging ? 'border-orange-500 shadow-[0_0_30px_rgba(249,115,22,0.4)] scale-105' : 'border-white/10 hover:border-[#bc13fe]/50 hover:shadow-[0_0_20px_rgba(188,19,254,0.2)]'} aspect-[3/4] flex flex-col transition-colors ${index === totalConcepts - 1 ? 'tour-thumbnail' : ''}`}
+    >
+      {/* Drag Handle */}
+      <div 
+        {...attributes} 
+        {...listeners} 
+        className="absolute top-2 left-2 z-30 p-2 bg-black/50 hover:bg-black/80 rounded flex items-center justify-center text-white/50 hover:text-white backdrop-blur-md cursor-grab active:cursor-grabbing"
+      >
+        <GripHorizontal className="w-4 h-4" />
+      </div>
+
+      <div className="absolute inset-0 cursor-pointer" onClick={() => {
+          let slots = 1;
+          if (concept.reference_image_bg) slots = 3;
+          else if (concept.reference_image_split) slots = 2;
+          onEdit(index, Math.max(1, slots));
+      }}>
+        <img src={concept.thumbnail} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+        
+        <div className="absolute inset-x-0 bottom-0 p-3 flex flex-col gap-1 z-10 w-full">
+          <h3 className="text-white font-bold text-sm truncate drop-shadow-md w-full">{concept.name || 'Untitled'}</h3>
+          <p className="text-white/60 text-[9px] uppercase font-bold tracking-wider truncate w-full">{isTemplateOrSmart ? 'Template / AI' : 'Custom Concept'}</p>
+        </div>
+        
+        <div className="absolute inset-0 bg-[#bc13fe]/0 group-hover:bg-[#bc13fe]/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 z-0">
+           <div className="bg-black/80 text-white rounded-full p-3 transform translate-y-4 group-hover:translate-y-0 shadow-xl transition-all">
+              <Edit className="w-5 h-5" />
+           </div>
+        </div>
+      </div>
+
+      {/* Delete Button */}
+      <button 
+        onClick={(e) => { e.stopPropagation(); onDelete(index); }} 
+        className="absolute top-2 right-2 text-white/50 hover:text-red-500 bg-black/50 hover:bg-black/80 backdrop-blur-md transition-colors p-2 z-20 rounded-full"
+        title="Delete Concept"
+      >
+        <Trash2 className="w-4 h-4" />
+      </button>
+    </div>
+  );
+};
 
 const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(({ concepts, onSaveConcepts, adminPin, settings }, ref) => {
   const [localConcepts, setLocalConcepts] = useState(concepts);
@@ -625,48 +700,55 @@ Output ONLY the enhanced prompt text, nothing else.`;
     }
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setLocalConcepts((items) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   return (
     <div className="flex flex-col gap-10">
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        {localConcepts.map((concept, index) => {
-          const isTemplateOrSmart = concept.concept_id?.startsWith('template_') || 
-                                    concept.id.startsWith('template_') || 
-                                    concept.concept_id?.startsWith('smart_') || 
-                                    concept.id.startsWith('smart_') ||
-                                    concept.concept_id?.startsWith('concept_studio_') ||
-                                    concept.id.startsWith('concept_studio_');
-
-          return (
-          <div key={concept.id} onClick={() => {
-              let slots = 1;
-              if (concept.reference_image_bg) slots = 3;
-              else if (concept.reference_image_split) slots = 2;
-              setVisibleRefSlots(Math.max(1, slots));
-              setEditingConceptIndex(index);
-          }} className={`glass-card relative group rounded-xl overflow-hidden border border-white/10 aspect-[3/4] flex flex-col cursor-pointer hover:border-[#bc13fe]/50 hover:shadow-[0_0_20px_rgba(188,19,254,0.2)] transition-all ${index === localConcepts.length - 1 ? 'tour-thumbnail' : ''}`}>
-               <img src={concept.thumbnail} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
-               
-               <button 
-                 onClick={(e) => { e.stopPropagation(); handleDeleteConcept(index); }} 
-                 className="absolute top-2 right-2 text-white/50 hover:text-red-500 bg-black/50 hover:bg-black/80 backdrop-blur-md transition-colors p-2 z-20 rounded-full"
-                 title="Delete Concept"
-               >
-                 <Trash2 className="w-4 h-4" />
-               </button>
-
-               <div className="absolute inset-x-0 bottom-0 p-3 flex flex-col gap-1 z-10 w-full">
-                 <h3 className="text-white font-bold text-sm truncate drop-shadow-md w-full">{concept.name || 'Untitled'}</h3>
-                 <p className="text-white/60 text-[9px] uppercase font-bold tracking-wider truncate w-full">{isTemplateOrSmart ? 'Template / AI' : 'Custom Concept'}</p>
-               </div>
-               
-               <div className="absolute inset-0 bg-[#bc13fe]/0 group-hover:bg-[#bc13fe]/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 z-0">
-                  <div className="bg-black/80 text-white rounded-full p-3 transform translate-y-4 group-hover:translate-y-0 shadow-xl transition-all">
-                     <Edit className="w-5 h-5" />
-                  </div>
-               </div>
-          </div>
-        )})}
+        <DndContext 
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext 
+            items={localConcepts.map(c => c.id)}
+            strategy={rectSortingStrategy}
+          >
+            {localConcepts.map((concept, index) => (
+              <SortableConceptCard 
+                key={concept.id}
+                concept={concept}
+                index={index}
+                totalConcepts={localConcepts.length}
+                onEdit={(idx, slots) => {
+                  setVisibleRefSlots(slots);
+                  setEditingConceptIndex(idx);
+                }}
+                onDelete={handleDeleteConcept}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
 
         <div onClick={() => setShowCreationSelectionModal(true)} className="glass-card flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-white/20 hover:border-[#bc13fe]/50 hover:bg-[#bc13fe]/5 transition-all cursor-pointer min-h-[200px] tour-create-own group">
            <div className="bg-white/5 rounded-full p-4 text-white group-hover:scale-110 group-hover:text-[#bc13fe] transition-all">
