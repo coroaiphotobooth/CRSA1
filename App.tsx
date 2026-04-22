@@ -537,14 +537,14 @@ const PhotoboothFlow: React.FC = () => {
       
       {/* --- GLOBAL BACKGROUND VIDEO --- */}
       {settings.backgroundVideoUrl && settings.backgroundVideoUrl.trim() !== '' && (
-        <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="fixed inset-0 z-0 pointer-events-none transform-gpu">
           <video 
             src={settings.backgroundVideoUrl}
             autoPlay 
             loop 
             muted 
             playsInline
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-cover will-change-transform" 
           />
           <div className="absolute inset-0 bg-black/60" />
         </div>
@@ -552,10 +552,10 @@ const PhotoboothFlow: React.FC = () => {
 
       {/* --- GLOBAL BACKGROUND IMAGE (Fallback if no video) --- */}
       {(!settings.backgroundVideoUrl || settings.backgroundVideoUrl.trim() === '') && settings.backgroundImage && (
-        <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="fixed inset-0 z-0 pointer-events-none transform-gpu">
           <img 
             src={getGoogleDriveDirectLink(settings.backgroundImage)} 
-            className="w-full h-full object-cover" 
+            className="w-full h-full object-cover will-change-transform" 
             alt="Global Background" 
           />
           <div className="absolute inset-0 bg-black/70" />
