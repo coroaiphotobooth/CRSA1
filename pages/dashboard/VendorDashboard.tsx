@@ -1783,7 +1783,7 @@ export default function VendorDashboard() {
       {/* Buy Credits Modal */}
       {showBuyCreditsModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
-          <div className="bg-[#111]/90 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-lg relative shadow-2xl">
+          <div className="bg-[#111]/90 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-lg relative shadow-2xl max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => setShowBuyCreditsModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
@@ -2107,7 +2107,7 @@ export default function VendorDashboard() {
       {/* Buy Unlimited Modal */}
       {showBuyUnlimitedModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
-          <div className="bg-[#111]/90 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-lg relative shadow-2xl">
+          <div className="bg-[#111]/90 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-lg relative shadow-2xl max-h-[90vh] overflow-y-auto">
             <button 
               onClick={() => setShowBuyUnlimitedModal(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
