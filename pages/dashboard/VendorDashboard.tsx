@@ -2037,6 +2037,12 @@ export default function VendorDashboard() {
                   {/* PAYPAL INTEGRATION FOR USD */}
                   {buyCurrency === 'USD' && (
                     <div className="w-full relative z-50">
+                      <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
+                        <span>Includes PayPal Fee (4.4% + $0.30)</span>
+                        <span className="font-bold text-[#bc13fe]">
+                          ${((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2)}
+                        </span>
+                      </div>
                       <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
                         <PayPalButtons 
                           style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
@@ -2045,10 +2051,12 @@ export default function VendorDashboard() {
                             const { data: { session } } = await supabase.auth.getSession();
                             if (!session || !vendor?.id) throw new Error("Not authenticated");
                             
+                            const finalPriceUSD = ((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2);
+
                             const res = await fetch('/api/payment/create', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                                body: JSON.stringify({ vendor_id: vendor.id, type: 'CREDIT', amount: Math.round(getCreditPriceUSD(creditAmount) * usdToIdrRate), quantity: creditAmount, payment_method: 'PAYPAL' })
+                                body: JSON.stringify({ vendor_id: vendor.id, type: 'CREDIT', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: creditAmount, payment_method: 'PAYPAL' })
                             });
                             const paymentData = await res.json();
                             const transactionId = paymentData.transaction_id;
@@ -2060,7 +2068,7 @@ export default function VendorDashboard() {
                                 custom_id: transactionId,
                                 amount: {
                                   currency_code: "USD",
-                                  value: getCreditPriceUSD(creditAmount).toFixed(2)
+                                  value: finalPriceUSD
                                 }
                               }]
                             });
@@ -2342,6 +2350,12 @@ export default function VendorDashboard() {
                   {/* PAYPAL INTEGRATION FOR USD */}
                   {buyCurrency === 'USD' && (
                     <div className="w-full relative z-50">
+                      <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
+                        <span>Includes PayPal Fee (4.4% + $0.30)</span>
+                        <span className="font-bold text-[#bc13fe]">
+                          ${(((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2)}
+                        </span>
+                      </div>
                       <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
                         <PayPalButtons 
                           style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
@@ -2349,10 +2363,12 @@ export default function VendorDashboard() {
                             const { data: { session } } = await supabase.auth.getSession();
                             if (!session || !vendor?.id) throw new Error("Not authenticated");
                             
+                            const finalPriceUSD = (((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2);
+
                             const res = await fetch('/api/payment/create', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                                body: JSON.stringify({ vendor_id: vendor.id, type: 'UNLIMITED', amount: Math.round((eventPrices[eventDuration] / 15000) * usdToIdrRate), quantity: eventDuration, payment_method: 'PAYPAL' })
+                                body: JSON.stringify({ vendor_id: vendor.id, type: 'UNLIMITED', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: eventDuration, payment_method: 'PAYPAL' })
                             });
                             const paymentData = await res.json();
                             const transactionId = paymentData.transaction_id;
@@ -2364,7 +2380,7 @@ export default function VendorDashboard() {
                                 custom_id: transactionId,
                                 amount: {
                                   currency_code: "USD",
-                                  value: (eventPrices[eventDuration] / 15000).toFixed(2)
+                                  value: finalPriceUSD
                                 }
                               }]
                             });
