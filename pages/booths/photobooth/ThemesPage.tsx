@@ -280,12 +280,12 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
                 )}
             </div>
           ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full animate-[popIn_0.5s_ease-out]">
+          <div className="flex flex-wrap justify-center gap-4 md:gap-6 w-full animate-[popIn_0.5s_ease-out]">
             {concepts.map((concept) => (
               <div 
                 key={concept.id}
                 onClick={() => onSelect(concept)}
-                className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl border-2 border-white/10 hover:border-purple-500 transition-all duration-300 shadow-2xl hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:-translate-y-2 bg-black/40 backdrop-blur-sm"
+                className="w-[calc(50%-0.5rem)] md:w-[calc(25%-1.125rem)] max-w-[280px] group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl border-2 border-white/10 hover:border-purple-500 transition-all duration-300 shadow-2xl hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:-translate-y-2 bg-black/40 backdrop-blur-sm flex-shrink-0"
               >
                 <img 
                   src={concept.thumbnail} 
