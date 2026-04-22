@@ -58,29 +58,49 @@ export default function VendorDashboard() {
     }
   };
 
-  const handlePayPalSuccess = async (type: 'CREDIT' | 'UNLIMITED', quantity: number) => {
-    // With server-to-server webhook, we no longer forcefully update records client-side.
-    // The webhook will do it securely in the background, and the Realtime DB will refresh `vendor`.
-    // We just show the notification modal and close purchasing modal.
+  const handlePayPalSuccess = async (type: 'CREDIT' | 'UNLIMITED', quantity: number, transactionId: string) => {
+    // Show a loading dialog first, let the user know we are verifying
+    const isEnglish = language === 'en';
+    showDialog('alert', isEnglish ? 'Processing Payment' : 'Memproses Pembayaran', 
+        isEnglish 
+        ? `Payment completed!\nPlease wait a moment while we verify & update your balance...` 
+        : `Pembayaran Selesai!\nMohon tunggu sebentar, kami sedang memverifikasi & menambah saldo Anda...`
+    );
+    setShowBuyCreditsModal(false);
+    setShowBuyUnlimitedModal(false);
+
+    let isSuccess = false;
     try {
-        if (type === 'CREDIT') {
-            const isEnglish = language === 'en';
-            showDialog('alert', isEnglish ? 'Processing Payment' : 'Memproses Pembayaran', 
-                isEnglish 
-                ? `Payment is being processed. Thank you!\nYour credit will be added by ${quantity} shortly.` 
-                : `Pembayaran sedang diproses. Terima kasih!\nKredit Anda akan ditambahkan sebesar ${quantity} beberapa saat lagi.`
-            );
-        } else if (type === 'UNLIMITED') {
-            const isEnglish = language === 'en';
-            showDialog('alert', isEnglish ? 'Processing Payment' : 'Memproses Pembayaran', 
-                isEnglish 
-                ? `Payment is being processed. Thank you!\nYour unlimited quota will be added by ${quantity} hours shortly.` 
-                : `Pembayaran sedang diproses. Terima kasih!\nKuota unlimited Anda akan ditambahkan sebesar ${quantity} jam beberapa saat lagi.`
-            );
+        // Poll the Supabase transactions table for up to 10 seconds to see if webhook completed
+        for (let i = 0; i < 5; i++) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const { data: tx } = await supabase.from('transactions').select('status').eq('id', transactionId).single();
+            if (tx && tx.status === 'PAID') {
+               isSuccess = true;
+               break;
+            }
         }
-        
-        setShowBuyCreditsModal(false);
-        setShowBuyUnlimitedModal(false);
+
+        if (isSuccess && vendor) {
+            // Re-fetch the vendor data directly to ensure UI updates without needing a page refresh
+            const { data: updatedVendor } = await supabase.from('vendors').select('*').eq('id', vendor.id).single();
+            if (updatedVendor) {
+                setVendor(updatedVendor);
+            }
+            
+            showDialog('alert', isEnglish ? 'Payment Success' : 'Pembayaran Berhasil', 
+                isEnglish 
+                ? (type === 'CREDIT' ? `Payment Successful!\nYour credit has been added by ${quantity}.` : `Payment Successful!\nYour unlimited quota has been added by ${quantity} hours.`)
+                : (type === 'CREDIT' ? `Pembayaran Berhasil!\nKredit Anda telah ditambahkan sebesar ${quantity}.` : `Pembayaran Berhasil!\nKuota unlimited Anda telah ditambahkan sebesar ${quantity} jam.`)
+            );
+        } else {
+             // If polling timed out, tell them it might take a minute
+             showDialog('alert', isEnglish ? 'Payment Pending' : 'Pembayaran Tertunda', 
+                isEnglish 
+                ? `Your payment was accepted by PayPal, but our verification is taking longer than usual. Your balance will update automatically within 1-2 minutes.` 
+                : `Pembayaran Anda diterima PayPal, namun verifikasi kami butuh waktu lebih lama. Saldo Anda akan otomatis bertambah dalam 1-2 menit.`
+             );
+        }
     } catch (err: any) {
         console.error("Failed to update post-payment UX:", err);
     }
@@ -2075,11 +2095,38 @@ export default function VendorDashboard() {
                           }}
                           onApprove={async (data, actions) => {
                             if (!actions.order) return;
-                            const details = await actions.order.capture();
-                            if (details.status === 'COMPLETED') {
-                                // Close modal, let webhook and Realtime logic handle fulfillment message
-                                setShowBuyCreditsModal(false);
+                            
+                            try {
+                              // Retrieve the transaction ID created earlier
+                              const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units[0].custom_id);
+
+                              const details = await actions.order.capture();
+                              
+                              if (details.status === 'COMPLETED') {
+                                  handlePayPalSuccess('CREDIT', creditAmount, txId);
+                              } else if (details.status === 'PENDING') {
+                                  setShowBuyCreditsModal(false);
+                                  showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your credits will be added once PayPal clears the payment.');
+                              } else {
+                                  showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
+                              }
+                            } catch (err: any) {
+                              console.error("PayPal Capture Error:", err);
+                              // PayPal's SDK typically handles INSTRUMENT_DECLINED internally, but just in case:
+                              if (err?.message?.includes('INSTRUMENT_DECLINED')) {
+                                showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
+                              } else {
+                                showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
+                              }
                             }
+                          }}
+                          onCancel={() => {
+                            // User closed the popup
+                            showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
+                          }}
+                          onError={(err) => {
+                            console.error("PayPal Error:", err);
+                            showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
                           }}
                         />
                       </PayPalScriptProvider>
@@ -2387,10 +2434,36 @@ export default function VendorDashboard() {
                           }}
                           onApprove={async (data, actions) => {
                             if (!actions.order) return;
-                            const details = await actions.order.capture();
-                            if (details.status === 'COMPLETED') {
-                                setShowBuyUnlimitedModal(false);
+                            
+                            try {
+                              // Retrieve the transaction ID created earlier
+                              const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units[0].custom_id);
+
+                              const details = await actions.order.capture();
+                              
+                              if (details.status === 'COMPLETED') {
+                                  handlePayPalSuccess('UNLIMITED', eventDuration, txId);
+                              } else if (details.status === 'PENDING') {
+                                  setShowBuyUnlimitedModal(false);
+                                  showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your quota will be added once PayPal clears the payment.');
+                              } else {
+                                  showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
+                              }
+                            } catch (err: any) {
+                              console.error("PayPal Capture Error:", err);
+                              if (err?.message?.includes('INSTRUMENT_DECLINED')) {
+                                showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
+                              } else {
+                                showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
+                              }
                             }
+                          }}
+                          onCancel={() => {
+                            showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
+                          }}
+                          onError={(err) => {
+                            console.error("PayPal Error:", err);
+                            showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
                           }}
                         />
                       </PayPalScriptProvider>
