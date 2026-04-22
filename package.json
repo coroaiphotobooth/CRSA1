@@ -14,6 +14,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@google/genai": "^1.36.0",
+    "@paypal/paypal-server-sdk": "^2.3.0",
+    "@paypal/react-paypal-js": "^9.1.1",
     "@supabase/supabase-js": "^2.100.0",
     "@types/papaparse": "^5.5.2",
     "file-saver": "^2.0.5",

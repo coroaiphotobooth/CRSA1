@@ -369,7 +369,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
   }, [countdown, capture]);
 
   const doCountdown = () => {
-      setCountdown(settings.countdownDuration || 3);
+      setCountdown(settings?.countdownDuration || 3);
   };
 
   const handleBack = () => {

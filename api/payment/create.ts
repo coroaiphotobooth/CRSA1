@@ -80,6 +80,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(500).json({ error: 'Failed to create transaction record' });
         }
 
+        if (payment_method === 'PAYPAL') {
+            // For PayPal, we just return the transaction ID and let the frontend handle the rest with the widget
+            return res.status(200).json({ 
+                payment_url: 'paypal', // Dummy string to avoid errors on frontend
+                transaction_id: transaction.id
+            });
+        }
+
         // 2. Prepare DOKU Checkout Request
         const dokuClientId = process.env.DOKU_CLIENT_ID;
         const dokuSecretKey = process.env.DOKU_SECRET_KEY;

@@ -14,6 +14,7 @@ import CinematicIntro from '../../components/CinematicIntro';
 import { useTourState, setTourState } from '../../lib/tourState';
 import ConceptStudio from './ConceptStudio';
 import { usePresence } from '../../hooks/usePresence';
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 export default function VendorDashboard() {
   const [activeTab, setActiveTab] = useState<'events' | 'concept_studio'>('events');
@@ -56,6 +57,35 @@ export default function VendorDashboard() {
         : eventPrices[eventDuration];
     }
   };
+
+  const handlePayPalSuccess = async (type: 'CREDIT' | 'UNLIMITED', quantity: number) => {
+    // With server-to-server webhook, we no longer forcefully update records client-side.
+    // The webhook will do it securely in the background, and the Realtime DB will refresh `vendor`.
+    // We just show the notification modal and close purchasing modal.
+    try {
+        if (type === 'CREDIT') {
+            const isEnglish = language === 'en';
+            showDialog('alert', isEnglish ? 'Processing Payment' : 'Memproses Pembayaran', 
+                isEnglish 
+                ? `Payment is being processed. Thank you!\nYour credit will be added by ${quantity} shortly.` 
+                : `Pembayaran sedang diproses. Terima kasih!\nKredit Anda akan ditambahkan sebesar ${quantity} beberapa saat lagi.`
+            );
+        } else if (type === 'UNLIMITED') {
+            const isEnglish = language === 'en';
+            showDialog('alert', isEnglish ? 'Processing Payment' : 'Memproses Pembayaran', 
+                isEnglish 
+                ? `Payment is being processed. Thank you!\nYour unlimited quota will be added by ${quantity} hours shortly.` 
+                : `Pembayaran sedang diproses. Terima kasih!\nKuota unlimited Anda akan ditambahkan sebesar ${quantity} jam beberapa saat lagi.`
+            );
+        }
+        
+        setShowBuyCreditsModal(false);
+        setShowBuyUnlimitedModal(false);
+    } catch (err: any) {
+        console.error("Failed to update post-payment UX:", err);
+    }
+  };
+
   const [timeLeft, setTimeLeft] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
 
@@ -2004,6 +2034,50 @@ export default function VendorDashboard() {
                     )}</span>
                   </button>
 
+                  {/* PAYPAL INTEGRATION FOR USD */}
+                  {buyCurrency === 'USD' && (
+                    <div className="w-full relative z-50">
+                      <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+                        <PayPalButtons 
+                          style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
+                          createOrder={async (data, actions) => {
+                            // First, create a pending transaction in Supabase
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (!session || !vendor?.id) throw new Error("Not authenticated");
+                            
+                            const res = await fetch('/api/payment/create', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                                body: JSON.stringify({ vendor_id: vendor.id, type: 'CREDIT', amount: Math.round(getCreditPriceUSD(creditAmount) * usdToIdrRate), quantity: creditAmount, payment_method: 'PAYPAL' })
+                            });
+                            const paymentData = await res.json();
+                            const transactionId = paymentData.transaction_id;
+
+                            return actions.order.create({
+                              intent: "CAPTURE",
+                              purchase_units: [{
+                                description: `${creditAmount} CoroAI Credits`,
+                                custom_id: transactionId,
+                                amount: {
+                                  currency_code: "USD",
+                                  value: getCreditPriceUSD(creditAmount).toFixed(2)
+                                }
+                              }]
+                            });
+                          }}
+                          onApprove={async (data, actions) => {
+                            if (!actions.order) return;
+                            const details = await actions.order.capture();
+                            if (details.status === 'COMPLETED') {
+                                // Close modal, let webhook and Realtime logic handle fulfillment message
+                                setShowBuyCreditsModal(false);
+                            }
+                          }}
+                        />
+                      </PayPalScriptProvider>
+                    </div>
+                  )}
+
                     <button
                     onClick={() => {
                       const baseAmount = getBaseAmountForDoku('credit');
@@ -2264,6 +2338,48 @@ export default function VendorDashboard() {
                       (eventPrices[eventDuration] / 15000) * 1.007
                     )}</span>
                   </button>
+
+                  {/* PAYPAL INTEGRATION FOR USD */}
+                  {buyCurrency === 'USD' && (
+                    <div className="w-full relative z-50">
+                      <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+                        <PayPalButtons 
+                          style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
+                          createOrder={async (data, actions) => {
+                            const { data: { session } } = await supabase.auth.getSession();
+                            if (!session || !vendor?.id) throw new Error("Not authenticated");
+                            
+                            const res = await fetch('/api/payment/create', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                                body: JSON.stringify({ vendor_id: vendor.id, type: 'UNLIMITED', amount: Math.round((eventPrices[eventDuration] / 15000) * usdToIdrRate), quantity: eventDuration, payment_method: 'PAYPAL' })
+                            });
+                            const paymentData = await res.json();
+                            const transactionId = paymentData.transaction_id;
+
+                            return actions.order.create({
+                              intent: "CAPTURE",
+                              purchase_units: [{
+                                description: `CoroAI Unlimited Event (${eventDuration} Hours)`,
+                                custom_id: transactionId,
+                                amount: {
+                                  currency_code: "USD",
+                                  value: (eventPrices[eventDuration] / 15000).toFixed(2)
+                                }
+                              }]
+                            });
+                          }}
+                          onApprove={async (data, actions) => {
+                            if (!actions.order) return;
+                            const details = await actions.order.capture();
+                            if (details.status === 'COMPLETED') {
+                                setShowBuyUnlimitedModal(false);
+                            }
+                          }}
+                        />
+                      </PayPalScriptProvider>
+                    </div>
+                  )}
 
                     <button
                     onClick={() => {
