@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { PhotoboothSettings, ProcessNotification } from '../../../types';
 import { ChevronDown, Settings, AlertCircle, CheckCircle } from 'lucide-react';
 import { useDialog } from '../../../components/DialogProvider';
+import { prewarmCamera } from '../../../lib/cameraUtils';
 
 interface LandingPageProps {
   onStart: () => void;
@@ -49,6 +50,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
     // Capture click coordinates for ripple effect
     setRipple({ x: e.clientX, y: e.clientY });
     setIsTransitioning(true);
+    
+    // Prewarm camera immediately to eliminate device setup delay
+    prewarmCamera(settings);
     
     // Increased timeout to allow ripple animation to play
     setTimeout(() => {
@@ -164,7 +168,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
           <div className="relative z-10 flex flex-col items-center gap-4 md:gap-8 w-full max-w-md md:max-w-none">
               <div className={`flex gap-4 md:gap-8 justify-center ${settings.uiSettings?.launchLayout === 'top_bottom' ? 'flex-col items-center' : 'flex-col md:flex-row'}`}>
                 <button 
-                  onClick={(e) => { e.stopPropagation(); onStart(); }}
+                  onClick={(e) => { 
+                      e.stopPropagation(); 
+                      prewarmCamera(settings);
+                      onStart(); 
+                  }}
                   style={settings.uiSettings?.buttonColor ? { backgroundColor: settings.uiSettings.buttonColor } : { backgroundColor: '#bc13fe' }}
                   className={`group relative py-5 md:py-6 transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden ${settings.uiSettings?.launchLayout === 'top_bottom' ? 'w-64 px-4' : 'px-8 md:px-12'}`}
                 >

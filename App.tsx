@@ -58,6 +58,12 @@ const PhotoboothFlow: React.FC = () => {
   const [settings, setSettings] = useState<PhotoboothSettings>(DEFAULT_SETTINGS);
   const [concepts, setConcepts] = useState<Concept[]>(DEFAULT_CONCEPTS);
   const [eventLoadStatus, setEventLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  
+  // App Booting States
+  const [isBooting, setIsBooting] = useState(false);
+  const [bootMessage, setBootMessage] = useState('Initializing AI Core...');
+  const [bootProgress, setBootProgress] = useState(0);
+
   const autoResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Regeneration Quality State
@@ -184,6 +190,81 @@ const PhotoboothFlow: React.FC = () => {
     
     // 3. Sync Cloud
     const syncCloud = async () => {
+      const handleBoot = async (settingsToLoad: PhotoboothSettings, conceptsToLoad: Concept[]) => {
+          setEventLoadStatus('success');
+          
+          // Only boot if we are launching the actual photobooth flow, not admin or gallery
+          if (initialPage !== AppState.LANDING) {
+              return;
+          }
+          
+          setIsBooting(true);
+          setBootMessage("Initializing AI Core...");
+          setBootProgress(0);
+          
+          // Inject global cache container
+          (window as any).__IMAGE_CACHE__ = (window as any).__IMAGE_CACHE__ || {};
+          const cache = (window as any).__IMAGE_CACHE__;
+          
+          const refUrls: string[] = [];
+          conceptsToLoad.forEach(c => {
+             if (c.thumbnail) refUrls.push(getGoogleDriveDirectLink(c.thumbnail)); // Preload thumbnails too
+             if (c.refImage) refUrls.push(getGoogleDriveDirectLink(c.refImage));
+             if (c.reference_image_split) refUrls.push(getGoogleDriveDirectLink(c.reference_image_split));
+             if (c.reference_image_bg) refUrls.push(getGoogleDriveDirectLink(c.reference_image_bg));
+             if (c.overlayImage) refUrls.push(getGoogleDriveDirectLink(c.overlayImage));
+          });
+          
+          const uniqueUrls = Array.from(new Set(refUrls)).filter(url => url && url.startsWith('http'));
+          const totalAssets = uniqueUrls.length + (settingsToLoad.backgroundVideoUrl ? 1 : 0);
+          let completed = 0;
+
+          const updateProgress = (msg: string) => {
+              completed++;
+              setBootMessage(msg);
+              setBootProgress(Math.round((completed / Math.max(1, totalAssets)) * 100));
+          };
+
+          // 1. Pre-buffer background video silently
+          if (settingsToLoad.backgroundVideoUrl) {
+              setBootMessage("Buffering Visuals...");
+              try {
+                  await fetch(settingsToLoad.backgroundVideoUrl, { mode: 'no-cors' });
+              } catch (e) {}
+              updateProgress("Background Synced");
+          }
+
+          // 2. Download and Base64 cache all references
+          const fetchPromises = uniqueUrls.map(async (url) => {
+              if (cache[url]) {
+                  updateProgress("Loading Asset...");
+                  return;
+              }
+              try {
+                  const res = await fetch(url);
+                  const blob = await res.blob();
+                  const base64Data = await new Promise<string>((resolve) => {
+                      const reader = new FileReader();
+                      reader.onloadend = () => resolve(reader.result as string);
+                      reader.readAsDataURL(blob);
+                  });
+                  cache[url] = {
+                      data: base64Data.split(',')[1],
+                      mimeType: blob.type || 'image/jpeg'
+                  };
+              } catch (e) {
+                  console.warn("Preload fail:", url);
+              }
+              updateProgress("Securing AI Assets...");
+          });
+
+          await Promise.all(fetchPromises);
+          
+          setBootMessage("Studio Ready");
+          setBootProgress(100);
+          setTimeout(() => setIsBooting(false), 500);
+      };
+
       try {
         if (eventId) {
           // Fetch from Supabase
@@ -200,22 +281,25 @@ const PhotoboothFlow: React.FC = () => {
                 loadedSettings.videoPrompt === 'Animate the image with very subtle and natural motion. Keep the subject stable and realistic. Add minimal camera movement and gentle breathing or blinking. Avoid any distortion, fast motion, or unrealistic effects. Preserve the original look and details.') {
               loadedSettings.videoPrompt = 'Apply slow camera movement (push-in, push-out, pan, or parallax depth effect). Add subtle natural motion to the subject such as blinking, breathing, and micro expressions. Keep the face sharp, realistic, and undistorted.';
             }
-            setSettings(prev => ({ 
-              ...prev, 
+            
+            const nextSettings = { 
+              ...settings, 
               ...loadedSettings, 
               eventName: eventData.name,
               eventDescription: eventData.description,
               activeEventId: eventData.id,
               storage_folder: eventData.storage_folder,
               vendor_id: eventData.vendor_id
-            }));
+            };
+            setSettings(nextSettings);
             
-            // Also fetch concepts from Supabase if we have a concepts table
+            // Also fetch concepts from Supabase
             const { data: conceptsData, error: conceptsError } = await supabase
               .from('concepts')
               .select('*')
               .eq('event_id', eventId);
               
+            let nextConcepts = concepts;
             if (!conceptsError && conceptsData) {
               const mappedConcepts = conceptsData.map(c => ({
                 id: c.id,
@@ -229,22 +313,25 @@ const PhotoboothFlow: React.FC = () => {
                 style_preset: c.style_preset || undefined
               }));
               setConcepts(mappedConcepts);
+              nextConcepts = mappedConcepts;
               saveLargeData('pb_concepts', mappedConcepts).catch(err => 
                   console.error("Failed to cache concepts to DB", err)
               );
             }
-            setEventLoadStatus('success');
+            handleBoot(nextSettings, nextConcepts);
           } else {
             setEventLoadStatus('error');
           }
         } else {
           // Legacy GAS Sync
           const res = await fetchSettings();
+          let nextSettings = { ...settings };
+          let nextConcepts = concepts;
           if (res.ok) {
-            setSettings(prev => ({ ...prev, ...res.settings }));
+            nextSettings = { ...nextSettings, ...res.settings };
             if (res.concepts && Array.isArray(res.concepts)) {
+              nextConcepts = res.concepts;
               setConcepts(res.concepts);
-              // Save to IndexedDB (Async) - DO NOT use localStorage for concepts
               saveLargeData('pb_concepts', res.concepts).catch(err => 
                   console.error("Failed to cache concepts to DB", err)
               );
@@ -254,16 +341,17 @@ const PhotoboothFlow: React.FC = () => {
           const events = await fetchEvents();
           const active = events.find(e => e.isActive);
           if (active) {
-            setSettings(prev => ({
-              ...prev,
+            nextSettings = {
+              ...nextSettings,
               eventName: active.name,
               eventDescription: active.description,
               folderId: active.folderId,
               activeEventId: active.id,
               storage_folder: active.storage_folder
-            }));
+            };
           }
-          setEventLoadStatus('success');
+          setSettings(nextSettings);
+          handleBoot(nextSettings, nextConcepts);
         }
       } catch (e) {
         console.warn("Cloud sync error:", e);
@@ -586,6 +674,21 @@ const PhotoboothFlow: React.FC = () => {
             >
               Go to Login
             </button>
+          </div>
+        ) : isBooting ? (
+          <div className="flex flex-col items-center justify-center text-white h-full min-h-[50vh] animate-in fade-in zoom-in duration-500">
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-[0.2em] mb-8 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">CORO AI</h1>
+            <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden mb-4 relative">
+               <div 
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-[#bc13fe] transition-all duration-300 ease-out"
+                  style={{ width: `${bootProgress}%` }}
+               />
+               <div className="absolute top-0 left-0 w-full h-full bg-white/5 animate-pulse" />
+            </div>
+            <p className="text-xs uppercase tracking-widest text-white/60 font-mono flex items-center gap-2">
+               <span className="w-2 h-2 rounded-full bg-[#bc13fe] animate-pulse"></span>
+               {bootMessage} {bootProgress}%
+            </p>
           </div>
         ) : (
           renderPage()

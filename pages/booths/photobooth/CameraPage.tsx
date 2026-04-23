@@ -3,6 +3,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { AspectRatio, PhotoboothSettings } from '../../../types';
 import { useWebViewCamera } from '../../../hooks/useWebViewCamera';
 import { getGoogleDriveDirectLink } from '../../../lib/imageUtils';
+import { getPrewarmedStream } from '../../../lib/cameraUtils';
 
 interface CameraPageProps {
   onCapture: (image: string) => void;
@@ -55,9 +56,15 @@ const CameraPage: React.FC<CameraPageProps> = ({
       console.log("Stopping Camera Stream...");
       streamRef.current.getTracks().forEach(track => {
         track.stop();
-        streamRef.current?.removeTrack(track);
       });
       streamRef.current = null;
+      
+      // Also release the global stream to prevent holding dead tracks
+      const globalStream = (window as any).__GLOBAL_MEDIA_STREAM__;
+      if (globalStream) {
+          globalStream.getTracks().forEach((track: any) => track.stop());
+          (window as any).__GLOBAL_MEDIA_STREAM__ = null;
+      }
     }
     
     if (videoRef.current) {
@@ -107,7 +114,14 @@ const CameraPage: React.FC<CameraPageProps> = ({
         } 
       };
 
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      let mediaStream = getPrewarmedStream();
+      
+      if (mediaStream) {
+          console.log("⚡ Found Global Pre-Warmed Camera Stream!");
+      } else {
+          mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      }
+      
       streamRef.current = mediaStream;
       
       if (videoRef.current) {

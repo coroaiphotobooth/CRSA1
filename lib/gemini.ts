@@ -1,6 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { PhotoboothSettings, AspectRatio, Concept } from "../types";
+import { getGoogleDriveDirectLink } from './imageUtils';
 
 // --- OPENAI HELPER FUNCTIONS ---
 
@@ -277,9 +278,22 @@ Instruction: ${finalPrompt}`;
 
       // Helper to fetch and convert image to base64
       const fetchImageAsBase64 = async (urlOrBase64: string): Promise<{ data: string, mimeType: string }> => {
-        if (urlOrBase64.startsWith('http')) {
+        let finalUrl = urlOrBase64;
+        
+        // Only run through getGoogleDriveDirectLink if it's a URL or Drive ID
+        if (urlOrBase64 && !urlOrBase64.startsWith('data:')) {
+             finalUrl = getGoogleDriveDirectLink(urlOrBase64);
+        }
+
+        if (finalUrl.startsWith('http')) {
+          const cache = (window as any).__IMAGE_CACHE__;
+          if (cache && cache[finalUrl]) {
+              console.log("⚡ Zero-Wait Pre-Processing: Using cached reference image for AI.");
+              return cache[finalUrl];
+          }
+
           try {
-            const response = await fetch(urlOrBase64);
+            const response = await fetch(finalUrl);
             const blob = await response.blob();
             const mimeType = blob.type || 'image/jpeg';
             const base64data = await new Promise<string>((resolve) => {
@@ -291,15 +305,15 @@ Instruction: ${finalPrompt}`;
           } catch (err) {
             console.error("Failed to fetch image URL:", err);
             return { 
-              data: urlOrBase64.includes(',') ? urlOrBase64.split(',')[1] : urlOrBase64, 
+              data: finalUrl.includes(',') ? finalUrl.split(',')[1] : finalUrl, 
               mimeType: 'image/jpeg' 
             };
           }
         } else {
-          const data = urlOrBase64.includes(',') ? urlOrBase64.split(',')[1] : urlOrBase64;
+          const data = finalUrl.includes(',') ? finalUrl.split(',')[1] : finalUrl;
           let mimeType = 'image/jpeg';
-          if (urlOrBase64.startsWith('data:')) {
-              mimeType = urlOrBase64.split(';')[0].split(':')[1];
+          if (finalUrl.startsWith('data:')) {
+              mimeType = finalUrl.split(';')[0].split(':')[1];
           }
           return { data, mimeType };
         }
@@ -607,9 +621,13 @@ CORE CONCEPT
 
 OUTFIT
 - Describe the clothing clearly and specifically.
-- If the user uploads a clothing reference image, describe the outfit based on the reference and rewrite ONLY the OUTFIT section unless the user asks for more changes.
-- If relevant, support male outfit, female outfit, and hijab female outfit naturally and clearly.
-- Keep outfit realistic, premium, and visually coherent with the concept.
+- CRITICAL SHIELDING: You MUST ALWAYS separate the outfit into conditional statements to prevent cross-dressing (e.g., men wearing dresses) or logical errors when scanning groups.
+- Format the OUTFIT section EXACTLY like this:
+  If male: [Describe the male outfit matching the theme]
+  If female: [Describe the female outfit matching the theme]
+  If hijab female: [Describe the hijab-friendly version of the female outfit]
+- If a user uploads a reference image (e.g. only showing a female dress), you MUST invent complimentary 'male' and 'hijab' variations that match the theme of that exact dress. Do NOT leave the other genders empty.
+- Keep the outfits realistic, premium, and visually coherent with the concept.
 
 BACKGROUND
 - Describe the environment clearly.
