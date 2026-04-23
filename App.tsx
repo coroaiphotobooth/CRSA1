@@ -14,6 +14,7 @@ import VipLandingPage from './pages/booths/photobooth/VipLandingPage';
 import CheckinPage from './pages/CheckinPage';
 import RegistrationApp from './pages/booths/registration/RegistrationApp';
 import RegistrationAdmin from './pages/booths/registration/RegistrationAdmin';
+import RegistrationMonitor from './pages/booths/registration/RegistrationMonitor';
 import ThemesPage from './pages/booths/photobooth/ThemesPage';
 import CameraPage from './pages/booths/photobooth/CameraPage';
 import ResultPage from './pages/booths/photobooth/ResultPage';
@@ -746,6 +747,7 @@ const App: React.FC = () => {
           <Route path="/dashboard" element={<VendorDashboard />} />
           <Route path="/result/:sessionId" element={<GuestResultPage />} />
           <Route path="/registration/:eventId/*" element={<RegistrationApp />} />
+          <Route path="/registration/:eventId/monitor" element={<RegistrationMonitor />} />
           <Route path="/admin/:eventId/registration" element={<RegistrationAdmin />} />
           <Route path="/app/:eventId/*" element={<PhotoboothFlow />} />
           <Route path="/admin/:eventId/guestbook" element={<GuestbookAdmin />} />

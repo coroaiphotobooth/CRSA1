@@ -1792,13 +1792,23 @@ export default function VendorDashboard() {
                         <Settings className="w-3 h-3" />
                         {t.settings}
                       </button>
-                      <button 
-                        onClick={() => navigate(`/app/${event.id}?page=gallery`)}
-                        className={`flex-1 min-w-[45%] py-2 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 ${isBartender ? 'bg-blue-500/10 hover:bg-blue-500/20' : 'bg-white/5 hover:bg-white/10'}`}
-                      >
-                        <ImageIcon className="w-3 h-3" />
-                        {t.gallery}
-                      </button>
+                      {(event.settings?.eventType || event.event_type) === 'registration' ? (
+                        <button 
+                          onClick={() => navigate(`/registration/${event.id}/monitor`)}
+                          className="flex-1 min-w-[45%] py-2 text-green-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 bg-green-500/10 hover:bg-green-500/20"
+                        >
+                          <Monitor className="w-3 h-3" />
+                          Monitor
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => navigate(`/app/${event.id}?page=gallery`)}
+                          className={`flex-1 min-w-[45%] py-2 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 ${isBartender ? 'bg-blue-500/10 hover:bg-blue-500/20' : 'bg-white/5 hover:bg-white/10'}`}
+                        >
+                          <ImageIcon className="w-3 h-3" />
+                          {t.gallery}
+                        </button>
+                      )}
 
                     </div>
                     <div className="flex gap-2 mt-1">

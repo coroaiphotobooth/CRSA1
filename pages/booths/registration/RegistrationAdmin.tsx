@@ -4,7 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { PhotoboothSettings } from '../../../types';
 import { DEFAULT_SETTINGS } from '../../../constants';
 import { useDialog } from '../../../components/DialogProvider';
-import { ArrowLeft, Save, Maximize, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Save, Maximize, FileSpreadsheet, Monitor } from 'lucide-react';
 
 const RegistrationAdmin: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -85,6 +85,12 @@ const RegistrationAdmin: React.FC = () => {
           <h1 className="text-xl font-black uppercase tracking-widest text-green-400">Registration Admin</h1>
         </div>
         <div className="flex items-center gap-4">
+          <button 
+            onClick={() => navigate(`/registration/${eventId}/monitor`)} 
+            className="px-6 py-2 bg-gradient-to-r from-green-900 to-emerald-900 border border-green-500/30 hover:border-green-400 text-green-200 text-xs font-bold uppercase tracking-widest rounded-lg transition-colors shadow-lg shadow-green-500/20 flex items-center gap-2"
+          >
+            <Monitor className="w-4 h-4" /> Live Monitor
+          </button>
           <button 
             onClick={() => navigate(`/registration/${eventId}`)} 
             className="px-6 py-2 bg-white/5 hover:bg-white/10 text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-colors border border-white/10 flex items-center gap-2"
