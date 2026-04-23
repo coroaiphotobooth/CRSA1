@@ -4,7 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import { PhotoboothSettings } from '../../../types';
 import { DEFAULT_SETTINGS } from '../../../constants';
 import { useDialog } from '../../../components/DialogProvider';
-import { ArrowLeft, Save, Maximize, FileSpreadsheet, Monitor } from 'lucide-react';
+import { ArrowLeft, Save, Maximize, Monitor } from 'lucide-react';
 
 const RegistrationAdmin: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -110,28 +110,6 @@ const RegistrationAdmin: React.FC = () => {
 
       <div className="max-w-4xl mx-auto p-6 space-y-8 mt-6">
         
-        {/* Core Settings */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 backdrop-blur-sm">
-          <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-4">
-            <FileSpreadsheet className="w-6 h-6 text-green-400" />
-            <h2 className="text-lg font-bold uppercase tracking-widest text-white">Data Sync Configuration</h2>
-          </div>
-          
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Google Apps Script URL</label>
-              <input 
-                type="text" 
-                value={settings.vipAppsScriptUrl || ''} 
-                onChange={(e) => handleChange('vipAppsScriptUrl', e.target.value)}
-                placeholder="https://script.google.com/macros/s/.../exec"
-                className="w-full bg-black/40 border-2 border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:border-green-400 focus:outline-none font-mono text-sm transition-colors"
-               />
-               <p className="text-xs text-gray-500">URL Spreadsheet yang menerima & mengirim status registrasi tamu.</p>
-            </div>
-          </div>
-        </div>
-
         {/* Video Avatar Settings */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 backdrop-blur-sm">
           <div className="flex items-center gap-3 mb-6 border-b border-white/10 pb-4">

@@ -506,37 +506,7 @@ export default function VendorDashboard() {
         if (eventsError) {
           console.error("Error fetching events:", eventsError);
         } else {
-          // AUTO-CLEANUP 15 DAYS
-          const now = Date.now();
-          const FIFTEEN_DAYS_MS = 15 * 24 * 60 * 60 * 1000;
-          const activeEvents = [];
-          
-          if (eventsData) {
-              for (const e of eventsData) {
-                  const eventAge = now - new Date(e.created_at).getTime();
-                  if (eventAge > FIFTEEN_DAYS_MS) {
-                      // Silently delete event & its storage
-                      console.log(`Auto-deleting old event: ${e.name} (${e.id})`);
-                      supabase.from('events').delete().eq('id', e.id).then();
-                      if (e.storage_folder) {
-                         const folderPath = e.storage_folder;
-                         const deletePath = async (path: string) => {
-                             const { data: files } = await supabase.storage.from('photobooth').list(path, { limit: 100 });
-                             if (files && files.length > 0) {
-                                 const fileNames = files.filter(x => x.id).map(x => `${path}/${x.name}`);
-                                 supabase.storage.from('photobooth').remove(fileNames).then();
-                             }
-                         };
-                         deletePath(`${folderPath}/original`).then();
-                         deletePath(`${folderPath}/result`).then();
-                         deletePath(folderPath).then();
-                      }
-                  } else {
-                      activeEvents.push(e);
-                  }
-              }
-          }
-          setEvents(activeEvents);
+          setEvents(eventsData || []);
         }
 
         // Fetch global settings for default template
@@ -1733,12 +1703,32 @@ export default function VendorDashboard() {
 
               {events.map((event, index) => {
                 const isBartender = event.settings?.eventType === 'bartender';
+                const expireDate = new Date(new Date(event.created_at).getTime() + 15 * 24 * 60 * 60 * 1000);
+                const daysUntilExpire = Math.ceil((expireDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                const isNearExpire = daysUntilExpire <= 3 && daysUntilExpire > 0;
+                const isExpired = daysUntilExpire <= 0;
+
                 return (
                 <div key={event.id} className={`glass-card p-6 rounded-2xl border flex flex-col gap-4 transition-colors group ${index === 0 ? 'tour-event-card' : ''} ${isBartender ? 'border-blue-500/30 hover:border-blue-400/60 bg-blue-900/[0.05]' : 'border-white/10 hover:border-[#bc13fe]/50'}`}>
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-bold text-lg mb-1">{event.name}</h3>
-                      <p className="text-xs text-gray-400">{event.date ? new Date(event.date).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+                      <p className="text-xs text-gray-400 mb-1">{event.date ? new Date(event.date).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+                      
+                      {/* Expiration Indicator */}
+                      <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-bold uppercase tracking-wider ${
+                        isExpired 
+                          ? 'bg-red-500/10 border-red-500/30 text-red-500' 
+                          : isNearExpire 
+                            ? 'bg-orange-500/10 border-orange-500/30 text-orange-400' 
+                            : 'bg-green-500/5 border-green-500/20 text-green-500/70'
+                      }`}>
+                         {isExpired 
+                           ? `EXPIRED / DELETE SOON (${expireDate.toLocaleDateString()})` 
+                           : isNearExpire 
+                             ? `TENGGAT WAKTU: ${daysUntilExpire} HARI LAGI (${expireDate.toLocaleDateString()})` 
+                             : `TENGGAT WAKTU: ${daysUntilExpire} HARI`}
+                      </div>
                     </div>
                     <div className={`w-3 h-3 rounded-full ${event.is_active !== false ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-gray-600'}`} title={event.is_active !== false ? 'Active' : 'Inactive'} />
                   </div>

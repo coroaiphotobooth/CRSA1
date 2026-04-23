@@ -112,7 +112,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
     setError(null);
 
     try {
-      const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbw5ZUzv-XwzgYJPvQt_PN42Yof3NivR_V3TJ3mfa6XkhsmAiOHMzZ5OTjA2NrKQk8s8/exec";
+      const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbwNjKY4JyNbdulbdRJgjHgRe6SxXN4oTYijMCmf-LQPHj0ZsELDMrm91daUlYmmxjM/exec";
       
       // Sending query as 'kode' Parameter to verification script. 
       // If the GAS script is updated to search by both, it works. If not, it just matches exactly.
@@ -147,7 +147,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
     if (!pendingGuest) return;
     setStep('greet');
     
-    const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbw5ZUzv-XwzgYJPvQt_PN42Yof3NivR_V3TJ3mfa6XkhsmAiOHMzZ5OTjA2NrKQk8s8/exec";
+    const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbwNjKY4JyNbdulbdRJgjHgRe6SxXN4oTYijMCmf-LQPHj0ZsELDMrm91daUlYmmxjM/exec";
     
     // Background Ping update
     fetch(`${scriptUrl}?action=update&target=login&kode=${encodeURIComponent(pendingGuest.kode)}&status=sudah`, {

@@ -45,7 +45,7 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   printTransparency: 0,
   enableSilentPrintWrapper: false,
   enableVipMode: false,
-  vipAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbw5ZUzv-XwzgYJPvQt_PN42Yof3NivR_V3TJ3mfa6XkhsmAiOHMzZ5OTjA2NrKQk8s8/exec',
+  vipAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbwNjKY4JyNbdulbdRJgjHgRe6SxXN4oTYijMCmf-LQPHj0ZsELDMrm91daUlYmmxjM/exec',
   vipVideoIdleUrl: 'https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO/LOOP%20IDLE.mp4',
   vipVideoTalkingUrl: 'https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO/TALKING.mp4',
   vipTtsSpeed: 1.25,

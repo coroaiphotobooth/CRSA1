@@ -61,7 +61,7 @@ const RegistrationMonitor: React.FC = () => {
         if (!res.ok) return;
         
         const json = await res.json();
-        if (mounted && json.result === 'success' && Array.isArray(json.data)) {
+        if (mounted && (json.result === 'success' || json.success === true) && Array.isArray(json.data)) {
           // Compare to trigger cool animation if there's a new arrival
           setArrivals(prev => {
             const newData = json.data.slice(0, 50); // Get latest 50
