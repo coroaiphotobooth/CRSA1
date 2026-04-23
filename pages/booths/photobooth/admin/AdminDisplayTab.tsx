@@ -312,6 +312,24 @@ export const AdminDisplayTab = forwardRef<AdminDisplayTabRef, AdminDisplayTabPro
                       <div className="w-3 h-3 bg-white/20 rounded-[2px]" />
                     </div>
                   </button>
+                  
+                  {settings.enableVipMode && (
+                    <button
+                      type="button"
+                      onClick={() => handleChange('launchLayout', 'vip_checkin')}
+                      className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all duration-300 flex items-center justify-between
+                        ${localUI.launchLayout === 'vip_checkin' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}
+                      `}
+                    >
+                      <div>
+                        <div className="font-bold text-white uppercase text-xs mb-0.5 whitespace-nowrap">VIP Gate Check-in</div>
+                        <div className="text-[9px] text-gray-400 leading-tight pr-2">Displays ID Input field only & triggers TTS. Used for separated receptionist display.</div>
+                      </div>
+                      <div className="w-7 h-7 rounded-full border border-white/20 flex items-center justify-center bg-black/50 shrink-0">
+                        <svg className="w-4 h-4 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      </div>
+                    </button>
+                  )}
                 </div>
               </div>
             )}

@@ -64,7 +64,7 @@ export interface UIDisplaySettings {
   buttonColor: string;
   conceptLayout: 'grid' | 'carousel';
   photoboothFlow: 'launch_concept_photo' | 'launch_photo_concept' | 'no_launch_concept_photo';
-  launchLayout: 'split_left_right' | 'top_bottom' | 'background_only';
+  launchLayout: 'split_left_right' | 'top_bottom' | 'background_only' | 'vip_checkin';
   showFrameDuringCapture: boolean;
   captureButtonPosition: 'bottom' | 'top_right';
   resultButtonsPosition: 'bottom' | 'right' | 'top';

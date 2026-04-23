@@ -11,6 +11,7 @@ import { saveLargeData, getLargeData } from './lib/storage';
 import { supabase, decrementCredits } from './lib/supabase';
 import LandingPage from './pages/booths/photobooth/LandingPage';
 import VipLandingPage from './pages/booths/photobooth/VipLandingPage';
+import CheckinPage from './pages/CheckinPage';
 import ThemesPage from './pages/booths/photobooth/ThemesPage';
 import CameraPage from './pages/booths/photobooth/CameraPage';
 import ResultPage from './pages/booths/photobooth/ResultPage';
@@ -523,6 +524,15 @@ const PhotoboothFlow: React.FC = () => {
             setCurrentPage(AppState.THEMES);
             return null;
         }
+        if (settings.uiSettings?.launchLayout === 'vip_checkin') {
+          return (
+             <CheckinPage 
+                settings={settings}
+                onExit={() => { setAdminTab('settings'); setCurrentPage(AppState.ADMIN); }}
+             />
+          );
+        }
+
         if (settings.enableVipMode) {
           return (
             <VipLandingPage 
