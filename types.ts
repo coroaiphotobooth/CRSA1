@@ -80,7 +80,7 @@ export interface PhotoboothSettings {
   folderId: string;
   originalFolderId?: string; 
   storage_folder?: string;
-  eventType?: 'photobooth' | 'guestbook' | 'bartender';
+  eventType?: 'photobooth' | 'guestbook' | 'bartender' | 'registration';
   bartenderMenu?: BartenderMenuItem[];
   spreadsheetId?: string; 
   selectedModel: string;

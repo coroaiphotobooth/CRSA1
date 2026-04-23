@@ -533,6 +533,24 @@ const PhotoboothFlow: React.FC = () => {
           );
         }
 
+        if (settings.uiSettings?.launchLayout === 'vip_checkin') {
+          return (
+             <CheckinPage 
+                settings={settings}
+                onExit={() => { setAdminTab('settings'); setCurrentPage(AppState.ADMIN); }}
+             />
+          );
+        }
+
+        if (settings.uiSettings?.launchLayout === 'vip_checkin') {
+          return (
+             <CheckinPage 
+                settings={settings}
+                onExit={() => { setAdminTab('settings'); setCurrentPage(AppState.ADMIN); }}
+             />
+          );
+        }
+
         if (settings.enableVipMode) {
           return (
             <VipLandingPage 

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft, Palette, Monitor, Camera, Wine } from 'lucide-react';
+import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft, Palette, Monitor, Camera, Wine, ClipboardList } from 'lucide-react';
 import { Vendor, Event } from '../../types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -204,7 +204,7 @@ export default function VendorDashboard() {
   const [rentDuration, setRentDuration] = useState<'minggu' | 'bulan'>('minggu');
   const [newEventName, setNewEventName] = useState('');
   const [newEventDescription, setNewEventDescription] = useState('AI PHOTOBOOTH EXPERIENCE');
-  const [newEventType, setNewEventType] = useState<'photobooth' | 'guestbook' | 'bartender'>('photobooth');
+  const [newEventType, setNewEventType] = useState<'photobooth' | 'guestbook' | 'bartender' | 'registration'>('photobooth');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ current: number, total: number } | null>(null);
   const [showDownloadOptions, setShowDownloadOptions] = useState<string | null>(null);
@@ -793,7 +793,11 @@ export default function VendorDashboard() {
               eventName: newEventName.trim(),
               eventDescription: newEventDescription.trim(),
               storage_folder: folderName,
-              eventType: newEventType
+              eventType: newEventType,
+              uiSettings: {
+                ...(initialSettings.uiSettings || {}),
+                launchLayout: newEventType === 'registration' ? 'vip_checkin' : (initialSettings.uiSettings?.launchLayout || 'split_left_right')
+              }
             }
           }
         ])
@@ -2647,7 +2651,7 @@ export default function VendorDashboard() {
               {(vendor?.email === 'demo@coroai.app' || vendor?.email === 'coroaiphotobooth@gmail.com') && (
                 <div className="mb-6">
                   <label className="block text-sm text-gray-400 mb-2">Event Type</label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <button
                       type="button"
                       onClick={() => {
@@ -2668,6 +2672,17 @@ export default function VendorDashboard() {
                     >
                       <Wine className={`w-5 h-5 ${newEventType === 'bartender' ? 'text-blue-400' : 'text-gray-400'}`} />
                       <span className="font-bold text-xs uppercase tracking-wider">Bartender</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                          setNewEventType('registration');
+                          if (newEventName === '') setNewEventName('VIP Registration Event');
+                      }}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${newEventType === 'registration' ? 'border-green-500 bg-green-500/20' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
+                    >
+                      <ClipboardList className={`w-5 h-5 ${newEventType === 'registration' ? 'text-green-400' : 'text-gray-400'}`} />
+                      <span className="font-bold text-xs uppercase tracking-wider">Registration</span>
                     </button>
                   </div>
                 </div>
