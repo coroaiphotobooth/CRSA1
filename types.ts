@@ -10,6 +10,7 @@ export interface Concept {
   reference_image_split?: string;
   reference_image_bg?: string;
   style_preset?: string;
+  overlayImage?: string;
 }
 
 export interface TemplateConcept {
@@ -73,6 +74,7 @@ export interface UIDisplaySettings {
 }
 
 export interface PhotoboothSettings {
+  title?: string;
   eventName: string;
   eventDescription: string;
   uiSettings?: UIDisplaySettings;
@@ -224,6 +226,7 @@ export interface Event {
   settings: PhotoboothSettings;
   created_at: string;
   storage_folder?: string;
+  event_type?: string;
 }
 
 export interface Transaction {

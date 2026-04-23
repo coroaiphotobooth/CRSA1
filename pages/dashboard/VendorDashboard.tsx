@@ -796,7 +796,7 @@ export default function VendorDashboard() {
               eventType: newEventType,
               uiSettings: {
                 ...(initialSettings.uiSettings || {}),
-                launchLayout: newEventType === 'registration' ? 'vip_checkin' : (initialSettings.uiSettings?.launchLayout || 'split_left_right')
+                launchLayout: initialSettings.uiSettings?.launchLayout || 'split_left_right'
               }
             }
           }
@@ -1749,10 +1749,13 @@ export default function VendorDashboard() {
                     <div className="flex flex-wrap gap-2">
                       <button 
                         onClick={async () => {
-                          if (event.settings?.eventType === 'guestbook') {
+                          const type = event.settings?.eventType || event.event_type;
+                          if (type === 'guestbook') {
                             navigate(`/guestbook/${event.id}/monitor`);
-                          } else if (event.settings?.eventType === 'bartender') {
+                          } else if (type === 'bartender') {
                             navigate(`/bartender/${event.id}`);
+                          } else if (type === 'registration') {
+                            navigate(`/registration/${event.id}`);
                           } else {
                             try {
                               // Request camera and mic permissions upfront
@@ -1773,10 +1776,13 @@ export default function VendorDashboard() {
                       </button>
                       <button 
                         onClick={() => {
-                          if (event.settings?.eventType === 'guestbook') {
+                          const type = event.settings?.eventType || event.event_type;
+                          if (type === 'guestbook') {
                             navigate(`/admin/${event.id}/guestbook`);
-                          } else if (event.settings?.eventType === 'bartender') {
+                          } else if (type === 'bartender') {
                             navigate(`/admin/${event.id}/bartender`);
+                          } else if (type === 'registration') {
+                            navigate(`/admin/${event.id}/registration`);
                           } else {
                             navigate(`/admin/${event.id}`);
                           }
@@ -2210,13 +2216,13 @@ export default function VendorDashboard() {
                           if (!actions.order) return;
                           
                           try {
-                            const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units[0].custom_id);
+                            const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units?.[0]?.custom_id);
 
                             const details = await actions.order.capture();
                             
                             if (details.status === 'COMPLETED') {
                                 handlePayPalSuccess('CREDIT', creditAmount, txId);
-                            } else if (details.status === 'PENDING') {
+                            } else if ((details.status as string) === 'PENDING') {
                                 setShowBuyCreditsModal(false);
                                 showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your credits will be added once PayPal clears the payment.');
                             } else {
@@ -2555,13 +2561,13 @@ export default function VendorDashboard() {
                           
                           try {
                             // Retrieve the transaction ID created earlier
-                            const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units[0].custom_id);
+                            const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units?.[0]?.custom_id);
 
                             const details = await actions.order.capture();
                             
                             if (details.status === 'COMPLETED') {
                                 handlePayPalSuccess('UNLIMITED', eventDuration, txId);
-                            } else if (details.status === 'PENDING') {
+                            } else if ((details.status as string) === 'PENDING') {
                                 setShowBuyUnlimitedModal(false);
                                 showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your quota will be added once PayPal clears the payment.');
                             } else {

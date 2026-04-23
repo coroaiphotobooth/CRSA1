@@ -12,6 +12,8 @@ import { supabase, decrementCredits } from './lib/supabase';
 import LandingPage from './pages/booths/photobooth/LandingPage';
 import VipLandingPage from './pages/booths/photobooth/VipLandingPage';
 import CheckinPage from './pages/CheckinPage';
+import RegistrationApp from './pages/booths/registration/RegistrationApp';
+import RegistrationAdmin from './pages/booths/registration/RegistrationAdmin';
 import ThemesPage from './pages/booths/photobooth/ThemesPage';
 import CameraPage from './pages/booths/photobooth/CameraPage';
 import ResultPage from './pages/booths/photobooth/ResultPage';
@@ -533,24 +535,6 @@ const PhotoboothFlow: React.FC = () => {
           );
         }
 
-        if (settings.uiSettings?.launchLayout === 'vip_checkin') {
-          return (
-             <CheckinPage 
-                settings={settings}
-                onExit={() => { setAdminTab('settings'); setCurrentPage(AppState.ADMIN); }}
-             />
-          );
-        }
-
-        if (settings.uiSettings?.launchLayout === 'vip_checkin') {
-          return (
-             <CheckinPage 
-                settings={settings}
-                onExit={() => { setAdminTab('settings'); setCurrentPage(AppState.ADMIN); }}
-             />
-          );
-        }
-
         if (settings.enableVipMode) {
           return (
             <VipLandingPage 
@@ -761,6 +745,8 @@ const App: React.FC = () => {
           <Route path="/superadmin" element={<SuperAdminDashboard />} />
           <Route path="/dashboard" element={<VendorDashboard />} />
           <Route path="/result/:sessionId" element={<GuestResultPage />} />
+          <Route path="/registration/:eventId/*" element={<RegistrationApp />} />
+          <Route path="/admin/:eventId/registration" element={<RegistrationAdmin />} />
           <Route path="/app/:eventId/*" element={<PhotoboothFlow />} />
           <Route path="/admin/:eventId/guestbook" element={<GuestbookAdmin />} />
           <Route path="/admin/:eventId/bartender" element={<BartenderAdmin />} />
