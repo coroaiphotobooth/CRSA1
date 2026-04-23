@@ -636,8 +636,9 @@ export default function VendorDashboard() {
           const localSeenOnboarding = localStorage.getItem(`has_seen_onboarding_${user.id}`) === 'true';
           const localSeenTourPrompt = localStorage.getItem(`has_seen_tour_prompt_${user.id}`) === 'true';
           
-          const needsOnboarding = !user.user_metadata?.has_seen_onboarding && !localSeenOnboarding;
-          const needsTourPrompt = !user.user_metadata?.has_seen_tour_prompt && !localSeenTourPrompt && !isActive;
+          const isOwnerEmail = user.email === 'coroaiphotobooth@gmail.com';
+          const needsOnboarding = (!user.user_metadata?.has_seen_onboarding && !localSeenOnboarding) || (isOwnerEmail && !localSeenOnboarding);
+          const needsTourPrompt = (!user.user_metadata?.has_seen_tour_prompt && !localSeenTourPrompt && !isActive) || (isOwnerEmail && !localSeenTourPrompt && !isActive && !needsOnboarding);
 
           if (needsOnboarding) {
             setShowOnboarding(true);
