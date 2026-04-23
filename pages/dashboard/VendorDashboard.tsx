@@ -207,6 +207,7 @@ export default function VendorDashboard() {
   const [newEventType, setNewEventType] = useState<'photobooth' | 'guestbook' | 'bartender'>('photobooth');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ current: number, total: number } | null>(null);
+  const [showDownloadOptions, setShowDownloadOptions] = useState<string | null>(null);
   const [backupProgress, setBackupProgress] = useState<{ current: number, total: number, success: number, fail: number } | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -505,7 +506,37 @@ export default function VendorDashboard() {
         if (eventsError) {
           console.error("Error fetching events:", eventsError);
         } else {
-          setEvents(eventsData || []);
+          // AUTO-CLEANUP 15 DAYS
+          const now = Date.now();
+          const FIFTEEN_DAYS_MS = 15 * 24 * 60 * 60 * 1000;
+          const activeEvents = [];
+          
+          if (eventsData) {
+              for (const e of eventsData) {
+                  const eventAge = now - new Date(e.created_at).getTime();
+                  if (eventAge > FIFTEEN_DAYS_MS) {
+                      // Silently delete event & its storage
+                      console.log(`Auto-deleting old event: ${e.name} (${e.id})`);
+                      supabase.from('events').delete().eq('id', e.id).then();
+                      if (e.storage_folder) {
+                         const folderPath = e.storage_folder;
+                         const deletePath = async (path: string) => {
+                             const { data: files } = await supabase.storage.from('photobooth').list(path, { limit: 100 });
+                             if (files && files.length > 0) {
+                                 const fileNames = files.filter(x => x.id).map(x => `${path}/${x.name}`);
+                                 supabase.storage.from('photobooth').remove(fileNames).then();
+                             }
+                         };
+                         deletePath(`${folderPath}/original`).then();
+                         deletePath(`${folderPath}/result`).then();
+                         deletePath(folderPath).then();
+                      }
+                  } else {
+                      activeEvents.push(e);
+                  }
+              }
+          }
+          setEvents(activeEvents);
         }
 
         // Fetch global settings for default template
@@ -872,7 +903,7 @@ export default function VendorDashboard() {
     }
   };
 
-  const handleDownloadAllData = async (eventId: string) => {
+  const handleDownloadAllData = async (eventId: string, mode: 'result_only' | 'result_and_original' = 'result_only') => {
     try {
       const { data: sessions, error } = await supabase
         .from('sessions')
@@ -889,6 +920,7 @@ export default function VendorDashboard() {
       sessions.forEach(s => {
         if (s.result_image_url) totalFiles++;
         if (s.result_video_url) totalFiles++;
+        if (mode === 'result_and_original' && s.original_image_url) totalFiles++;
       });
 
       if (totalFiles === 0) {
@@ -907,7 +939,7 @@ export default function VendorDashboard() {
           try {
             const response = await fetch(session.result_image_url);
             const blob = await response.blob();
-            folder?.file(`session_${session.id}_image.jpg`, blob);
+            folder?.file(`session_${session.id}_result.jpg`, blob);
             count++;
             setDownloadProgress({ current: count, total: totalFiles });
           } catch (e) {
@@ -923,6 +955,17 @@ export default function VendorDashboard() {
             setDownloadProgress({ current: count, total: totalFiles });
           } catch (e) {
             console.error(`Failed to download video for session ${session.id}`, e);
+          }
+        }
+        if (mode === 'result_and_original' && session.original_image_url) {
+          try {
+            const response = await fetch(session.original_image_url);
+            const blob = await response.blob();
+            folder?.file(`session_${session.id}_original.jpg`, blob);
+            count++;
+            setDownloadProgress({ current: count, total: totalFiles });
+          } catch (e) {
+            console.error(`Failed to download original image for session ${session.id}`, e);
           }
         }
       }
@@ -980,6 +1023,7 @@ export default function VendorDashboard() {
       sessions.forEach(s => {
         if (s.result_image_url) totalFiles++;
         if (s.result_video_url) totalFiles++;
+        if (s.original_image_url) totalFiles++;
       });
 
       if (totalFiles === 0) {
@@ -1071,12 +1115,40 @@ export default function VendorDashboard() {
           currentCount++;
           setBackupProgress({ current: currentCount, total: totalFiles, success: successCount, fail: failCount });
         }
+
+        if (session.original_image_url) {
+          try {
+            const base64Data = await fetchBase64WithFallback(session.original_image_url);
+
+            // Using 'uploadGenerated' action for original image handling via GAS script logic
+            const res = await robustFetch(gasUrl, {
+              method: 'POST',
+              body: JSON.stringify({
+                action: 'uploadGenerated',
+                image: base64Data,
+                folderId,
+                skipGallery: true
+              })
+            });
+            if (res.ok) {
+              successCount++;
+            } else {
+              console.error("GAS Upload Failed for original image:", res);
+              failCount++;
+            }
+          } catch (e) {
+            console.error("Backup failed for an original image:", e);
+            failCount++;
+          }
+          currentCount++;
+          setBackupProgress({ current: currentCount, total: totalFiles, success: successCount, fail: failCount });
+        }
       }
 
       timeoutsRef.current.push(setTimeout(async () => {
         setBackupProgress(null);
         await showDialog('alert', 'Success', `Backup complete! Successfully backed up ${successCount} files. Failed: ${failCount} files.`);
-      }, 500));
+      }, 500) as any);
 
     } catch (err: any) {
       console.error("Backup error:", err);
@@ -1720,7 +1792,7 @@ export default function VendorDashboard() {
                     </div>
                     <div className="flex gap-2 mt-1">
                       <button 
-                        onClick={() => handleDownloadAllData(event.id)}
+                        onClick={() => setShowDownloadOptions(event.id)}
                         className="flex-1 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
                         title={t.download}
                       >
@@ -1756,6 +1828,43 @@ export default function VendorDashboard() {
         )}
 
         {/* Progress Modals */}
+      {showDownloadOptions && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
+          <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-md relative text-center">
+            <button 
+              onClick={() => setShowDownloadOptions(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-white">Download Options</h2>
+            <p className="text-gray-300 mb-6 text-sm">What would you like to include in your ZIP download?</p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  handleDownloadAllData(showDownloadOptions, 'result_only');
+                  setShowDownloadOptions(null);
+                }}
+                className="w-full py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg font-bold transition-colors"
+                disabled={!!downloadProgress}
+              >
+                Result Only (Fast)
+              </button>
+              <button
+                onClick={() => {
+                  handleDownloadAllData(showDownloadOptions, 'result_and_original');
+                  setShowDownloadOptions(null);
+                }}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors"
+                disabled={!!downloadProgress}
+              >
+                Result + Original Photos
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {downloadProgress && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
           <div className="bg-[#111]/80 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-md text-center">
