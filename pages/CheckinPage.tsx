@@ -34,7 +34,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
   };
 
   const playGreetingSynthesis = async (name: string, _: string | undefined, voice: string = 'Kore', speed: number = 1.25) => {
-    const greetingText = `Halo ${name}, Selamat datang di acara! Silakan masuk dan nikmati acaranya.`;
+    const greetingText = `Halo ${name}, selamat datang di acara tech data, silakan menikmati acara ini. Terima kasih.`;
     
     let audioReadyToPlay = async () => {};
     let ttsSuccess = false;
@@ -48,8 +48,8 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
         }
 
         const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: [{ parts: [{ text: `Katakan dengan ceria: ${greetingText}` }] }],
+          model: "gemini-3.1-flash-tts-preview",
+          contents: [{ parts: [{ text: greetingText }] }],
           config: {
             responseModalities: ["AUDIO"],
             speechConfig: {
