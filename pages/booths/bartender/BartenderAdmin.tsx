@@ -12,7 +12,9 @@ const BartenderAdmin: React.FC = () => {
   const [settings, setSettings] = useState<PhotoboothSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'settings'|'menu'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings'|'menu'|'orders'>('orders');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -31,6 +33,52 @@ const BartenderAdmin: React.FC = () => {
     };
     loadSettings();
   }, [eventId]);
+
+  const fetchOrders = async () => {
+    if (!eventId) return;
+    setOrdersLoading(true);
+    try {
+       const { data, error } = await supabase
+         .from('sessions')
+         .select('*')
+         .eq('event_id', eventId)
+         .order('created_at', { ascending: false });
+       if (error) throw error;
+       if (data) setOrders(data);
+    } catch(e) {
+       console.error("Fetch orders failed", e);
+    } finally {
+       setOrdersLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'orders') {
+       fetchOrders();
+       const interval = setInterval(fetchOrders, 3000);
+       return () => clearInterval(interval);
+    }
+  }, [activeTab, eventId]);
+
+  const handleMarkDone = async (orderId: string) => {
+    try {
+      const { error } = await supabase.from('sessions').update({ is_posted_to_wall: true }).eq('id', orderId);
+      if (error) throw error;
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, is_posted_to_wall: true } : o));
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  const handleRemoveOrder = async (orderId: string) => {
+    try {
+      const { error } = await supabase.from('sessions').delete().eq('id', orderId);
+      if (error) throw error;
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    } catch(e) {
+      console.error(e);
+    }
+  };
 
   const handleSave = async () => {
     if (!eventId) return;
@@ -105,6 +153,12 @@ const BartenderAdmin: React.FC = () => {
         {/* Tabs */}
         <div className="flex gap-4">
           <button 
+            onClick={() => setActiveTab('orders')}
+            className={`px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center gap-2 transition-all ${activeTab === 'orders' ? 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-[#111] hover:bg-white/5 border border-white/10'}`}
+          >
+            <List className="w-4 h-4" /> Daftar Pesanan
+          </button>
+          <button 
             onClick={() => setActiveTab('settings')}
             className={`px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-sm flex items-center gap-2 transition-all ${activeTab === 'settings' ? 'bg-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.4)]' : 'bg-[#111] hover:bg-white/5 border border-white/10'}`}
           >
@@ -117,6 +171,75 @@ const BartenderAdmin: React.FC = () => {
             <List className="w-4 h-4" /> Menu List
           </button>
         </div>
+
+        {/* Orders Tab */}
+        {activeTab === 'orders' && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+             <div className="flex items-center justify-between glass-card p-6 rounded-2xl border border-white/10 bg-[#111]">
+               <div>
+                  <h2 className="text-xl font-bold">Pesanan Masuk</h2>
+                  <p className="text-sm text-gray-400 mt-1 font-mono tracking-wider">Live auto-update pesanan dari pengunjung.</p>
+               </div>
+               <button 
+                 onClick={fetchOrders}
+                 className="px-4 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center gap-2 transition-colors"
+               >
+                 Refresh
+               </button>
+             </div>
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               {ordersLoading && orders.length === 0 && (
+                 <div className="col-span-1 md:col-span-2 text-center p-12 border-2 border-dashed border-white/10 rounded-2xl">
+                    Loading orders...
+                 </div>
+               )}
+               {!ordersLoading && orders.length === 0 && (
+                 <div className="col-span-1 md:col-span-2 text-center p-12 border-2 border-dashed border-white/10 rounded-2xl">
+                   <p className="text-gray-500 font-mono tracking-wider mb-4">Belum ada pesanan yang masuk.</p>
+                 </div>
+               )}
+               
+               {orders.map((order) => {
+                  const isDone = order.is_posted_to_wall;
+                  return (
+                     <div key={order.id} className={`glass-card p-6 rounded-2xl border transition-colors flex flex-col gap-4 relative group ${isDone ? 'border-green-500/30 bg-green-900/10' : 'border-blue-500/30 bg-[#111]/80 hover:border-blue-400'}`}>
+                        <div className="flex justify-between items-start">
+                           <div>
+                              <h3 className="font-heading font-bold text-2xl uppercase tracking-widest text-white">{order.guest_message || 'Unknown Drink'}</h3>
+                              <p className="text-sm text-blue-400 font-mono mt-1">Order ID: {order.guest_name}</p>
+                           </div>
+                           <span className={`text-xs font-mono px-3 py-1 rounded-full ${isDone ? 'bg-green-500/20 text-green-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
+                              {isDone ? 'SELESAI' : 'MENUNGGU'}
+                           </span>
+                        </div>
+                        
+                        <p className="text-xs text-gray-500 font-mono">
+                           Waktu: {new Date(order.created_at).toLocaleTimeString('id-ID')}
+                        </p>
+                        
+                        <div className="mt-2 flex gap-3">
+                           {!isDone && (
+                              <button 
+                                 onClick={() => handleMarkDone(order.id)}
+                                 className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm tracking-widest uppercase py-3 rounded-xl transition-all"
+                              >
+                                 Buat Pesanan
+                              </button>
+                           )}
+                           <button 
+                              onClick={() => handleRemoveOrder(order.id)}
+                              className="px-4 py-3 bg-red-500/10 hover:bg-red-500/80 text-red-400 hover:text-white rounded-xl transition-all"
+                           >
+                              <Trash2 className="w-4 h-4" />
+                           </button>
+                        </div>
+                     </div>
+                  );
+               })}
+             </div>
+          </motion.div>
+        )}
 
         {/* Settings Tab */}
         {activeTab === 'settings' && (

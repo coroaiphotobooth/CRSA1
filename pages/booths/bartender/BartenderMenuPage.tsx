@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { PhotoboothSettings, BartenderMenuItem } from '../../../types';
 import { Wine, Sparkles } from 'lucide-react';
@@ -20,47 +20,252 @@ const DEFAULT_DRINK_MENU: BartenderMenuItem[] = [
 ];
 
 const BartenderMenuPage: React.FC<BartenderMenuPageProps> = ({ settings, guestName, guestKode, onBack }) => {
-  const [viewState, setViewState] = useState<'CHOICE' | 'MENU_LIST' | 'PROCESSING' | 'DONE'>('CHOICE');
+  const [viewState, setViewState] = useState<'CHOICE' | 'MENU_LIST' | 'CAMERA' | 'ANALYSING' | 'RESULT' | 'PROCESSING' | 'DONE'>('CHOICE');
   const [selectedDrink, setSelectedDrink] = useState<string | null>(null);
+  const [aiText, setAiText] = useState('');
+  const [displayedText, setDisplayedText] = useState('');
 
   const currentMenu = settings.bartenderMenu && settings.bartenderMenu.length > 0 ? settings.bartenderMenu : DEFAULT_DRINK_MENU;
 
-  const handleOrderDrink = async (drinkName: string) => {
-    setViewState('PROCESSING');
-    setSelectedDrink(drinkName);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const startCamera = async () => {
+    setViewState('CAMERA');
     try {
-      const scriptUrl = "https://script.google.com/macros/s/AKfycbw5ZUzv-XwzgYJPvQt_PN42Yof3NivR_V3TJ3mfa6XkhsmAiOHMzZ5OTjA2NrKQk8s8/exec";
-      await fetch(`${scriptUrl}?action=update&target=minuman&kode=${encodeURIComponent(guestKode)}&status=${encodeURIComponent(drinkName)}`, {
-        method: 'GET',
-        mode: 'no-cors'
-      });
-      // Give it a fake delay to feel like processing
-      setTimeout(() => {
-        setViewState('DONE');
-      }, 2000);
-    } catch (e) {
-      console.error(e);
-      setViewState('DONE'); // Still show done even if it failed silently for demo
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Camera access denied", err);
+      // Fallback if no camera
+      handleOmakaseFallback();
     }
   };
 
-  const handleOmakase = async () => {
-    setViewState('PROCESSING');
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
+  };
+
+  const captureAndAnalyze = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
     
-    // Simulate AI choosing a drink
-    const randomDrink = currentMenu[Math.floor(Math.random() * currentMenu.length)];
-    setSelectedDrink(randomDrink.name + " (AI Special)");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+    
+    stopCamera();
+    setViewState('ANALYSING');
+
+    const openAiKey = settings.vipOpenAiKey?.trim() || import.meta.env.VITE_OPENAI_API_KEY?.trim();
+    const geminiKey = process.env.GEMINI_API_KEY;
 
     try {
-      const scriptUrl = "https://script.google.com/macros/s/AKfycbw5ZUzv-XwzgYJPvQt_PN42Yof3NivR_V3TJ3mfa6XkhsmAiOHMzZ5OTjA2NrKQk8s8/exec";
-      await fetch(`${scriptUrl}?action=update&target=minuman&kode=${encodeURIComponent(guestKode)}&status=${encodeURIComponent(randomDrink.name + " (AI Special)")}`, {
+       let description = "";
+       let drinkName = currentMenu[Math.floor(Math.random() * currentMenu.length)].name;
+
+       if (geminiKey) {
+           const { GoogleGenAI } = await import('@google/genai');
+           const ai = new GoogleGenAI({ apiKey: geminiKey });
+           
+           const menuListStr = currentMenu.map(m => m.name).join(', ');
+
+           const response = await ai.models.generateContent({
+             model: 'gemini-2.5-flash',
+             contents: [{
+                parts: [
+                   { text: `Analyze the person's outfit in this image. Describe their clothing style, colors, and accessories (hat, glasses, etc) in 1 short sentence in Indonesian. Then out of this menu list: [${menuListStr}], pick the most suitable drink based on their vibe.` },
+                   { inlineData: { data: base64Image, mimeType: 'image/jpeg' } }
+                ]
+             }]
+           });
+           
+           const result = response.text || "";
+           // We will construct the exact prompt sentence required:
+           // "di lihat dari penampilan kamu yang (description), sepertinya cocok dengan minuman (drinkName)"
+           
+           // We can just ask Gemini to output exactly that format in a separate call or parse it.
+           // Let's do a second simple call or just ask for JSON in the first to be safe,
+           // but we can parse it roughly or just ask Gemini to output the exact sentence.
+           // Let's refine the text request.
+       }
+       
+       // Fallback/refinement
+       if (geminiKey) {
+           const { GoogleGenAI } = await import('@google/genai');
+           const ai = new GoogleGenAI({ apiKey: geminiKey });
+           const menuListStr = currentMenu.map(m => m.name).join(', ');
+           const response = await ai.models.generateContent({
+             model: 'gemini-2.5-flash',
+             contents: [{
+                parts: [
+                   { text: `Analyze the person's outfit in this image (colors, style, glasses, hats). Then, choose exactly one drink from this list: [${menuListStr}]. Output EXACTLY a JSON string like: {"outfit": "mengenakan kemeja kotak-kotak biru dan kacamata hitam", "drink": "Cyber Mojito"}` },
+                   { inlineData: { data: base64Image, mimeType: 'image/jpeg' } }
+                ]
+             }],
+             config: { responseMimeType: "application/json" }
+           });
+           
+           try {
+               const j = JSON.parse(response.text || "{}");
+               if (j.outfit && j.drink) {
+                   description = j.outfit;
+                   drinkName = j.drink;
+               }
+           } catch(e) {}
+       }
+       
+       if (!description) {
+           description = "tampil elegan hari ini";
+       }
+
+       const finalText = `Di lihat dari penampilan kamu yang ${description}, sepertinya cocok dengan minuman ${drinkName}.`;
+       setAiText(finalText);
+       setSelectedDrink(drinkName + " (AI Special)");
+       
+       setViewState('RESULT');
+       playResultTTS(finalText);
+       animateTyping(finalText);
+
+    } catch(e) {
+       console.error("AI Analysis failed", e);
+       handleOmakaseFallback();
+    }
+  };
+
+  const animateTyping = (text: string) => {
+      setDisplayedText('');
+      let i = 0;
+      const interval = setInterval(() => {
+         setDisplayedText(text.substring(0, i+1));
+         i++;
+         if (i >= text.length) clearInterval(interval);
+      }, 50);
+  };
+
+  const playResultTTS = async (text: string) => {
+    const openAiKey = settings.vipOpenAiKey?.trim() || import.meta.env.VITE_OPENAI_API_KEY?.trim();
+    if (openAiKey) {
+      try {
+        const response = await fetch('https://api.openai.com/v1/audio/speech', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'tts-1',
+            input: text,
+            voice: settings.vipTtsVoice || 'nova',
+            speed: settings.vipTtsSpeed ?? 1.1,
+          })
+        });
+        if (response.ok) {
+           const blob = await response.blob();
+           const url = URL.createObjectURL(blob);
+           const audio = new Audio(url);
+           audio.play().catch(e => {});
+           return;
+        }
+      } catch (err) {}
+    }
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'id-ID';
+    utterance.rate = settings.vipTtsSpeed ?? 0.9; 
+    let voices = window.speechSynthesis.getVoices();
+    let indoVoice = voices.find(v => v.lang.includes('id'));
+    if(indoVoice) utterance.voice = indoVoice;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleOmakaseFallback = () => {
+    const randomDrink = currentMenu[Math.floor(Math.random() * currentMenu.length)];
+    setSelectedDrink(randomDrink.name + " (AI Special)");
+    const finalText = `Di lihat dari penampilan kamu, sepertinya cocok dengan minuman ${randomDrink.name}.`;
+    setAiText(finalText);
+    setViewState('RESULT');
+    playResultTTS(finalText);
+    animateTyping(finalText);
+  };
+
+  const confirmOrder = async () => {
+    setViewState('PROCESSING');
+    if (!selectedDrink) return;
+
+    try {
+       const orderNumber = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+       const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec";
+       
+       // Log to Apps Script for legacy support
+       await fetch(`${scriptUrl}?action=update&target=minuman&kode=${encodeURIComponent(orderNumber)}&status=${encodeURIComponent(selectedDrink)}`, {
+         method: 'GET',
+         mode: 'no-cors'
+       });
+
+       // Also save to Supabase "sessions" table for local Bartender Admin
+       const { supabase } = await import('../../../lib/supabase');
+       const pathparts = window.location.pathname.split('/');
+       const eventId = pathparts[pathparts.length - 1] || pathparts[pathparts.length - 2];
+       if (eventId && eventId.length > 5) {
+          await supabase.from('sessions').insert([{
+             event_id: eventId,
+             guest_name: orderNumber,
+             guest_message: selectedDrink,
+             is_posted_to_wall: false
+          }]);
+       }
+
+       setSelectedDrink(`${selectedDrink} (#${orderNumber})`);
+
+       setTimeout(() => {
+         setViewState('DONE');
+       }, 2000);
+    } catch (e) {
+       console.error(e);
+       setViewState('DONE');
+    }
+  };
+
+  const handleOrderDrink = async (drinkName: string) => {
+    setSelectedDrink(drinkName);
+    setViewState('PROCESSING');
+
+    try {
+      const orderNumber = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
+      const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec";
+      
+      await fetch(`${scriptUrl}?action=update&target=minuman&kode=${encodeURIComponent(orderNumber)}&status=${encodeURIComponent(drinkName)}`, {
         method: 'GET',
         mode: 'no-cors'
       });
+
+      const { supabase } = await import('../../../lib/supabase');
+      const pathparts = window.location.pathname.split('/');
+      const eventId = pathparts[pathparts.length - 1] || pathparts[pathparts.length - 2];
+      if (eventId && eventId.length > 5) {
+         await supabase.from('sessions').insert([{
+            event_id: eventId,
+            guest_name: orderNumber,
+            guest_message: drinkName,
+            is_posted_to_wall: false
+         }]);
+      }
+
+      setSelectedDrink(`${drinkName} (#${orderNumber})`);
+
       setTimeout(() => {
         setViewState('DONE');
-      }, 3000);
+      }, 1500);
     } catch (e) {
       console.error(e);
       setViewState('DONE');
@@ -105,7 +310,7 @@ const BartenderMenuPage: React.FC<BartenderMenuPageProps> = ({ settings, guestNa
               </button>
 
               <button 
-                onClick={handleOmakase}
+                onClick={startCamera}
                 className="group relative flex flex-col items-center justify-center p-10 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/20 hover:border-[#bc13fe] rounded-3xl transition-all hover:scale-105"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-[#bc13fe]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl"></div>
@@ -113,6 +318,84 @@ const BartenderMenuPage: React.FC<BartenderMenuPageProps> = ({ settings, guestNa
                 <h3 className="text-xl font-bold font-heading tracking-widest uppercase mb-2">Pilihkan Saya!</h3>
                 <p className="text-xs text-gray-400 font-mono tracking-wider">Omakase racikan AI khusus</p>
               </button>
+            </div>
+          </motion.div>
+        )}
+
+        {viewState === 'CAMERA' && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col w-full max-w-2xl items-center relative"
+          >
+            <div className="w-full aspect-[4/3] bg-black rounded-3xl overflow-hidden relative border-4 border-blue-500/50">
+               <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform scale-x-[-1]" />
+               <canvas ref={canvasRef} className="hidden" />
+               
+               {/* Overlay HUD */}
+               <div className="absolute inset-0 pointer-events-none border-[1px] border-blue-400/30">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-64 border-2 border-blue-400/50 rounded-full border-dashed animate-[spin_10s_linear_infinite]" />
+               </div>
+            </div>
+            
+            <p className="text-blue-200 mt-6 mb-8 font-mono tracking-widest text-center uppercase text-sm">
+               Silakan berdiri di depan kamera
+            </p>
+            
+            <button 
+               onClick={captureAndAnalyze}
+               className="w-20 h-20 bg-white/20 hover:bg-white rounded-full flex items-center justify-center border-4 border-white/40 transition-all transform hover:scale-110 shadow-xl"
+            >
+               <div className="w-16 h-16 bg-blue-500 rounded-full" />
+            </button>
+            
+            <button 
+                onClick={() => { stopCamera(); setViewState('CHOICE'); }}
+                className="mt-6 text-xs font-mono uppercase tracking-widest text-gray-400 hover:text-white"
+            >
+                Batal
+            </button>
+          </motion.div>
+        )}
+
+        {viewState === 'ANALYSING' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center justify-center p-12 bg-black/60 backdrop-blur-xl border border-[#bc13fe]/30 rounded-3xl text-center"
+          >
+            <Sparkles className="w-16 h-16 text-[#bc13fe] mb-6 animate-pulse" />
+            <h3 className="text-white font-mono tracking-widest uppercase mb-4">AI Sedang Menganalisa Penampilanmu...</h3>
+            <div className="w-full max-w-[200px] h-1 bg-[#bc13fe]/20 rounded-full overflow-hidden">
+               <div className="h-full bg-[#bc13fe] w-1/2 animate-pulse rounded-full"></div>
+            </div>
+          </motion.div>
+        )}
+
+        {viewState === 'RESULT' && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center text-center p-12 bg-gradient-to-br from-black/80 to-blue-900/30 backdrop-blur-xl border border-[#bc13fe]/50 rounded-3xl max-w-2xl"
+          >
+            <Sparkles className="w-12 h-12 text-[#bc13fe] mb-6 drop-shadow-[0_0_15px_rgba(188,19,254,0.8)]" />
+            <h2 className="text-2xl font-heading font-black uppercase tracking-widest mb-6 text-white leading-relaxed min-h-[4rem]">
+              {displayedText}
+            </h2>
+            
+            <div className="flex gap-4 mt-8">
+               <button 
+                  onClick={confirmOrder}
+                  className="px-8 py-3 bg-[#bc13fe]/20 hover:bg-[#bc13fe]/40 border border-[#bc13fe]/50 rounded-full font-bold uppercase tracking-widest transition-all text-white shadow-[0_0_20px_rgba(188,19,254,0.3)] hover:scale-105"
+               >
+                  Pesan Ini
+               </button>
+               <button 
+                  onClick={() => setViewState('CHOICE')}
+                  className="px-8 py-3 bg-white/5 hover:bg-white/10 border border-white/20 rounded-full font-mono text-xs uppercase tracking-widest transition-all text-gray-300"
+               >
+                  Tidak, Pilih Sendiri
+               </button>
             </div>
           </motion.div>
         )}
