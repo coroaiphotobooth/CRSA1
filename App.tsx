@@ -633,6 +633,15 @@ const PhotoboothFlow: React.FC = () => {
     }
   };
 
+  // Convert Hex to RGB space-separated string for Tailwind CSS variables
+  const getGlowRgb = () => {
+     let hex = settings.uiSettings?.glowColor || '#bc13fe';
+     hex = hex.replace('#', '');
+     if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+     const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+     return result ? `${parseInt(result[1], 16)} ${parseInt(result[2], 16)} ${parseInt(result[3], 16)}` : '188 19 254';
+  };
+
   return (
     <div className={`relative w-full min-h-screen bg-[#050505] flex flex-col items-center justify-start ${settings.uiSettings?.fontFamily || 'font-sans'}`}>
       
@@ -641,6 +650,7 @@ const PhotoboothFlow: React.FC = () => {
         {`
           :root {
             --glow-color: ${settings.uiSettings?.glowColor || '#bc13fe'};
+            --glow-color-rgb: ${getGlowRgb()};
             --font-color: ${settings.uiSettings?.fontColor || '#ffffff'};
           }
           body {
@@ -654,12 +664,6 @@ const PhotoboothFlow: React.FC = () => {
           }
           .neon-text {
             text-shadow: 0 0 5px var(--glow-color), 0 0 10px var(--glow-color) !important;
-          }
-          .border-\\[\\#bc13fe\\] {
-            border-color: var(--glow-color) !important;
-          }
-          .text-\\[\\#bc13fe\\] {
-            color: var(--glow-color) !important;
           }
         `}
       </style>
@@ -694,7 +698,7 @@ const PhotoboothFlow: React.FC = () => {
       {/* Default Decorative Background */}
       {(!settings.backgroundVideoUrl || settings.backgroundVideoUrl.trim() === '') && !settings.backgroundImage && (
         <div className="fixed top-0 left-0 w-full h-full pointer-events-none opacity-20 z-0">
-            <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] bg-purple-600 blur-[150px] rounded-full" />
+            <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] bg-glow blur-[150px] rounded-full" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[70%] h-[70%] bg-blue-600 blur-[150px] rounded-full" />
         </div>
       )}
@@ -702,7 +706,7 @@ const PhotoboothFlow: React.FC = () => {
       <div className="relative z-10 w-full flex flex-col items-center flex-grow justify-center">
         {eventLoadStatus === 'loading' ? (
           <div className="flex flex-col items-center justify-center text-white h-full min-h-[50vh]">
-            <div className="w-12 h-12 border-4 border-white/20 border-t-[#bc13fe] rounded-full animate-spin mb-4"></div>
+            <div className="w-12 h-12 border-4 border-white/20 border-t-glow rounded-full animate-spin mb-4"></div>
             <p className="text-sm uppercase tracking-widest text-white/60">Loading Event...</p>
           </div>
         ) : eventLoadStatus === 'error' ? (
@@ -711,23 +715,23 @@ const PhotoboothFlow: React.FC = () => {
             <p className="text-white/70 mb-8">Event not found or you don't have permission to access it. Please log in as the event owner.</p>
             <button 
               onClick={() => window.location.href = '/login'}
-              className="px-8 py-3 bg-[#bc13fe] text-white rounded-full font-bold uppercase tracking-widest hover:bg-[#bc13fe]/80 transition-colors"
+              className="px-8 py-3 bg-glow text-white rounded-full font-bold uppercase tracking-widest hover:bg-glow/80 transition-colors"
             >
               Go to Login
             </button>
           </div>
         ) : isBooting ? (
           <div className="flex flex-col items-center justify-center text-white h-full min-h-[50vh] animate-in fade-in zoom-in duration-500">
-            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-[0.2em] mb-8 bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">CORO AI</h1>
+            <h1 className="text-4xl md:text-6xl font-black uppercase tracking-[0.2em] mb-8 bg-gradient-to-r from-blue-400 via-glow to-pink-500 bg-clip-text text-transparent">CORO AI</h1>
             <div className="w-64 h-1 bg-white/10 rounded-full overflow-hidden mb-4 relative">
                <div 
-                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-[#bc13fe] transition-all duration-300 ease-out"
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-glow transition-all duration-300 ease-out"
                   style={{ width: `${bootProgress}%` }}
                />
                <div className="absolute top-0 left-0 w-full h-full bg-white/5 animate-pulse" />
             </div>
             <p className="text-xs uppercase tracking-widest text-white/60 font-mono flex items-center gap-2">
-               <span className="w-2 h-2 rounded-full bg-[#bc13fe] animate-pulse"></span>
+               <span className="w-2 h-2 rounded-full bg-glow animate-pulse"></span>
                {bootMessage} {bootProgress}%
             </p>
           </div>
@@ -754,7 +758,7 @@ const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   if (isChecking) {
     return (
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center">
-        <div className="w-12 h-12 border-4 border-white/20 border-t-[#bc13fe] rounded-full animate-spin mb-4"></div>
+        <div className="w-12 h-12 border-4 border-white/20 border-t-glow rounded-full animate-spin mb-4"></div>
         <p className="text-white/50 text-sm font-mono tracking-widest uppercase">Verifying Session...</p>
       </div>
     );

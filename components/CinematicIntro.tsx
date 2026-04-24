@@ -57,7 +57,7 @@ export default function CinematicIntro({ vendorName, onComplete, isInstallable, 
             <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-500">
               Coroai Photobooth app
             </h2>
-            <p className="text-sm md:text-lg tracking-[0.3em] text-[#bc13fe] uppercase font-light">
+            <p className="text-sm md:text-lg tracking-[0.3em] text-glow uppercase font-light">
               creative intelligence Studio
             </p>
           </motion.div>
@@ -123,7 +123,7 @@ export default function CinematicIntro({ vendorName, onComplete, isInstallable, 
                   if (onInstall) onInstall();
                   onComplete(selectedLang);
                 }}
-                className="px-10 py-5 bg-[#bc13fe] text-white rounded-lg hover:bg-[#a010d8] transition-all tracking-widest uppercase font-bold"
+                className="px-10 py-5 bg-glow text-white rounded-lg hover:bg-glow/80 transition-all tracking-widest uppercase font-bold"
               >
                 Install App
               </button>

@@ -414,7 +414,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
       <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-40 bg-gradient-to-b from-black/80 to-transparent">
         <button 
           onClick={handleBack} 
-          className="text-white hover:text-purple-400 font-bold tracking-widest uppercase text-xs md:text-base transition-colors bg-black/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10"
+          className="text-white hover:text-glow font-bold tracking-widest uppercase text-xs md:text-base transition-colors bg-black/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10"
         >
           BACK
         </button>
@@ -444,7 +444,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
         {/* LOADING SPINNER (While Video Init) */}
         {!isVideoReady && !capturedImage && !localCapturedImage && !cameraError && (
             <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none">
-                <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-12 h-12 border-4 border-glow border-t-transparent rounded-full animate-spin"></div>
             </div>
         )}
 
@@ -453,7 +453,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
            <div className="relative w-full h-full flex items-center justify-center bg-black overflow-hidden p-4 md:p-8">
               
               {/* FRAME WITH VIDEO INSIDE */}
-              <div className="relative z-20 border-2 border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.3)] rounded-2xl overflow-hidden flex items-center justify-center bg-zinc-900 w-full h-full">
+              <div className="relative z-20 border-2 border-glow/50 shadow-[0_0_20px_rgba(var(--glow-color-rgb),0.3)] rounded-2xl overflow-hidden flex items-center justify-center bg-zinc-900 w-full h-full">
                   
                   <div 
                     className="absolute flex items-center justify-center"
@@ -473,7 +473,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
                         />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-black text-white/50">
-                          <div className="w-8 h-8 border-2 border-white/20 border-t-[#bc13fe] rounded-full animate-spin mb-2"></div>
+                          <div className="w-8 h-8 border-2 border-white/20 border-t-glow rounded-full animate-spin mb-2"></div>
                           <span className="text-xs uppercase tracking-widest">Connecting DSLR...</span>
                         </div>
                       )
@@ -490,10 +490,10 @@ const CameraPage: React.FC<CameraPageProps> = ({
                   </div>
                   
                   {/* Corner Markers */}
-                  <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-purple-500 rounded-tl-lg z-30 pointer-events-none" />
-                  <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-purple-500 rounded-tr-lg z-30 pointer-events-none" />
-                  <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-purple-500 rounded-bl-lg z-30 pointer-events-none" />
-                  <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-purple-500 rounded-br-lg z-30 pointer-events-none" />
+                  <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-glow rounded-tl-lg z-30 pointer-events-none" />
+                  <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-glow rounded-tr-lg z-30 pointer-events-none" />
+                  <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-glow rounded-bl-lg z-30 pointer-events-none" />
+                  <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-glow rounded-br-lg z-30 pointer-events-none" />
                   
                   {/* PNG Frame Guide Overlay */}
                   {settings?.uiSettings?.showFrameDuringCapture && settings?.overlayImage && (
@@ -543,7 +543,7 @@ const CameraPage: React.FC<CameraPageProps> = ({
                    onCapture(localCapturedImage);
                    onGenerate();
                 }}
-                className="px-8 py-3 md:py-4 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-full uppercase tracking-widest font-bold text-[10px] md:text-sm shadow-[0_0_20px_rgba(188,19,254,0.4)] transition-all flex items-center gap-2 border border-white/10"
+                className="px-8 py-3 md:py-4 bg-glow hover:bg-glow/80 text-white rounded-full uppercase tracking-widest font-bold text-[10px] md:text-sm shadow-[0_0_20px_rgba(var(--glow-color-rgb),0.4)] transition-all flex items-center gap-2 border border-white/10"
              >
                 PROCESS NOW
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
@@ -559,12 +559,12 @@ const CameraPage: React.FC<CameraPageProps> = ({
                    {showModelShortcut && (
                        <button
                          onClick={handleToggleModel}
-                         className={`group flex flex-col items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full backdrop-blur-md border-2 transition-all shadow-lg ${isUltraModel ? 'bg-orange-900/40 border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)]' : 'bg-purple-900/40 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.4)]'}`}
+                         className={`group flex flex-col items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full backdrop-blur-md border-2 transition-all shadow-lg ${isUltraModel ? 'bg-orange-900/40 border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)]' : 'bg-glow/40 border-glow shadow-[0_0_15px_rgba(var(--glow-color-rgb),0.4)]'}`}
                        >
-                           <div className={`text-[8px] md:text-[9px] font-bold font-heading uppercase tracking-widest ${isUltraModel ? 'text-orange-200' : 'text-purple-200'}`}>
+                           <div className={`text-[8px] md:text-[9px] font-bold font-heading uppercase tracking-widest ${isUltraModel ? 'text-orange-200' : 'text-glow'}`}>
                                {isUltraModel ? 'ULTRA' : 'NORMAL'}
                            </div>
-                           <div className={`text-[6px] md:text-[7px] font-mono opacity-70 ${isUltraModel ? 'text-orange-300' : 'text-purple-300'}`}>
+                           <div className={`text-[6px] md:text-[7px] font-mono opacity-70 ${isUltraModel ? 'text-orange-300' : 'text-glow'}`}>
                                {isUltraModel ? 'GEN3' : 'GEN3.1'}
                            </div>
                        </button>
@@ -576,9 +576,9 @@ const CameraPage: React.FC<CameraPageProps> = ({
                   className="group pointer-events-auto relative w-24 h-24 md:w-28 md:h-28 flex items-center justify-center outline-none transition-transform active:scale-95"
                   disabled={!!cameraError}
                 >
-                  <div className={`absolute inset-0 border-2 border-dashed ${cameraError ? 'border-red-500/30' : 'border-purple-500/30'} rounded-full animate-[spin_10s_linear_infinite]`} />
-                  <div className={`absolute inset-2 border-2 ${cameraError ? 'border-red-500/20' : 'border-white/20'} rounded-full group-hover:border-purple-400/50 transition-colors duration-500`} />
-                  <div className={`absolute inset-4 bg-white/5 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center group-hover:bg-purple-600/20 group-hover:border-purple-400 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.05)]`}>
+                  <div className={`absolute inset-0 border-2 border-dashed ${cameraError ? 'border-red-500/30' : 'border-glow/30'} rounded-full animate-[spin_10s_linear_infinite]`} />
+                  <div className={`absolute inset-2 border-2 ${cameraError ? 'border-red-500/20' : 'border-white/20'} rounded-full group-hover:border-glow/50 transition-colors duration-500`} />
+                  <div className={`absolute inset-4 bg-white/5 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center group-hover:bg-glow/20 group-hover:border-glow transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.05)]`}>
                     <span className="text-[10px] md:text-xs font-heading font-black text-white tracking-[0.2em] italic group-hover:neon-text">CAPTURE</span>
                   </div>
                 </button>
@@ -586,10 +586,10 @@ const CameraPage: React.FC<CameraPageProps> = ({
                 <div className="pointer-events-auto w-16 h-16 md:flex items-center justify-center">
                   <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-black/40 border border-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/10 hover:border-purple-500 transition-all group/upload"
+                    className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-black/40 border border-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/10 hover:border-glow transition-all group/upload"
                     title="Upload Image"
                   >
-                    <svg className="w-5 h-5 md:w-6 md:h-6 text-white/70 group-hover/upload:text-purple-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-white/70 group-hover/upload:text-glow transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
                   </button>

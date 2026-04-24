@@ -178,7 +178,7 @@ const GuestbookFlow: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <Loader2 className="w-12 h-12 text-[#bc13fe] animate-spin" />
+        <Loader2 className="w-12 h-12 text-glow animate-spin" />
       </div>
     );
   }
@@ -215,7 +215,7 @@ const GuestbookFlow: React.FC = () => {
 
       {currentState === GuestbookState.GENERATING && (
         <div className="min-h-screen flex flex-col items-center justify-center text-white p-6 text-center">
-          <Loader2 className="w-16 h-16 text-[#bc13fe] animate-spin mb-6" />
+          <Loader2 className="w-16 h-16 text-glow animate-spin mb-6" />
           <h2 className="text-2xl font-bold mb-2">Creating your memory...</h2>
           <p className="text-gray-400">Our AI is processing your photo</p>
         </div>

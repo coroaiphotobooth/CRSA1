@@ -70,7 +70,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       {/* Ripple Animation Element */}
       {ripple && (
         <div 
-          className="absolute z-[100] pointer-events-none rounded-full border-4 border-white/40 shadow-[0_0_60px_30px_rgba(188,19,254,0.4)] animate-[ripple-effect_1.5s_cubic-bezier(0.1,0.8,0.3,1)_forwards]"
+          className="absolute z-[100] pointer-events-none rounded-full border-4 border-white/40 shadow-[0_0_60px_30px_rgba(var(--glow-color-rgb),0.4)] animate-[ripple-effect_1.5s_cubic-bezier(0.1,0.8,0.3,1)_forwards]"
           style={{
             left: ripple.x,
             top: ripple.y,
@@ -160,7 +160,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
             <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-7xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-4 uppercase`}>
               {settings.eventName}
             </h1>
-            <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-xl'} tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase`}>
+            <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-xl'} tracking-[0.3em] md:tracking-[0.5em] text-glow font-bold uppercase`}>
               {settings.eventDescription}
             </h2>
           </div>
@@ -200,7 +200,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
                 {n.status === 'failed' && <div className="w-2 h-2 rounded-full bg-red-500" />}
                 
                 <span className="text-[10px] font-mono uppercase text-gray-300">
-                    {n.conceptName} : <span className={n.status === 'completed' ? 'text-green-400' : n.status === 'failed' ? 'text-red-400' : 'text-[#bc13fe]'}>
+                    {n.conceptName} : <span className={n.status === 'completed' ? 'text-green-400' : n.status === 'failed' ? 'text-red-400' : 'text-glow'}>
                         {n.status === 'completed' ? 'READY IN GALLERY' : n.status.toUpperCase()}
                     </span>
                 </span>

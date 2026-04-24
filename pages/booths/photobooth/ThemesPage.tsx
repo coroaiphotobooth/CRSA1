@@ -153,7 +153,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
       <div className="flex justify-between items-center w-full mb-4 max-w-6xl shrink-0 z-20">
         <div className="w-24 md:w-32">
           {photoboothFlow !== 'no_launch_concept_photo' && (
-            <button onClick={onBack} className="text-white flex items-center gap-2 hover:text-purple-400 transition-colors uppercase font-bold tracking-widest text-xs md:text-base bg-black/20 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md">
+            <button onClick={onBack} className="text-white flex items-center gap-2 hover:text-glow transition-colors uppercase font-bold tracking-widest text-xs md:text-base bg-black/20 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md">
               <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
               BACK
             </button>
@@ -161,7 +161,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
         </div>
         <div className="text-center">
           <h2 className="text-xl md:text-3xl font-heading text-white neon-text italic uppercase">CHOOSE CONCEPT</h2>
-          <p className="text-[10px] text-purple-400 tracking-widest uppercase mt-1 drop-shadow-md">Select your transformation</p>
+          <p className="text-[10px] text-glow tracking-widest uppercase mt-1 drop-shadow-md">Select your transformation</p>
         </div>
         <div className="hidden md:block w-24 md:w-32" /> {/* Spacer to balance Back button */}
       </div>
@@ -175,7 +175,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
             <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-2 uppercase`}>
               {settings.eventName}
             </h1>
-            <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-lg'} tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase`}>
+            <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-lg'} tracking-[0.3em] md:tracking-[0.5em] text-glow font-bold uppercase`}>
               {settings.eventDescription}
             </h2>
           </div>
@@ -187,7 +187,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
             {onAdmin && (
               <button 
                 onClick={() => onAdmin('concepts')}
-                className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white font-bold rounded-xl transition-all shadow-lg shadow-[#bc13fe]/20 uppercase tracking-widest text-sm"
+                className="px-6 py-3 bg-glow hover:bg-glow/80 text-white font-bold rounded-xl transition-all shadow-lg shadow-glow/20 uppercase tracking-widest text-sm"
               >
                 Add concept to this event
               </button>
@@ -242,7 +242,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
                         let baseClasses = "absolute top-0 bottom-0 my-auto cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-500 shadow-2xl flex flex-col justify-end bg-black";
                         
                         if (isCenter) {
-                          baseClasses += " z-30 scale-100 opacity-100 border-purple-500 shadow-[0_0_50px_rgba(168,85,247,0.5)] h-[90%] md:h-[95%] aspect-[2/3] left-1/2 -translate-x-1/2";
+                          baseClasses += " z-30 scale-100 opacity-100 border-glow shadow-[0_0_50px_rgba(var(--glow-color-rgb),0.5)] h-[90%] md:h-[95%] aspect-[2/3] left-1/2 -translate-x-1/2";
                         } else if (isLeft) {
                           baseClasses += " z-20 scale-[0.85] opacity-80 border-white/20 h-[75%] md:h-[80%] aspect-[2/3] left-[20%] md:left-[28%] -translate-x-1/2 hover:opacity-100";
                         } else if (isRight) {
@@ -285,7 +285,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
               <div 
                 key={concept.id}
                 onClick={() => onSelect(concept)}
-                className="w-[calc(50%-0.5rem)] md:w-[calc(25%-1.125rem)] max-w-[280px] group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl border-2 border-white/10 hover:border-purple-500 transition-all duration-300 shadow-2xl hover:shadow-[0_0_30px_rgba(168,85,247,0.4)] hover:-translate-y-2 bg-black/80 flex-shrink-0"
+                className="w-[calc(50%-0.5rem)] md:w-[calc(25%-1.125rem)] max-w-[280px] group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-xl border-2 border-white/10 hover:border-glow transition-all duration-300 shadow-2xl hover:shadow-[0_0_30px_rgba(var(--glow-color-rgb),0.4)] hover:-translate-y-2 bg-black/80 flex-shrink-0"
               >
                 <img 
                   src={concept.thumbnail} 
@@ -298,14 +298,14 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
                 {/* Content */}
                 <div className="absolute bottom-0 left-0 p-4 w-full flex flex-col gap-1">
                   <h3 className="text-sm md:text-lg font-heading text-white leading-tight tracking-tight uppercase italic group-hover:neon-text transition-all">{concept.name}</h3>
-                  <div className="h-0.5 w-8 bg-purple-500 group-hover:w-full transition-all duration-500" />
+                  <div className="h-0.5 w-8 bg-glow group-hover:w-full transition-all duration-500" />
                   <p className="text-[8px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 uppercase tracking-widest mt-1">
                       Click to Select
                   </p>
                 </div>
 
                 {/* Selection Ring Animation */}
-                <div className="absolute inset-0 border-2 border-purple-500/0 group-hover:border-purple-500/100 rounded-xl transition-all duration-300" />
+                <div className="absolute inset-0 border-2 border-glow/0 group-hover:border-glow/100 rounded-xl transition-all duration-300" />
               </div>
             ))}
           </div>
@@ -318,7 +318,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
             <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-2 uppercase`}>
               {settings.eventName}
             </h1>
-            <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-lg'} tracking-[0.3em] md:tracking-[0.5em] text-[#bc13fe] font-bold uppercase`}>
+            <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-lg'} tracking-[0.3em] md:tracking-[0.5em] text-glow font-bold uppercase`}>
               {settings.eventDescription}
             </h2>
           </div>

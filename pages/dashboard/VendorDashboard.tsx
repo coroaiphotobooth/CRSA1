@@ -1167,7 +1167,10 @@ export default function VendorDashboard() {
       create: "CREATE",
       creating: "CREATING...",
       error: "Error",
-      close: "CLOSE"
+      close: "CLOSE",
+      expired: "EXPIRED / DELETE SOON",
+      deadlineDays: "DEADLINE: {days} DAYS LEFT",
+      deadline: "DEADLINE: {days} DAYS"
     },
     id: {
       welcome: "Selamat datang kembali,",
@@ -1203,7 +1206,10 @@ export default function VendorDashboard() {
       create: "BUAT",
       creating: "MEMBUAT...",
       error: "Kesalahan",
-      close: "TUTUP"
+      close: "TUTUP",
+      expired: "KEDALUWARSA / SEGERA DIHAPUS",
+      deadlineDays: "TENGGAT WAKTU: {days} HARI LAGI",
+      deadline: "TENGGAT WAKTU: {days} HARI"
     }
   };
 
@@ -1724,10 +1730,10 @@ export default function VendorDashboard() {
                             : 'bg-green-500/5 border-green-500/20 text-green-500/70'
                       }`}>
                          {isExpired 
-                           ? `EXPIRED / DELETE SOON (${expireDate.toLocaleDateString()})` 
+                           ? `${t.expired} (${expireDate.toLocaleDateString()})` 
                            : isNearExpire 
-                             ? `TENGGAT WAKTU: ${daysUntilExpire} HARI LAGI (${expireDate.toLocaleDateString()})` 
-                             : `TENGGAT WAKTU: ${daysUntilExpire} HARI`}
+                             ? `${t.deadlineDays.replace('{days}', daysUntilExpire.toString())} (${expireDate.toLocaleDateString()})` 
+                             : t.deadline.replace('{days}', daysUntilExpire.toString())}
                       </div>
                     </div>
                     <div className={`w-3 h-3 rounded-full ${event.is_active !== false ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-gray-600'}`} title={event.is_active !== false ? 'Active' : 'Inactive'} />

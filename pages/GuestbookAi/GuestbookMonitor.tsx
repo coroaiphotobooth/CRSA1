@@ -222,8 +222,8 @@ const GuestbookMonitor: React.FC = React.memo(() => {
       <div class="p-4 flex-1 flex flex-col justify-center ${messageRounded} ${bgClass} pointer-events-none ${junctionMargin}">
         <p class="text-white italic line-clamp-3 mb-2" style="font-size: ${fontSize}px;">"${item.guest_message}"</p>
         <div class="flex items-center gap-2 mt-auto">
-          <div class="w-4 h-[2px] bg-[#bc13fe]"></div>
-          <p class="font-bold text-[#bc13fe] uppercase tracking-wider" style="font-size: ${Math.max(10, fontSize - 4)}px;">${item.guest_name}</p>
+          <div class="w-4 h-[2px] bg-glow"></div>
+          <p class="font-bold text-glow uppercase tracking-wider" style="font-size: ${Math.max(10, fontSize - 4)}px;">${item.guest_name}</p>
         </div>
       </div>
     `;
@@ -374,7 +374,7 @@ const GuestbookMonitor: React.FC = React.memo(() => {
           <img src={backgroundImage} className="w-full h-full object-cover opacity-60" alt="Background" />
         ) : (
           <>
-            <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-[#bc13fe]/20 rounded-full blur-[150px] animate-pulse" />
+            <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-glow/20 rounded-full blur-[150px] animate-pulse" />
             <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-blue-500/20 rounded-full blur-[150px] animate-pulse" style={{ animationDelay: '2s' }} />
           </>
         )}
@@ -452,8 +452,8 @@ const GuestbookMonitor: React.FC = React.memo(() => {
                     <div className={`p-4 flex-1 flex flex-col justify-center ${messageRounded} ${bgClass} pointer-events-none ${junctionMargin}`}>
                       <p className="text-white italic line-clamp-3 mb-2" style={{ fontSize: `${fontSize}px` }}>"{item.guest_message}"</p>
                       <div className="flex items-center gap-2 mt-auto">
-                        <div className="w-3 h-[2px] bg-[#bc13fe]"></div>
-                        <p className="font-bold text-[#bc13fe] uppercase tracking-wider truncate" style={{ fontSize: `${Math.max(10, fontSize - 4)}px` }}>{item.guest_name}</p>
+                        <div className="w-3 h-[2px] bg-glow"></div>
+                        <p className="font-bold text-glow uppercase tracking-wider truncate" style={{ fontSize: `${Math.max(10, fontSize - 4)}px` }}>{item.guest_name}</p>
                       </div>
                     </div>
                   </div>
@@ -517,14 +517,14 @@ const GuestbookMonitor: React.FC = React.memo(() => {
                     </div>
                     <div className={`p-3 px-5 flex-1 flex flex-col justify-center ${messageRounded} ${bgClass} ${junctionMargin} min-h-[60px] ${isEven ? 'items-start text-left' : 'items-end text-right'}`}>
                       <div className={`flex items-start gap-2 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}>
-                        <span className="text-[#bc13fe] text-xl leading-none">"</span>
+                        <span className="text-glow text-xl leading-none">"</span>
                         <p className="text-white italic leading-tight" style={{ fontSize: `${fontSize}px` }}>
                           {item.guest_message}
                         </p>
                       </div>
                       <div className={`flex items-center gap-2 mt-2 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}>
-                        <div className="w-4 h-[1px] bg-[#bc13fe] rounded-full" />
-                        <h3 className="font-bold text-[#bc13fe] uppercase tracking-widest" style={{ fontSize: `${Math.max(10, fontSize - 4)}px` }}>
+                        <div className="w-4 h-[1px] bg-glow rounded-full" />
+                        <h3 className="font-bold text-glow uppercase tracking-widest" style={{ fontSize: `${Math.max(10, fontSize - 4)}px` }}>
                           {item.guest_name}
                         </h3>
                       </div>
@@ -584,13 +584,13 @@ const GuestbookMonitor: React.FC = React.memo(() => {
               </div>
               <div className="w-full md:w-1/2 flex flex-col justify-center">
                 <div className="glass-card p-8 rounded-3xl border border-white/10 relative">
-                  <div className="absolute -top-6 -left-6 text-6xl text-[#bc13fe] opacity-50">"</div>
+                  <div className="absolute -top-6 -left-6 text-6xl text-glow opacity-50">"</div>
                   <p className="text-3xl leading-relaxed text-white font-medium mb-8 relative z-10 italic">
                     {lightboxItem.guest_message}
                   </p>
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-1 bg-[#bc13fe] rounded-full" />
-                    <h3 className="text-2xl font-bold text-[#bc13fe] uppercase tracking-widest">
+                    <div className="w-12 h-1 bg-glow rounded-full" />
+                    <h3 className="text-2xl font-bold text-glow uppercase tracking-widest">
                       {lightboxItem.guest_name}
                     </h3>
                   </div>

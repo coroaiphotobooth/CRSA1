@@ -92,7 +92,7 @@ const GuestbookResult: React.FC<GuestbookResultProps> = ({
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full aspect-[3/4] rounded-2xl overflow-hidden border-4 border-white/10 shadow-2xl shadow-[#bc13fe]/20 mb-8 relative"
+          className="w-full aspect-[3/4] rounded-2xl overflow-hidden border-4 border-white/10 shadow-2xl shadow-glow/20 mb-8 relative"
         >
           <img 
             src={imageUrl} 
@@ -119,7 +119,7 @@ const GuestbookResult: React.FC<GuestbookResultProps> = ({
           <button
             onClick={handlePostToWall}
             disabled={isPosting || isPosted}
-            className={`flex-1 py-4 ${isPosted ? 'bg-green-500' : 'bg-[#bc13fe] hover:bg-[#a010d8]'} disabled:opacity-50 text-white rounded-xl font-bold text-lg transition-all flex flex-col items-center justify-center gap-2 shadow-lg shadow-[#bc13fe]/20`}
+            className={`flex-1 py-4 ${isPosted ? 'bg-green-500' : 'bg-glow hover:bg-[#a010d8]'} disabled:opacity-50 text-white rounded-xl font-bold text-lg transition-all flex flex-col items-center justify-center gap-2 shadow-lg shadow-glow/20`}
           >
             {isPosting ? (
               <Loader2 className="w-6 h-6 animate-spin" />

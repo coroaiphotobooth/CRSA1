@@ -118,7 +118,7 @@ export default function GuestResultPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white">
-        <Loader2 className="w-12 h-12 animate-spin text-[#bc13fe] mb-4" />
+        <Loader2 className="w-12 h-12 animate-spin text-glow mb-4" />
         <p className="text-xl font-heading tracking-wider">MENCARI DATA SESI...</p>
       </div>
     );
@@ -149,9 +149,9 @@ export default function GuestResultPage() {
 
         <div className={`grid grid-cols-1 ${sessionData.isVideoRequested || sessionData.resultVideoUrl ? 'md:grid-cols-2' : 'max-w-md mx-auto'} gap-8`}>
           {/* Image Section */}
-          <div className="glass-card rounded-3xl p-6 flex flex-col items-center border border-[#bc13fe]/30">
+          <div className="glass-card rounded-3xl p-6 flex flex-col items-center border border-glow/30">
             <div className="flex items-center gap-2 mb-4 w-full">
-              <ImageIcon className="w-5 h-5 text-[#bc13fe]" />
+              <ImageIcon className="w-5 h-5 text-glow" />
               <h2 className="text-xl font-heading font-bold">AI PHOTO</h2>
             </div>
             
@@ -167,7 +167,7 @@ export default function GuestResultPage() {
                 </div>
                 <button 
                   onClick={() => handleDownload(sessionData.resultImageUrl!, `CoroAI_Photo_${sessionId}.jpg`)}
-                  className="w-full py-4 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold tracking-wider transition-all flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-glow hover:bg-glow/80 text-white rounded-xl font-bold tracking-wider transition-all flex items-center justify-center gap-2"
                 >
                   <Download className="w-5 h-5" />
                   DOWNLOAD PHOTO
@@ -183,9 +183,9 @@ export default function GuestResultPage() {
 
           {/* Video Section (Only if requested or exists) */}
           {(sessionData.isVideoRequested || sessionData.resultVideoUrl) && (
-            <div className="glass-card rounded-3xl p-6 flex flex-col items-center border border-[#bc13fe]/30">
+            <div className="glass-card rounded-3xl p-6 flex flex-col items-center border border-glow/30">
               <div className="flex items-center gap-2 mb-4 w-full">
-                <Video className="w-5 h-5 text-[#bc13fe]" />
+                <Video className="w-5 h-5 text-glow" />
                 <h2 className="text-xl font-heading font-bold">AI VIDEO</h2>
               </div>
               
@@ -203,7 +203,7 @@ export default function GuestResultPage() {
                   </div>
                   <button 
                     onClick={() => handleDownload(sessionData.resultVideoUrl!, `CoroAI_Video_${sessionId}.mp4`)}
-                    className="w-full py-4 bg-transparent border-2 border-[#bc13fe] text-[#bc13fe] hover:bg-[#bc13fe] hover:text-white rounded-xl font-bold tracking-wider transition-all flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-transparent border-2 border-glow text-glow hover:bg-glow hover:text-white rounded-xl font-bold tracking-wider transition-all flex items-center justify-center gap-2"
                   >
                     <Download className="w-5 h-5" />
                     DOWNLOAD VIDEO

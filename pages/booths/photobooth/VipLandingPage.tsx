@@ -172,10 +172,10 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
               className="group relative overflow-hidden rounded-full p-1 transition-all hover:scale-105 active:scale-95"
             >
               {/* Animated border glow */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#bc13fe] via-blue-500 to-[#bc13fe] animate-[spin_4s_linear_infinite]" />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-glow via-blue-500 to-glow animate-[spin_4s_linear_infinite]" />
               
               <div className="relative flex items-center justify-center gap-4 bg-black/80 backdrop-blur-xl rounded-full px-12 py-6 border border-white/10 group-hover:bg-black/60 transition-colors">
-                <Camera className="w-8 h-8 text-[#bc13fe] group-hover:scale-110 transition-transform" />
+                <Camera className="w-8 h-8 text-glow group-hover:scale-110 transition-transform" />
                 <span className="text-2xl font-bold tracking-[0.3em] uppercase text-white">Start</span>
               </div>
             </button>

@@ -394,16 +394,16 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
         <div className="relative z-10 flex flex-col items-center">
           <div className="relative w-40 h-40 md:w-64 md:h-64 mb-8 shrink-0">
              <div className="absolute inset-0 border-[6px] border-white/5 rounded-full" />
-             <div className="absolute inset-0 border-[6px] border-t-purple-500 rounded-full animate-spin shadow-[0_0_30px_rgba(188,19,254,0.4)]" />
+             <div className="absolute inset-0 border-[6px] border-t-glow rounded-full animate-spin shadow-[0_0_30px_rgba(var(--glow-color-rgb),0.4)]" />
              <div className="absolute inset-0 flex items-center justify-center flex-col">
-               <span className="text-[10px] tracking-[0.3em] text-purple-400 font-bold mb-1 uppercase italic">Processing</span>
+               <span className="text-[10px] tracking-[0.3em] text-glow font-bold mb-1 uppercase italic">Processing</span>
                <span className="text-3xl md:text-5xl font-heading text-white italic">{timer}<span className="text-lg md:text-2xl text-white/50 ml-1">s</span></span>
              </div>
           </div>
           <div className="max-w-md bg-black/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl">
             <h2 className="text-xl md:text-2xl font-heading mb-3 neon-text italic uppercase tracking-tighter">{progress}</h2>
             <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden mb-3">
-              <div className="bg-purple-500 h-full animate-[progress_10s_ease-in-out_infinite]" style={{width: '60%'}} />
+              <div className="bg-glow h-full animate-[progress_10s_ease-in-out_infinite]" style={{width: '60%'}} />
             </div>
             <p className="text-[8px] text-gray-500 uppercase tracking-widest animate-pulse">Initializing Generative AI System...</p>
           </div>
@@ -415,15 +415,15 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   if (isVideoRequested) {
     return (
       <div className="w-full h-[100dvh] flex flex-col items-center justify-center bg-black/90 p-8 text-center animate-[fadeIn_0.5s] backdrop-blur-xl">
-          <div className="w-24 h-24 mb-6 rounded-full border-4 border-purple-500/50 flex items-center justify-center bg-purple-900/20 shadow-[0_0_50px_rgba(168,85,247,0.3)]">
-             <svg className="w-12 h-12 text-purple-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+          <div className="w-24 h-24 mb-6 rounded-full border-4 border-glow/50 flex items-center justify-center bg-glow/20 shadow-[0_0_50px_rgba(var(--glow-color-rgb),0.3)]">
+             <svg className="w-12 h-12 text-glow animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
           </div>
           <h1 className="text-3xl md:text-5xl font-heading text-white italic uppercase tracking-tighter mb-4">VIDEO IS IN PROCESS ON THE GALLERY</h1>
           <p className="text-white/60 font-mono text-sm tracking-widest uppercase mb-8 max-w-lg leading-relaxed">
              PLEASE VIEW THE PROCESS ON THE GALLERY PAGE
           </p>
           {videoRedirectTimer !== null && (
-             <div className="text-purple-400 font-bold tracking-[0.2em] text-xs">REDIRECTING IN {videoRedirectTimer}...</div>
+             <div className="text-glow font-bold tracking-[0.2em] text-xs">REDIRECTING IN {videoRedirectTimer}...</div>
           )}
       </div>
     );
@@ -446,7 +446,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
             <div className="relative border-4 border-white/5 shadow-2xl bg-black/50 backdrop-blur-sm rounded-xl overflow-hidden" style={{ aspectRatio: displayAspectRatio, maxHeight: '100%', maxWidth: '100%' }}>
                 <img src={viewMode === 'result' ? resultImage! : capturedImage} className="w-full h-full object-contain" />
                 <div className="absolute top-4 left-4 z-40">
-                    <button onClick={() => setViewMode(prev => prev === 'result' ? 'original' : 'result')} className={`backdrop-blur border px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all ${viewMode === 'result' ? 'bg-purple-900/50 border-purple-500 text-purple-200' : 'bg-green-900/50 border-green-500 text-green-200'}`}>
+                    <button onClick={() => setViewMode(prev => prev === 'result' ? 'original' : 'result')} className={`backdrop-blur border px-4 py-2 rounded-full font-bold text-[10px] uppercase tracking-widest transition-all ${viewMode === 'result' ? 'bg-glow/50 border-glow text-glow' : 'bg-green-900/50 border-green-500 text-green-200'}`}>
                       {viewMode === 'result' ? '👁 VIEW ORIGINAL' : '✨ VIEW RESULT'}
                     </button>
                 </div>
@@ -465,7 +465,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
 
                   return (
                     <div className={containerClasses}>
-                       <button onClick={() => setShowQR(true)} disabled={!sessionFolder} className={`backdrop-blur-md border px-5 py-4 rounded-full font-heading text-[10px] tracking-[0.2em] uppercase italic flex items-center gap-2 transition-all ${!sessionFolder ? 'bg-gray-800/50 border-gray-600 text-gray-400 cursor-wait' : 'bg-purple-900/30 border-purple-500/50 text-purple-100 hover:bg-purple-600/40'}`}>
+                       <button onClick={() => setShowQR(true)} disabled={!sessionFolder} className={`backdrop-blur-md border px-5 py-4 rounded-full font-heading text-[10px] tracking-[0.2em] uppercase italic flex items-center gap-2 transition-all ${!sessionFolder ? 'bg-gray-800/50 border-gray-600 text-gray-400 cursor-wait' : 'bg-glow/30 border-glow/50 text-glow hover:bg-glow/40'}`}>
                           {!sessionFolder ? "SAVING..." : "SESSION QR"}
                        </button>
                        {settings.enablePrint && (
@@ -503,7 +503,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
                  </div>
                  <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 gap-4">
                     {concepts.map(c => (
-                      <div key={c.id} onClick={() => setSelectedRegenConcept(c)} className={`relative group cursor-pointer rounded-lg overflow-hidden border transition-all ${selectedRegenConcept?.id === c.id ? 'border-orange-500 ring-2 ring-orange-500/50' : 'border-white/10 hover:border-purple-500'}`}>
+                      <div key={c.id} onClick={() => setSelectedRegenConcept(c)} className={`relative group cursor-pointer rounded-lg overflow-hidden border transition-all ${selectedRegenConcept?.id === c.id ? 'border-orange-500 ring-2 ring-orange-500/50' : 'border-white/10 hover:border-glow'}`}>
                          <img src={c.thumbnail} className="w-full h-40 object-cover transition-transform group-hover:scale-105" />
                          {selectedRegenConcept?.id === c.id && (
                              <div className="absolute inset-0 bg-orange-500/20 flex items-center justify-center">
@@ -516,12 +516,12 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
                  </div>
                  <div className="p-6 border-t border-white/10 flex flex-col md:flex-row justify-between gap-4 bg-black/50">
                     <label className="flex items-center gap-3 cursor-pointer group select-none">
-                       <div className={`w-5 h-5 border rounded flex items-center justify-center transition-all ${pendingQuality ? 'bg-purple-600 border-purple-500' : 'bg-black/50 border-white/20 group-hover:border-purple-400'}`}>
+                       <div className={`w-5 h-5 border rounded flex items-center justify-center transition-all ${pendingQuality ? 'bg-glow border-glow' : 'bg-black/50 border-white/20 group-hover:border-glow'}`}>
                            {pendingQuality && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                        </div>
                        <input type="checkbox" className="hidden" checked={pendingQuality} onChange={e => setPendingQuality(e.target.checked)} />
                        <div className="flex flex-col">
-                          <span className={`text-xs font-bold uppercase tracking-widest ${pendingQuality ? 'text-purple-300' : 'text-gray-400 group-hover:text-white'}`}>USE ULTRA QUALITY</span>
+                          <span className={`text-xs font-bold uppercase tracking-widest ${pendingQuality ? 'text-glow' : 'text-gray-400 group-hover:text-white'}`}>USE ULTRA QUALITY</span>
                           <span className="text-[8px] text-gray-500">Warning: Slower generation time</span>
                        </div>
                     </label>
@@ -536,21 +536,21 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
 
       {showQR && sessionFolder && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-[fadeIn_0.3s]" onClick={() => setShowQR(false)}>
-            <div className="relative bg-[#050505]/95 border border-purple-500/50 p-6 rounded-2xl flex flex-col items-center gap-4 max-w-[280px] w-full shadow-[0_0_80px_rgba(168,85,247,0.4)] backdrop-blur-xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                <div className="absolute top-0 left-0 w-full h-1 bg-purple-400/50 shadow-[0_0_10px_#a855f7] animate-[scan_2s_linear_infinite] z-20 pointer-events-none opacity-70" />
+            <div className="relative bg-[#050505]/95 border border-glow/50 p-6 rounded-2xl flex flex-col items-center gap-4 max-w-[280px] w-full shadow-[0_0_80px_rgba(var(--glow-color-rgb),0.4)] backdrop-blur-xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="absolute top-0 left-0 w-full h-1 bg-glow/50 shadow-[0_0_10px_var(--glow-color)] animate-[scan_2s_linear_infinite] z-20 pointer-events-none opacity-70" />
                 <div className="flex flex-col items-center z-10 w-full">
                   <h3 className="text-white font-heading text-xs tracking-[0.3em] uppercase neon-text">Neural Link</h3>
-                  <div className="w-full h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent mt-2 opacity-50"/>
+                  <div className="w-full h-px bg-gradient-to-r from-transparent via-glow to-transparent mt-2 opacity-50"/>
                 </div>
                 <div className="relative p-3 bg-white rounded-xl z-10 shadow-inner mt-1">
-                  <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-purple-500" />
-                  <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-purple-500" />
-                  <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-purple-500" />
-                  <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-purple-500" />
+                  <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-glow" />
+                  <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-glow" />
+                  <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-glow" />
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-glow" />
                   <img src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(`${window.location.origin}/result/${sessionFolder.id}?n=${encodeURIComponent(settings.eventName || '')}&d=${encodeURIComponent(settings.eventDescription || '')}`)}`} className="w-32 h-32 object-contain mix-blend-multiply" />
                 </div>
                 <div className="text-center z-10 mt-1">
-                  <p className="text-purple-300 text-[9px] font-mono tracking-widest uppercase mb-1">SCAN_TO_DOWNLOAD</p>
+                  <p className="text-glow text-[9px] font-mono tracking-widest uppercase mb-1">SCAN_TO_DOWNLOAD</p>
                   <p className="text-gray-500 text-[7px] uppercase tracking-widest">SECURE_CONNECTION_ESTABLISHED</p>
                 </div>
                 <button onClick={() => setShowQR(false)} className="mt-2 w-full py-2 bg-white/5 hover:bg-white/10 text-white border border-white/10 font-bold uppercase text-[9px] tracking-[0.2em] rounded transition-colors z-10">CLOSE</button>
