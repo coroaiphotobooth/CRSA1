@@ -66,7 +66,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
             responseModalities: [Modality.AUDIO],
             speechConfig: {
                 voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName: voice as any },
+                  prebuiltVoiceConfig: { voiceName: (voice as any) || 'Kore' },
                 },
             },
           },
@@ -74,18 +74,35 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
 
         const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
         if (base64Audio) {
-           // Create a Blob from base64
+           // Decode base64 16-bit PCM and play via Web Audio API 
            const binary = atob(base64Audio);
            const bytes = new Uint8Array(binary.length);
            for (let i = 0; i < binary.length; i++) {
                bytes[i] = binary.charCodeAt(i);
            }
-           const blob = new Blob([bytes], { type: 'audio/mp3' });
-           const url = URL.createObjectURL(blob);
-           const audio = new Audio(url);
-           audio.playbackRate = speed;
-           await audio.play();
-           return;
+           
+           const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+           const int16Array = new Int16Array(bytes.buffer);
+           const audioBuffer = audioCtx.createBuffer(1, int16Array.length, 24000);
+           const channelData = audioBuffer.getChannelData(0);
+           for (let i = 0; i < int16Array.length; i++) {
+             channelData[i] = int16Array[i] / 32768; // Convert 16-bit PCM to float [-1.0, 1.0]
+           }
+           
+           const source = audioCtx.createBufferSource();
+           source.buffer = audioBuffer;
+           source.playbackRate.value = speed;
+           source.connect(audioCtx.destination);
+           
+           // Wrap in promise to resume AudioContext if suspended
+           if (audioCtx.state === 'suspended') {
+             await audioCtx.resume();
+           }
+           
+           return new Promise<void>((resolve) => {
+             source.onended = () => resolve();
+             source.start(0);
+           });
         }
       }
     } catch (err) {

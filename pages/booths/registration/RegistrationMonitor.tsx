@@ -47,14 +47,12 @@ const RegistrationMonitor: React.FC = () => {
   }, [eventId]);
 
   useEffect(() => {
-    if (!settings?.vipAppsScriptUrl) return;
-
     let mounted = true;
     const fetchLiveArrivals = async () => {
       try {
         // Assumption: The Apps Script has an action=getRecent endpoint
         // that returns recent check-ins in JSON format.
-        const scriptUrl = settings.vipAppsScriptUrl;
+        const scriptUrl = settings?.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbwNjKY4JyNbdulbdRJgjHgRe6SxXN4oTYijMCmf-LQPHj0ZsELDMrm91daUlYmmxjM/exec";
         
         // Add a cache-buster
         const res = await fetch(`${scriptUrl}?action=getRecent&t=${Date.now()}`);
