@@ -38,6 +38,7 @@ const BartenderLandingPage: React.FC<BartenderLandingPageProps> = ({ onStart, se
     if (talkingVideoRef.current) {
       talkingVideoRef.current.playbackRate = settings.vipTtsSpeed ?? 1.1;
       talkingVideoRef.current.currentTime = 0;
+      talkingVideoRef.current.muted = false; // Ensure sound is unmuted
       
       talkingVideoRef.current.play().catch(e => console.error("Video play err:", e));
       
@@ -72,7 +73,7 @@ const BartenderLandingPage: React.FC<BartenderLandingPageProps> = ({ onStart, se
           ref={talkingVideoRef}
           src={settings.vipVideoTalkingUrl || '/placeholder-talking.mp4'} 
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${isVideoTalking ? 'opacity-100' : 'opacity-0'}`}
-          autoPlay loop muted playsInline 
+          playsInline 
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
       </div>
