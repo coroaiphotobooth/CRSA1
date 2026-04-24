@@ -37,6 +37,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   const [progress, setProgress] = useState("INITIATING...");
   const [timer, setTimer] = useState(0);
   const [showQR, setShowQR] = useState(false);
+  const [generationTrigger, setGenerationTrigger] = useState(0);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -197,7 +198,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
     if (!hasProcessed.current) {
       handleProcessFlow();
     }
-  }, [handleProcessFlow]); 
+  }, [handleProcessFlow, generationTrigger]); 
 
   // FIXED: Trigger queueing instead of direct generate and AWAIT RESPONSE
   const handleGenerateVideo = async () => {
@@ -320,9 +321,11 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
         setResultImage(null);
         setPrintLayoutImage(null);
         setError(null);
+        setIsProcessing(true);
         setCurrentQuality(pendingQuality);
         setConcept(selectedRegenConcept);
         setShowConceptSelector(false);
+        setGenerationTrigger(prev => prev + 1);
     }
   };
 

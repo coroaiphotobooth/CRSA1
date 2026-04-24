@@ -160,16 +160,54 @@ export const AdminDisplayTab = forwardRef<AdminDisplayTabRef, AdminDisplayTabPro
             <div className="flex gap-2">
                <input 
                  type="color"
-                 value={localUI.buttonColor}
+                 value={localUI.buttonColor || '#ea580c'}
                  onChange={(e) => handleChange('buttonColor', e.target.value)}
                  className="w-16 h-12 rounded cursor-pointer bg-black/50 border border-white/20"
                />
                <input 
                  type="text"
-                 value={localUI.buttonColor}
+                 value={localUI.buttonColor || '#ea580c'}
                  onChange={(e) => handleChange('buttonColor', e.target.value)}
                  className={UI_INPUT_TEXT}
                  placeholder="#ea580c"
+               />
+            </div>
+          </div>
+          
+          <div className={UI_CONTAINER}>
+            <label className={UI_LABEL}>Global Glow Color (Hex)</label>
+            <div className="flex gap-2">
+               <input 
+                 type="color"
+                 value={localUI.glowColor || '#bc13fe'}
+                 onChange={(e) => handleChange('glowColor', e.target.value)}
+                 className="w-16 h-12 rounded cursor-pointer bg-black/50 border border-white/20"
+               />
+               <input 
+                 type="text"
+                 value={localUI.glowColor || '#bc13fe'}
+                 onChange={(e) => handleChange('glowColor', e.target.value)}
+                 className={UI_INPUT_TEXT}
+                 placeholder="#bc13fe"
+               />
+            </div>
+          </div>
+
+          <div className={UI_CONTAINER}>
+            <label className={UI_LABEL}>Global Font Color (Hex)</label>
+            <div className="flex gap-2">
+               <input 
+                 type="color"
+                 value={localUI.fontColor || '#ffffff'}
+                 onChange={(e) => handleChange('fontColor', e.target.value)}
+                 className="w-16 h-12 rounded cursor-pointer bg-black/50 border border-white/20"
+               />
+               <input 
+                 type="text"
+                 value={localUI.fontColor || '#ffffff'}
+                 onChange={(e) => handleChange('fontColor', e.target.value)}
+                 className={UI_INPUT_TEXT}
+                 placeholder="#ffffff"
                />
             </div>
           </div>

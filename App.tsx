@@ -636,6 +636,34 @@ const PhotoboothFlow: React.FC = () => {
   return (
     <div className={`relative w-full min-h-screen bg-[#050505] flex flex-col items-center justify-start ${settings.uiSettings?.fontFamily || 'font-sans'}`}>
       
+      {/* --- GLOBAL DYNAMIC DESIGN STYLES --- */}
+      <style>
+        {`
+          :root {
+            --glow-color: ${settings.uiSettings?.glowColor || '#bc13fe'};
+            --font-color: ${settings.uiSettings?.fontColor || '#ffffff'};
+          }
+          body {
+            color: var(--font-color);
+          }
+          .text-white {
+            color: var(--font-color) !important;
+          }
+          .neon-border {
+            box-shadow: 0 0 5px var(--glow-color), 0 0 10px var(--glow-color) !important;
+          }
+          .neon-text {
+            text-shadow: 0 0 5px var(--glow-color), 0 0 10px var(--glow-color) !important;
+          }
+          .border-\\[\\#bc13fe\\] {
+            border-color: var(--glow-color) !important;
+          }
+          .text-\\[\\#bc13fe\\] {
+            color: var(--glow-color) !important;
+          }
+        `}
+      </style>
+
       {/* --- GLOBAL BACKGROUND VIDEO --- */}
       {settings.backgroundVideoUrl && settings.backgroundVideoUrl.trim() !== '' && (
         <div className="fixed inset-0 z-0 pointer-events-none transform-gpu">

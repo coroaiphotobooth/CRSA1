@@ -63,6 +63,8 @@ export interface UIDisplaySettings {
   eventDescSize: string;
   fontFamily: string;
   buttonColor: string;
+  glowColor?: string;
+  fontColor?: string;
   conceptLayout: 'grid' | 'carousel';
   photoboothFlow: 'launch_concept_photo' | 'launch_photo_concept' | 'no_launch_concept_photo';
   launchLayout: 'split_left_right' | 'top_bottom' | 'background_only' | 'vip_checkin';

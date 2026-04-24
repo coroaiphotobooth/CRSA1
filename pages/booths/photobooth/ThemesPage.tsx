@@ -160,7 +160,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
           )}
         </div>
         <div className="text-center">
-          <h2 className="text-xl md:text-3xl font-heading text-white neon-text italic uppercase bg-black/30 px-4 py-1 rounded-lg backdrop-blur-sm">CHOOSE CONCEPT</h2>
+          <h2 className="text-xl md:text-3xl font-heading text-white neon-text italic uppercase">CHOOSE CONCEPT</h2>
           <p className="text-[10px] text-purple-400 tracking-widest uppercase mt-1 drop-shadow-md">Select your transformation</p>
         </div>
         <div className="hidden md:block w-24 md:w-32" /> {/* Spacer to balance Back button */}
