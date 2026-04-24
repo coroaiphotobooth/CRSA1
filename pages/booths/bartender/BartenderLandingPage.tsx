@@ -33,10 +33,29 @@ const BartenderLandingPage: React.FC<BartenderLandingPageProps> = ({ onStart, se
   };
 
   const handleAccessBar = async () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onStart('', '');
-    }, 800);
+    setIsVideoTalking(true);
+
+    if (talkingVideoRef.current) {
+      talkingVideoRef.current.playbackRate = settings.vipTtsSpeed ?? 1.1;
+      talkingVideoRef.current.currentTime = 0;
+      talkingVideoRef.current.muted = false;
+      
+      talkingVideoRef.current.play().catch(e => console.error("Video play err:", e));
+      
+      talkingVideoRef.current.onended = () => {
+        setIsExiting(true);
+        setTimeout(() => {
+          onStart('', '');
+        }, 800);
+      };
+    } else {
+      setTimeout(() => {
+        setIsExiting(true);
+        setTimeout(() => {
+          onStart('', '');
+        }, 800);
+      }, 5000);
+    }
   };
 
   return (

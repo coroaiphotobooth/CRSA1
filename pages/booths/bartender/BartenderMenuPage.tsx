@@ -154,6 +154,69 @@ const BartenderMenuPage: React.FC<BartenderMenuPageProps> = ({ settings, guestNa
   };
 
   const playResultTTS = async (text: string) => {
+    let ttsSuccess = false;
+    const speed = settings.vipTtsSpeed ?? 1.1;
+
+    try {
+      if (process.env.GEMINI_API_KEY) {
+        // Dynamic import to avoid missing dependencies if they load late
+        const { GoogleGenAI } = await import('@google/genai');
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        let geminiVoice = settings.vipTtsVoice || 'Kore';
+        if (!['Puck', 'Charon', 'Kore', 'Fenrir', 'Aoede'].includes(geminiVoice)) {
+           geminiVoice = 'Kore';
+        }
+
+        const response = await ai.models.generateContent({
+          model: "gemini-3.1-flash-tts-preview",
+          contents: [{ parts: [{ text }] }],
+          config: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: geminiVoice as any },
+                },
+            },
+          },
+        });
+
+        const audioPart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData && p.inlineData.mimeType.startsWith('audio/'));
+        const base64Audio = audioPart?.inlineData?.data;
+
+        if (base64Audio) {
+           const binary = atob(base64Audio);
+           const bytes = new Uint8Array(binary.length);
+           for (let i = 0; i < binary.length; i++) {
+               bytes[i] = binary.charCodeAt(i);
+           }
+           
+           const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+           const int16Array = new Int16Array(bytes.buffer);
+           const audioBuffer = audioCtx.createBuffer(1, int16Array.length, 24000);
+           const channelData = audioBuffer.getChannelData(0);
+           for (let i = 0; i < int16Array.length; i++) {
+             channelData[i] = int16Array[i] / 32768;
+           }
+           
+           ttsSuccess = true;
+           const source = audioCtx.createBufferSource();
+           source.buffer = audioBuffer;
+           source.playbackRate.value = speed;
+           source.connect(audioCtx.destination);
+           
+           if (audioCtx.state === 'suspended') {
+             await audioCtx.resume();
+           }
+           
+           source.start(0);
+        }
+      }
+    } catch (err) {
+      console.error("Gemini TTS Err:", err);
+    }
+
+    if (ttsSuccess) return;
+
     const openAiKey = settings.vipOpenAiKey?.trim() || import.meta.env.VITE_OPENAI_API_KEY?.trim();
     if (openAiKey) {
       try {
@@ -167,13 +230,14 @@ const BartenderMenuPage: React.FC<BartenderMenuPageProps> = ({ settings, guestNa
             model: 'tts-1',
             input: text,
             voice: settings.vipTtsVoice || 'nova',
-            speed: settings.vipTtsSpeed ?? 1.1,
+            speed: speed,
           })
         });
         if (response.ok) {
            const blob = await response.blob();
            const url = URL.createObjectURL(blob);
            const audio = new Audio(url);
+           audio.playbackRate = speed;
            audio.play().catch(e => {});
            return;
         }
