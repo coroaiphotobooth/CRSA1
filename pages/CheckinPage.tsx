@@ -15,6 +15,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
   const [error, setError] = useState<string | null>(null);
   
   const [step, setStep] = useState<'input' | 'confirm' | 'greet'>('input');
+  const [greetState, setGreetState] = useState<'preparing' | 'playing' | 'done'>('preparing');
   const [pendingGuest, setPendingGuest] = useState<{name: string, kode: string} | null>(null);
   const [isVideoTalking, setIsVideoTalking] = useState(false);
   
@@ -35,26 +36,8 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
   const playGreetingSynthesis = async (name: string, _: string | undefined, voice: string = 'Kore', speed: number = 1.25) => {
     const greetingText = `Halo ${name}, Selamat datang di acara! Silakan masuk dan nikmati acaranya.`;
     
-    // Switch to talking video
-    setIsVideoTalking(true);
-    if (talkingVideoRef.current) {
-      talkingVideoRef.current.playbackRate = speed;
-      talkingVideoRef.current.currentTime = 0;
-      talkingVideoRef.current.play().catch(e => console.error("Video play err:", e));
-      
-      talkingVideoRef.current.onended = () => {
-        setIsVideoTalking(false);
-        setStep('input');
-        setVipKode('');
-      };
-    } else {
-       // fallback if no video
-       setTimeout(() => {
-          setIsVideoTalking(false);
-          setStep('input');
-          setVipKode('');
-       }, 5000);
-    }
+    let audioReadyToPlay = async () => {};
+    let ttsSuccess = false;
     
     try {
       if (process.env.GEMINI_API_KEY) {
@@ -72,12 +55,10 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
           },
         });
 
-        // Loop over parts to find the AUDIO part
         const audioPart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData && p.inlineData.mimeType.startsWith('audio/'));
         const base64Audio = audioPart?.inlineData?.data;
 
         if (base64Audio) {
-           // Decode base64 16-bit PCM and play via Web Audio API 
            const binary = atob(base64Audio);
            const bytes = new Uint8Array(binary.length);
            for (let i = 0; i < binary.length; i++) {
@@ -89,39 +70,82 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
            const audioBuffer = audioCtx.createBuffer(1, int16Array.length, 24000);
            const channelData = audioBuffer.getChannelData(0);
            for (let i = 0; i < int16Array.length; i++) {
-             channelData[i] = int16Array[i] / 32768; // Convert 16-bit PCM to float [-1.0, 1.0]
+             channelData[i] = int16Array[i] / 32768;
            }
            
-           const source = audioCtx.createBufferSource();
-           source.buffer = audioBuffer;
-           source.playbackRate.value = speed;
-           source.connect(audioCtx.destination);
-           
-           // Wrap in promise to resume AudioContext if suspended
-           if (audioCtx.state === 'suspended') {
-             await audioCtx.resume();
-           }
-           
-           return new Promise<void>((resolve) => {
-             source.onended = () => resolve();
-             source.start(0);
-           });
+           ttsSuccess = true;
+           audioReadyToPlay = async () => {
+             const source = audioCtx.createBufferSource();
+             source.buffer = audioBuffer;
+             source.playbackRate.value = speed;
+             source.connect(audioCtx.destination);
+             
+             if (audioCtx.state === 'suspended') {
+               await audioCtx.resume();
+             }
+             
+             return new Promise<void>((resolve) => {
+               source.onended = () => resolve();
+               source.start(0);
+             });
+           };
         }
       }
     } catch (err) {
       console.error("Gemini TTS Err:", err);
     }
 
-    // Fallback: Browser Web Speech API
-    const utterance = new SpeechSynthesisUtterance(greetingText);
-    utterance.lang = 'id-ID';
-    utterance.rate = speed ?? 0.9; 
-    
-    let voices = window.speechSynthesis.getVoices();
-    let indoVoice = voices.find(v => v.lang.includes('id'));
-    if(indoVoice) utterance.voice = indoVoice;
+    if (!ttsSuccess) {
+      const utterance = new SpeechSynthesisUtterance(greetingText);
+      utterance.lang = 'id-ID';
+      utterance.rate = speed ?? 0.9; 
+      
+      let voices = window.speechSynthesis.getVoices();
+      let indoVoice = voices.find(v => v.lang.includes('id'));
+      if(indoVoice) utterance.voice = indoVoice;
 
-    window.speechSynthesis.speak(utterance);
+      audioReadyToPlay = async () => {
+         return new Promise<void>((resolve) => {
+            utterance.onend = () => resolve();
+            window.speechSynthesis.speak(utterance);
+         });
+      };
+    }
+    
+    // Play both synchronously
+    setGreetState('playing');
+    setIsVideoTalking(true);
+
+    let videoPromise = Promise.resolve();
+    if (talkingVideoRef.current) {
+        talkingVideoRef.current.playbackRate = speed;
+        talkingVideoRef.current.currentTime = 0;
+        talkingVideoRef.current.muted = true;
+        talkingVideoRef.current.play().catch(e => console.error("Video play err:", e));
+        
+        videoPromise = new Promise<void>((resolve) => {
+             // Handle video ended
+             if (talkingVideoRef.current) talkingVideoRef.current.onended = () => resolve();
+        });
+    } else {
+        videoPromise = new Promise<void>((resolve) => setTimeout(resolve, 5000));
+    }
+    
+    await Promise.all([audioReadyToPlay(), videoPromise]);
+    
+    setIsVideoTalking(false);
+    setGreetState('done');
+    
+    // Auto return after 5 seconds
+    setTimeout(() => {
+        setStep(prev => {
+           if (prev === 'greet') {
+              setVipKode('');
+              return 'input';
+           }
+           return prev;
+        });
+    }, 5000);
   };
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -169,6 +193,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
   const handleConfirmYes = async () => {
     if (!pendingGuest) return;
     setStep('greet');
+    setGreetState('preparing');
     
     let scriptUrl = "https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec";
     if (settings.vipAppsScriptUrl && settings.vipAppsScriptUrl.includes('AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6')) {
@@ -221,10 +246,11 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
                   src={settings.vipVideoTalkingUrl || '/placeholder-talking.mp4'} 
                   className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out lg:opacity-50 blur-sm lg:blur-none ${isVideoTalking ? 'opacity-100' : 'opacity-0'}`}
                   playsInline 
+                  muted
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-black/20 z-10 lg:hidden" />
                 {/* Desktop layout gradient */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-transparent z-10 hidden lg:block w-2/3" />
+                <div className="absolute inset-0 top-auto bottom-0 h-1/2 bg-gradient-to-t from-black via-black/80 to-transparent z-10 hidden lg:block" />
              </>
           )}
        </div>
@@ -365,16 +391,39 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
                        </h2>
                     </div>
                     <p className="text-xl text-white/70 font-mono tracking-widest uppercase pl-6 mb-8 drop-shadow-md">
-                       Welcome back, <b className="text-white">{pendingGuest.name}</b>
+                       Selamat datang, <b className="text-white">{pendingGuest.name}</b>
                     </p>
                     
-                    <div className="flex items-center gap-4 text-green-400/80 text-sm font-mono pl-6">
-                       <span className="relative flex h-3 w-3">
-                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                         <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                       </span>
-                       AI Assistant is speaking...
-                    </div>
+                    {greetState === 'preparing' && (
+                       <div className="flex items-center gap-4 text-blue-400/80 text-sm font-mono pl-6">
+                          <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                          </span>
+                          Menyiapkan AI Assistant...
+                       </div>
+                    )}
+
+                    {greetState === 'playing' && (
+                       <div className="flex items-center gap-4 text-green-400/80 text-sm font-mono pl-6">
+                          <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                          </span>
+                          AI Assistant sedang berbicara...
+                       </div>
+                    )}
+
+                    {greetState === 'done' && (
+                       <div className="pl-6 mt-8">
+                          <button 
+                             onClick={() => { setStep('input'); setVipKode(''); }}
+                             className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-white font-mono uppercase tracking-widest text-sm transition-all shadow-lg hover:scale-105"
+                          >
+                             Kembali
+                          </button>
+                       </div>
+                    )}
                  </motion.div>
                )}
              </AnimatePresence>
