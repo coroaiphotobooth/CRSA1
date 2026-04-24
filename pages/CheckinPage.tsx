@@ -60,7 +60,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
       if (process.env.GEMINI_API_KEY) {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const response = await ai.models.generateContent({
-          model: "gemini-3.1-flash-tts-preview",
+          model: "gemini-2.5-flash",
           contents: [{ parts: [{ text: `Katakan dengan ceria: ${greetingText}` }] }],
           config: {
             responseModalities: [Modality.AUDIO],
@@ -72,7 +72,10 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
           },
         });
 
-        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+        // Loop over parts to find the AUDIO part
+        const audioPart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData && p.inlineData.mimeType.startsWith('audio/'));
+        const base64Audio = audioPart?.inlineData?.data;
+
         if (base64Audio) {
            // Decode base64 16-bit PCM and play via Web Audio API 
            const binary = atob(base64Audio);
@@ -129,7 +132,10 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
     setError(null);
 
     try {
-      const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbwNjKY4JyNbdulbdRJgjHgRe6SxXN4oTYijMCmf-LQPHj0ZsELDMrm91daUlYmmxjM/exec";
+      let scriptUrl = "https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec";
+      if (settings.vipAppsScriptUrl && settings.vipAppsScriptUrl.includes('AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6')) {
+         scriptUrl = settings.vipAppsScriptUrl;
+      }
       
       // Sending query as 'kode' Parameter to verification script. 
       // If the GAS script is updated to search by both, it works. If not, it just matches exactly.
@@ -164,7 +170,10 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
     if (!pendingGuest) return;
     setStep('greet');
     
-    const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbwNjKY4JyNbdulbdRJgjHgRe6SxXN4oTYijMCmf-LQPHj0ZsELDMrm91daUlYmmxjM/exec";
+    let scriptUrl = "https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec";
+    if (settings.vipAppsScriptUrl && settings.vipAppsScriptUrl.includes('AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6')) {
+       scriptUrl = settings.vipAppsScriptUrl;
+    }
     
     // Background Ping update
     fetch(`${scriptUrl}?action=update&target=login&kode=${encodeURIComponent(pendingGuest.kode)}&status=sudah`, {

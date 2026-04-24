@@ -113,6 +113,128 @@ function doGet(e) {
     }
   }
 
+  // --- VIP / Registration Endpoints ---
+  
+  if (action === 'verify') {
+    const kode = e.parameter.kode;
+    if (!kode) return createJsonResponse({ success: false, error: "No kode provided" });
+    const sheet = ss.getSheetByName('DATA TEST') || ss.getSheetByName('Registration');
+    if (!sheet) return createJsonResponse({ success: false, error: "Registration sheet not found" });
+    const dataRange = sheet.getDataRange();
+    const values = dataRange.getValues();
+    if (values.length <= 1) return createJsonResponse({ success: false, error: "No data" });
+    const headers = values[0].map(h => String(h).toLowerCase().trim());
+    const kodeIndex = headers.indexOf('kode');
+    let nameIndex = headers.indexOf('name');
+    if (nameIndex === -1) nameIndex = headers.indexOf('nama');
+    if (nameIndex === -1) nameIndex = headers.indexOf('first name');
+    
+    if (kodeIndex === -1) return createJsonResponse({ success: false, error: "Kode column not found" });
+    
+    for (let i = 1; i < values.length; i++) {
+       if (String(values[i][kodeIndex]) === String(kode)) {
+         let fullName = nameIndex !== -1 ? values[i][nameIndex] : ("Guest " + kode);
+         // if there's a last name, append it
+         let lastIndex = headers.indexOf('last name');
+         if (lastIndex !== -1 && values[i][lastIndex]) {
+            fullName += " " + values[i][lastIndex];
+         }
+         return createJsonResponse({
+           success: true,
+           guestName: fullName,
+           kode: kode
+         });
+       }
+    }
+    return createJsonResponse({ success: false, error: "Not found" });
+  }
+
+  if (action === 'update') {
+    const target = e.parameter.target; // 'login'
+    const kode = e.parameter.kode;
+    const status = e.parameter.status; // 'sudah'
+    
+    // Accept JSON body for POST compatibility if someone calls update via POST although the code is currently in doGet
+    if (target === 'login' && kode) {
+      const sheet = ss.getSheetByName('DATA TEST') || ss.getSheetByName('Registration');
+      if (sheet) {
+        return executeWithLock(() => {
+          const values = sheet.getDataRange().getValues();
+          const headers = values[0].map(h => String(h).toLowerCase().trim());
+          const kodeIndex = headers.indexOf('kode');
+          let statusIndex = headers.indexOf('status login');
+          if (statusIndex === -1) statusIndex = headers.indexOf('status');
+          
+          let timeIndex = headers.indexOf('timestamp');
+          if (kodeIndex !== -1 && statusIndex !== -1) {
+             for (let i = 1; i < values.length; i++) {
+               if (String(values[i][kodeIndex]) === String(kode)) {
+                 sheet.getRange(i + 1, statusIndex + 1).setValue(status);
+                 if (timeIndex !== -1) {
+                   const formattedDate = Utilities.formatDate(new Date(), "GMT+7", "HH:mm");
+                   sheet.getRange(i + 1, timeIndex + 1).setValue(formattedDate);
+                 }
+                 return createJsonResponse({ success: true });
+               }
+             }
+          }
+          return createJsonResponse({ success: false });
+        });
+      }
+    }
+    return createJsonResponse({ success: false });
+  }
+
+  if (action === 'getRecent') {
+    const sheet = ss.getSheetByName('DATA TEST') || ss.getSheetByName('Registration');
+    if (!sheet) return createJsonResponse({ success: true, data: [], allData: [], totalCount: 0, totalInvited: 0 });
+    const values = sheet.getDataRange().getValues();
+    if (values.length <= 1) return createJsonResponse({ success: true, data: [], allData: [], totalCount: 0, totalInvited: 0 });
+    const headers = values[0].map(h => String(h).toLowerCase().trim());
+    
+    let nameIndex = headers.indexOf('name');
+    if (nameIndex === -1) nameIndex = headers.indexOf('nama');
+    if (nameIndex === -1) nameIndex = headers.indexOf('first name');
+    
+    let lastNameIndex = headers.indexOf('last name');
+    
+    let statusIndex = headers.indexOf('status login');
+    if (statusIndex === -1) statusIndex = headers.indexOf('status');
+    
+    const timeIndex = headers.indexOf('timestamp');
+    const tableIndex = headers.indexOf('table');
+    const paxIndex = headers.indexOf('pax');
+    const idIndex = headers.indexOf('kode') !== -1 ? headers.indexOf('kode') : 0;
+    
+    let arrivals = [];
+    let allData = [];
+    
+    if (statusIndex !== -1 && nameIndex !== -1) {
+       for (let i = 1; i < values.length; i++) {
+          let fullName = values[i][nameIndex];
+          if (lastNameIndex !== -1 && values[i][lastNameIndex]) {
+             fullName += " " + values[i][lastNameIndex];
+          }
+          
+          const guestObj = {
+             id: values[i][idIndex] || i,
+             name: fullName,
+             status: values[i][statusIndex],
+             timestamp: timeIndex !== -1 ? values[i][timeIndex] : '',
+             table: tableIndex !== -1 ? values[i][tableIndex] : '',
+             pax: paxIndex !== -1 ? values[i][paxIndex] : ''
+          };
+          allData.push(guestObj);
+          
+          if (String(values[i][statusIndex]).toLowerCase() === 'sudah' || String(values[i][statusIndex]).toLowerCase() === 'sudah_bar') {
+             arrivals.push(guestObj);
+          }
+       }
+    }
+    arrivals.reverse(); // Newest first based on order in sheet
+    return createJsonResponse({ success: true, result: 'success', data: arrivals, allData: allData, totalCount: arrivals.length, totalInvited: allData.length });
+  }
+
   return createJsonResponse({ ok: true, message: "Coro AI API Active" });
 }
 
