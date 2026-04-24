@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronRight, Maximize, FileSpreadsheet, X, Check } from 'lucide-react';
 import { PhotoboothSettings } from '../types';
-import { GoogleGenAI, Modality } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 interface CheckinPageProps {
   settings: PhotoboothSettings;
@@ -42,14 +42,19 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
     try {
       if (process.env.GEMINI_API_KEY) {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        let geminiVoice = voice;
+        if (!['Puck', 'Charon', 'Kore', 'Fenrir', 'Aoede'].includes(geminiVoice)) {
+           geminiVoice = 'Kore';
+        }
+
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash",
           contents: [{ parts: [{ text: `Katakan dengan ceria: ${greetingText}` }] }],
           config: {
-            responseModalities: [Modality.AUDIO],
+            responseModalities: ["AUDIO"],
             speechConfig: {
                 voiceConfig: {
-                  prebuiltVoiceConfig: { voiceName: (voice as any) || 'Kore' },
+                  prebuiltVoiceConfig: { voiceName: geminiVoice as any },
                 },
             },
           },
@@ -234,7 +239,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
              <>
                 <video 
                   src={settings.vipVideoIdleUrl || '/placeholder-idle.mp4'} 
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out lg:opacity-50 blur-sm lg:blur-none ${isVideoTalking ? 'opacity-0' : 'opacity-100'}`}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out blur-sm lg:blur-none ${isVideoTalking ? 'opacity-0' : 'opacity-100'}`}
                   autoPlay 
                   loop 
                   muted 
@@ -244,7 +249,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
                 <video 
                   ref={talkingVideoRef}
                   src={settings.vipVideoTalkingUrl || '/placeholder-talking.mp4'} 
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out lg:opacity-50 blur-sm lg:blur-none ${isVideoTalking ? 'opacity-100' : 'opacity-0'}`}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out blur-sm lg:blur-none ${isVideoTalking ? 'opacity-100' : 'opacity-0'}`}
                   playsInline 
                   muted
                 />
