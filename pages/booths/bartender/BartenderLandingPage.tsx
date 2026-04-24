@@ -33,76 +33,30 @@ const BartenderLandingPage: React.FC<BartenderLandingPageProps> = ({ onStart, se
   };
 
   const handleAccessBar = async () => {
-    const greetingText = `Halo, selamat datang di AI Bar. Malam ini ingin menu spesial pilihan saya, atau ingin melihat daftar minuman kami?`;
-    
     setIsVideoTalking(true);
 
-    const openAiKey = settings.vipOpenAiKey?.trim() || import.meta.env.VITE_OPENAI_API_KEY?.trim();
-
-    if (openAiKey) {
-      try {
-        const response = await fetch('https://api.openai.com/v1/audio/speech', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${openAiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'tts-1',
-            input: greetingText,
-            voice: settings.vipTtsVoice || 'nova',
-            speed: settings.vipTtsSpeed ?? 1.25,
-          })
-        });
-        
-        if (!response.ok) throw new Error('TTS API Failed');
-
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        
-        audio.onended = () => {
-           setIsVideoTalking(false);
-           setIsExiting(true);
-           setTimeout(() => {
-              onStart('', '');
-           }, 1000);
-        };
-        
-        if (talkingVideoRef.current) {
-           talkingVideoRef.current.currentTime = 0;
-           talkingVideoRef.current.play().catch(e => console.error("Video play err:", e));
-        }
-        
-        await audio.play();
-        return;
-      } catch (err) {
-        console.error("OpenAI TTS Err:", err);
-      }
-    }
-
-    // Fallback Web Speech
-    const utterance = new SpeechSynthesisUtterance(greetingText);
-    utterance.lang = 'id-ID';
-    utterance.rate = settings.vipTtsSpeed ?? 0.9; 
-    let voices = window.speechSynthesis.getVoices();
-    let indoVoice = voices.find(v => v.lang.includes('id'));
-    if(indoVoice) utterance.voice = indoVoice;
-
-    utterance.onend = () => {
-      setIsVideoTalking(false);
-      setIsExiting(true);
-      setTimeout(() => {
-          onStart('', '');
-      }, 1000);
-    };
-
     if (talkingVideoRef.current) {
-       talkingVideoRef.current.currentTime = 0;
-       talkingVideoRef.current.play().catch(e => console.error("Video play err:", e));
+      talkingVideoRef.current.playbackRate = settings.vipTtsSpeed ?? 1.1;
+      talkingVideoRef.current.currentTime = 0;
+      
+      talkingVideoRef.current.play().catch(e => console.error("Video play err:", e));
+      
+      talkingVideoRef.current.onended = () => {
+        setIsVideoTalking(false);
+        setIsExiting(true);
+        setTimeout(() => {
+          onStart('', '');
+        }, 1000);
+      };
+    } else {
+      setTimeout(() => {
+        setIsVideoTalking(false);
+        setIsExiting(true);
+        setTimeout(() => {
+          onStart('', '');
+        }, 1000);
+      }, 5000);
     }
-
-    window.speechSynthesis.speak(utterance);
   };
 
   return (
