@@ -236,44 +236,99 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
       // 1. Construct Prompt based on Mode
       if (promptMode === 'booth') {
           if (concept.reference_image_split || concept.reference_image_bg) {
-              executionPrompt = `[SYSTEM INSTRUCTION]
-You are a professional photobooth AI. Your task is to redraw the people from the MAIN PHOTO using the provided REFERENCE IMAGES and THEME INSTRUCTION.
+              executionPrompt = `IDENTITY-PRESERVING FACE RENDERING
 
-[CRITICAL RULES]
-1. FACE IDENTITY LOCK: The face from the MAIN PHOTO must be preserved with high fidelity. Do not change facial features, age, or expression.
-2. CLOTHING TRANSFORMATION: If REFERENCE IMAGE 1 (Clothing) is provided, you MUST change the person's clothing to match it exactly.
-3. BACKGROUND: If REFERENCE IMAGE 2 (Background) is provided, place them in that exact environment.
-4. NO MERGING/GHOSTING: The person must be clearly separated from the background. Enforce depth separation (air gap). No "pasted" look.
-5. LIGHTING & SHADOWS: Apply realistic ground shadows and rim lighting to match the reference environment.
+You are creating a professional AI photobooth transformation using:
+- MAIN PHOTO = the person / subject
+- REFERENCE IMAGE 1 = clothing or style reference
+- REFERENCE IMAGE 2 = concept, background, or environment reference
 
-[THEME INSTRUCTION]
+Preserve the subject’s recognizable identity, including core facial structure, face shape, skin tone, age impression, hairstyle, and key facial characteristics.
+
+IMPORTANT:
+Do NOT copy-paste or preserve the original face as a flat photographic layer.
+Instead, re-render the subject naturally so the face, skin, hair, neck, and overall head blend seamlessly with the new outfit, environment, lighting, color grading, shadows, and artistic style.
+
+The face must remain clearly recognizable as the same person, but it should visually belong to the new concept.
+Apply consistent rendering across the face, hair, skin, neck, body, clothing, and background so the final image looks like one coherent, high-quality photobooth portrait.
+
+The result should look like a single fully integrated image, not a collage or composite.
+
+Avoid:
+- pasted-face or cut-out look
+- flat or detached facial rendering
+- mismatched skin lighting or color
+- different texture or resolution between face and body
+- hard edges
+- ghosting
+- floating subject
+- unnatural blending
+- face that looks sharper or flatter than the rest of the image
+
+Follow this specific prompt:
 ${finalPrompt}`;
           } else {
-              executionPrompt = `[SYSTEM INSTRUCTION]
-You are a professional photobooth AI. Your task is to place the person from the FIRST image into the background/environment of the SECOND image (Reference), while changing their clothing based on the THEME INSTRUCTION.
+              executionPrompt = `IDENTITY-PRESERVING FACE RENDERING
 
-[CRITICAL RULES]
-1. FACE IDENTITY LOCK: The face from the FIRST image (Person) must be preserved with high fidelity. Do not change facial features, age, or expression.
-2. CLOTHING TRANSFORMATION: You MUST change the person's clothing based on the [THEME INSTRUCTION] provided below. Do NOT use the clothing from the Reference image unless it matches the theme.
-3. BODY TRANSFORMATION: You may adapt the body pose to fit the new environment naturally.
-4. NO MERGING/GHOSTING: The person must be clearly separated from the background. Enforce depth separation (air gap). No "pasted" look.
-5. LIGHTING & SHADOWS: Apply realistic ground shadows and rim lighting to match the reference environment.
-6. BACKGROUND: Use the SECOND image as the environment reference for the background. Keep it slightly softer focus to make the person pop.
+You are creating a professional AI photobooth transformation using:
+- FIRST image = the person / subject
+- SECOND image = concept, background, style, lighting, or environment reference
 
-[IMAGE ROLES]
-- IMAGE 1: THE PERSON (Source of Face and Identity)
-- IMAGE 2: THE REFERENCE (Source of Background and Environment)
+Preserve the subject’s recognizable identity, including core facial structure, face shape, skin tone, age impression, hairstyle, and key facial characteristics.
 
-[THEME INSTRUCTION]
+IMPORTANT:
+Do NOT copy-paste or preserve the original face as a flat photographic layer.
+Instead, re-render the subject naturally so the face, skin, hair, neck, and overall head blend seamlessly with the new outfit, environment, lighting, color grading, shadows, and artistic style.
+
+The face must remain clearly recognizable as the same person, but it should visually belong to the new concept.
+Apply consistent rendering across the face, hair, skin, neck, body, clothing, and background so the final image looks like one coherent, high-quality photobooth portrait.
+
+The result should look like a single fully integrated image, not a collage or composite.
+
+Avoid:
+- pasted-face or cut-out look
+- flat or detached facial rendering
+- mismatched skin lighting or color
+- different texture or resolution between face and body
+- hard edges
+- ghosting
+- floating subject
+- unnatural blending
+- face that looks sharper or flatter than the rest of the image
+
+Follow this specific prompt:
 ${finalPrompt}`;
           }
       } else if (promptMode === 'wrapped') {
-          executionPrompt = `Edit the provided photo.
+          executionPrompt = `IDENTITY-PRESERVING FACE RENDERING
+
+Edit the provided image according to the prompt while preserving the recognizable identity of every person.
+
 Rules:
-- Detect ALL people in the photo and keep the SAME number of people.
-- Preserve each person’s identity (face, skin tone, age, gender, expression).
-- Do not remove, merge, replace, or add any person.
-Instruction: ${finalPrompt}`;
+- Detect all people in the photo.
+- Keep the same number of people.
+- Do not remove, replace, merge, or add any person.
+- Preserve each person’s recognizable identity, including facial structure, face shape, skin tone, age impression, hairstyle, and key facial features.
+- Do not copy-paste the original face directly.
+
+Re-render each face naturally so it matches the requested concept, lighting, color grading, skin texture, outfit, and overall artistic style.
+Ensure the face, hair, neck, skin, body, clothing, and background blend seamlessly as one coherent image.
+
+The final result must look like a polished, natural, fully integrated photobooth image, not a collage or pasted composite.
+
+Avoid:
+- pasted-face look
+- cut-out effect
+- detached or overly sharp face
+- mismatched lighting between face and body
+- inconsistent texture or resolution
+- hard edges
+- ghosting
+- unnatural blending
+- face that does not follow the visual style of the concept
+
+Instruction:
+${finalPrompt}`;
       }
 
       // Helper to fetch and convert image to base64
