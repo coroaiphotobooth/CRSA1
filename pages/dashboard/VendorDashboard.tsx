@@ -1213,47 +1213,26 @@ export default function VendorDashboard() {
     }
   };
 
-  const creditPricingTable = [
-    { credits: 10, idr: 100000, usd: 6.49 },
-    { credits: 50, idr: 475000, usd: 30.99 },
-    { credits: 100, idr: 900000, usd: 57.99 },
-    { credits: 200, idr: 1700000, usd: 109 },
-    { credits: 300, idr: 2500000, usd: 159 },
-    { credits: 400, idr: 3200000, usd: 205 },
-    { credits: 500, idr: 3900000, usd: 249 },
-    { credits: 600, idr: 4500000, usd: 289 },
-    { credits: 700, idr: 5100000, usd: 326 },
-    { credits: 800, idr: 5600000, usd: 359 },
-    { credits: 900, idr: 6300000, usd: 404 },
-    { credits: 1000, idr: 7000000, usd: 449 }
-  ];
-
   const getCreditPriceIDR = (amount: number) => {
-    if (amount <= 10) return creditPricingTable[0].idr;
-    for (let i = 0; i < creditPricingTable.length - 1; i++) {
-        const lower = creditPricingTable[i];
-        const upper = creditPricingTable[i+1];
-        if (amount === lower.credits) return lower.idr;
-        if (amount > lower.credits && amount < upper.credits) {
-            const ratio = (amount - lower.credits) / (upper.credits - lower.credits);
-            return Math.round(lower.idr + ratio * (upper.idr - lower.idr));
-        }
-    }
-    return amount * 7000;
+    if (amount < 50) return amount * 9500;
+    if (amount < 100) return amount * 8500;
+    if (amount < 250) return amount * 7750;
+    if (amount < 500) return amount * 7000;
+    if (amount < 1000) return amount * 6500;
+    if (amount < 1500) return amount * 6000;
+    if (amount < 2000) return amount * 5750;
+    return amount * 5500;
   };
 
   const getCreditPriceUSD = (amount: number) => {
-    if (amount <= 10) return creditPricingTable[0].usd;
-    for (let i = 0; i < creditPricingTable.length - 1; i++) {
-        const lower = creditPricingTable[i];
-        const upper = creditPricingTable[i+1];
-        if (amount === lower.credits) return lower.usd;
-        if (amount > lower.credits && amount < upper.credits) {
-            const ratio = (amount - lower.credits) / (upper.credits - lower.credits);
-            return lower.usd + ratio * (upper.usd - lower.usd);
-        }
-    }
-    return amount * 0.449;
+    if (amount < 50) return amount * 0.65;
+    if (amount < 100) return amount * 0.60;
+    if (amount < 250) return amount * 0.55;
+    if (amount < 500) return amount * 0.50;
+    if (amount < 1000) return amount * 0.45;
+    if (amount < 1500) return amount * 0.40;
+    if (amount < 2000) return amount * 0.37;
+    return amount * 0.35;
   };
 
   const eventPrices: Record<number, number> = {
@@ -1999,7 +1978,7 @@ export default function VendorDashboard() {
                     <input 
                       type="range" 
                       min="10" 
-                      max="1000" 
+                      max="2000" 
                       step="10"
                       value={creditAmount}
                       onChange={(e) => setCreditAmount(parseInt(e.target.value))}
@@ -2007,7 +1986,7 @@ export default function VendorDashboard() {
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
                       <span>10</span>
-                      <span>1000</span>
+                      <span>2000</span>
                     </div>
                   </div>
                   
