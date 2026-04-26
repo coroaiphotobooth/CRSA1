@@ -274,7 +274,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
               mimeType: createFromImageFile.type,
             }
           },
-          "Generate a detailed photobooth concept prompt based on this image following the system instructions. Output ONLY the finalized prompt sections."
+          "Generate a detailed photobooth concept prompt based on this image following the system instructions. Pay very close attention to the visual style of the reference image (e.g., photorealistic, cinematic, 3D render, illustration, anime, vintage, etc.). Ensure the generated prompt explicitly instructs the image generator to accurately reproduce this specific style, lighting, texture, and mood. Output ONLY the finalized prompt sections."
         ],
         config: {
           systemInstruction: systemInstruction,
