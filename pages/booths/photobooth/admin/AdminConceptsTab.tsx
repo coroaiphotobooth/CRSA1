@@ -409,7 +409,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
         if (!apiKey) throw new Error("API Key not configured");
         const ai = new GoogleGenAI({ apiKey });
         
-        let contents: any = "Please optimize and structure this prompt perfectly:\n" + concept.prompt;
+        let contents: any = "Please optimize and structure this prompt perfectly. Return ONLY the final structured prompt and absolutely NOTHING else. No conversational text, no greetings, no explanations.\n\n" + concept.prompt;
         
         if (hasAnyRefImage) {
           const parts: any[] = [];
@@ -479,7 +479,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       const hasAnyRefImage = !!concept.refImage || !!concept.reference_image_split || !!concept.reference_image_bg;
       const systemInstruction = CONCEPT_DESIGNER_SYSTEM_PROMPT;
 
-      let contents: any = "Please optimize and structure this prompt perfectly:\n" + concept.prompt;
+      let contents: any = "Please optimize and structure this prompt perfectly. Return ONLY the final structured prompt and absolutely NOTHING else. No conversational text, no greetings, no explanations.\n\n" + concept.prompt;
       
       if (hasAnyRefImage) {
         try {
