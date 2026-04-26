@@ -646,10 +646,12 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       let fullText = '';
       for await (const chunk of responseStream) {
         const text = chunk.text;
-        for (let i = 0; i < text.length; i += 2) {
-          fullText += text.substring(i, i + 2);
+        for (let i = 0; i < text.length; i++) {
+          fullText += text[i];
           handleConceptChange(index, 'prompt', fullText);
-          await new Promise(r => setTimeout(r, 10));
+          const el = document.getElementById('concept-prompt-textarea');
+          if (el) { el.scrollTop = el.scrollHeight; }
+          await new Promise(r => setTimeout(r, 15));
         }
       }
     } catch (err) {
@@ -729,10 +731,12 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       let fullText = '';
       for await (const chunk of responseStream) {
         const text = chunk.text;
-        for (let i = 0; i < text.length; i += 2) {
-          fullText += text.substring(i, i + 2);
+        for (let i = 0; i < text.length; i++) {
+          fullText += text[i];
           handleConceptChange(index, 'prompt', fullText);
-          await new Promise(r => setTimeout(r, 10));
+          const el = document.getElementById('concept-prompt-textarea');
+          if (el) { el.scrollTop = el.scrollHeight; }
+          await new Promise(r => setTimeout(r, 15));
         }
       }
       if (isActive && tourType === 'concept' && stepIndex === 5) {
@@ -1320,6 +1324,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
                     {!isTemplateOrSmart && (
                       <div className={`w-full flex flex-col gap-2 ${index === localConcepts.length - 1 ? 'tour-prompt' : ''}`}>
                         <textarea 
+                           id="concept-prompt-textarea"
                            className="bg-black/40 border border-white/10 p-4 text-[11px] font-mono h-28 text-white outline-none focus:border-[#bc13fe] focus:ring-1 focus:ring-[#bc13fe]/50 resize-y w-full rounded-xl shadow-inner custom-scrollbar transition-all" 
                            value={concept.prompt} 
                            onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
