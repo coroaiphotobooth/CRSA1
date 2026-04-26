@@ -2223,91 +2223,85 @@ export default function VendorDashboard() {
                 {/* PAYPAL INTEGRATION FOR USD */}
                 {buyCurrency === 'USD' && (
                   <div className="w-full relative z-50">
-                    {!isPayPalCheckout ? (
-                      <button
-                        onClick={() => setIsPayPalCheckout(true)}
-                        className="w-full px-4 py-3 bg-[#FFC439] hover:bg-[#F4BB33] text-[#003087] rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-sm"
-                      >
-                        <span className="text-xl">💳</span> Continue to PayPal or Card
-                      </button>
-                    ) : (
-                      <>
-                        <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
-                          <span>Includes PayPal Fee (4.4% + $0.30)</span>
-                          <span className="font-bold text-[#bc13fe]">
-                            ${((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2)}
-                          </span>
-                        </div>
-                        <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
-                          <PayPalButtons 
-                            style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
-                            createOrder={async (data, actions) => {
-                              const { data: { session } } = await supabase.auth.getSession();
-                              if (!session || !vendor?.id) throw new Error("Not authenticated");
-                              
-                              const finalPriceUSD = ((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2);
+                    <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
+                      <span>Includes PayPal Fee (4.4% + $0.30)</span>
+                      <span className="font-bold text-[#bc13fe]">
+                        ${((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2)}
+                      </span>
+                    </div>
+                    <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+                      <PayPalButtons 
+                        style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
+                        onClick={(data, actions) => {
+                          setIsPayPalCheckout(true);
+                        }}
+                        createOrder={async (data, actions) => {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (!session || !vendor?.id) throw new Error("Not authenticated");
+                          
+                          const finalPriceUSD = ((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2);
 
-                              const res = await fetch('/api/payment/create', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                                  body: JSON.stringify({ vendor_id: vendor.id, type: 'CREDIT', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: creditAmount, payment_method: 'PAYPAL' })
-                              });
-                              const paymentData = await res.json();
-                              const transactionId = paymentData.transaction_id;
+                          const res = await fetch('/api/payment/create', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                              body: JSON.stringify({ vendor_id: vendor.id, type: 'CREDIT', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: creditAmount, payment_method: 'PAYPAL' })
+                          });
+                          const paymentData = await res.json();
+                          const transactionId = paymentData.transaction_id;
 
-                              return actions.order.create({
-                                intent: "CAPTURE",
-                                purchase_units: [{
-                                  description: `${creditAmount} CoroAI Credits`,
-                                  custom_id: transactionId,
-                                  amount: {
-                                    currency_code: "USD",
-                                    value: finalPriceUSD
-                                  }
-                                }]
-                              });
-                            }}
-                            onApprove={async (data, actions) => {
-                              if (!actions.order) return;
-                              
-                              try {
-                                const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units?.[0]?.custom_id);
-
-                                const details = await actions.order.capture();
-                                
-                                if (details.status === 'COMPLETED') {
-                                    handlePayPalSuccess('CREDIT', creditAmount, txId);
-                                } else if ((details.status as string) === 'PENDING') {
-                                    setShowBuyCreditsModal(false);
-                                    showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your credits will be added once PayPal clears the payment.');
-                                } else {
-                                    showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
-                                }
-                              } catch (err: any) {
-                                console.error("PayPal Capture Error:", err);
-                                if (err?.message?.includes('INSTRUMENT_DECLINED')) {
-                                  showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
-                                } else {
-                                  showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
-                                }
+                          return actions.order.create({
+                            intent: "CAPTURE",
+                            purchase_units: [{
+                              description: `${creditAmount} CoroAI Credits`,
+                              custom_id: transactionId,
+                              amount: {
+                                currency_code: "USD",
+                                value: finalPriceUSD
                               }
-                            }}
-                            onCancel={() => {
-                              showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
-                            }}
-                            onError={(err) => {
-                              console.error("PayPal Error:", err);
-                              showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
-                            }}
-                          />
-                        </PayPalScriptProvider>
-                        <button
-                          onClick={() => setIsPayPalCheckout(false)}
-                          className="w-full mt-3 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
-                        >
-                          Change Package
-                        </button>
-                      </>
+                            }]
+                          });
+                        }}
+                        onApprove={async (data, actions) => {
+                          if (!actions.order) return;
+                          
+                          try {
+                            const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units?.[0]?.custom_id);
+
+                            const details = await actions.order.capture();
+                            
+                            if (details.status === 'COMPLETED') {
+                                handlePayPalSuccess('CREDIT', creditAmount, txId);
+                            } else if ((details.status as string) === 'PENDING') {
+                                setShowBuyCreditsModal(false);
+                                showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your credits will be added once PayPal clears the payment.');
+                            } else {
+                                showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
+                            }
+                          } catch (err: any) {
+                            console.error("PayPal Capture Error:", err);
+                            if (err?.message?.includes('INSTRUMENT_DECLINED')) {
+                              showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
+                            } else {
+                              showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
+                            }
+                          }
+                        }}
+                        onCancel={() => {
+                          showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
+                        }}
+                        onError={(err) => {
+                          console.error("PayPal Error:", err);
+                          showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
+                        }}
+                      />
+                    </PayPalScriptProvider>
+                    {isPayPalCheckout && (
+                      <button
+                        onClick={() => setIsPayPalCheckout(false)}
+                        className="w-full mt-3 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
+                      >
+                        Change Package
+                      </button>
                     )}
                   </div>
                 )}
@@ -2532,92 +2526,86 @@ export default function VendorDashboard() {
                 {/* PAYPAL INTEGRATION FOR USD */}
                 {buyCurrency === 'USD' && (
                   <div className="w-full relative z-50">
-                    {!isPayPalCheckout ? (
-                      <button
-                        onClick={() => setIsPayPalCheckout(true)}
-                        className="w-full px-4 py-3 bg-[#FFC439] hover:bg-[#F4BB33] text-[#003087] rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-sm"
-                      >
-                        <span className="text-xl">💳</span> Continue to PayPal or Card
-                      </button>
-                    ) : (
-                      <>
-                        <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
-                          <span>Includes PayPal Fee (4.4% + $0.30)</span>
-                          <span className="font-bold text-[#bc13fe]">
-                            ${(((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2)}
-                          </span>
-                        </div>
-                        <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
-                          <PayPalButtons 
-                            style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
-                            createOrder={async (data, actions) => {
-                              const { data: { session } } = await supabase.auth.getSession();
-                              if (!session || !vendor?.id) throw new Error("Not authenticated");
-                              
-                              const finalPriceUSD = (((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2);
+                    <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
+                      <span>Includes PayPal Fee (4.4% + $0.30)</span>
+                      <span className="font-bold text-[#bc13fe]">
+                        ${(((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2)}
+                      </span>
+                    </div>
+                    <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+                      <PayPalButtons 
+                        style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
+                        onClick={(data, actions) => {
+                          setIsPayPalCheckout(true);
+                        }}
+                        createOrder={async (data, actions) => {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (!session || !vendor?.id) throw new Error("Not authenticated");
+                          
+                          const finalPriceUSD = (((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2);
 
-                              const res = await fetch('/api/payment/create', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                                  body: JSON.stringify({ vendor_id: vendor.id, type: 'UNLIMITED', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: eventDuration, payment_method: 'PAYPAL' })
-                              });
-                              const paymentData = await res.json();
-                              const transactionId = paymentData.transaction_id;
+                          const res = await fetch('/api/payment/create', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                              body: JSON.stringify({ vendor_id: vendor.id, type: 'UNLIMITED', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: eventDuration, payment_method: 'PAYPAL' })
+                          });
+                          const paymentData = await res.json();
+                          const transactionId = paymentData.transaction_id;
 
-                              return actions.order.create({
-                                intent: "CAPTURE",
-                                purchase_units: [{
-                                  description: `CoroAI Unlimited Event (${eventDuration} Hours)`,
-                                  custom_id: transactionId,
-                                  amount: {
-                                    currency_code: "USD",
-                                    value: finalPriceUSD
-                                  }
-                                }]
-                              });
-                            }}
-                            onApprove={async (data, actions) => {
-                              if (!actions.order) return;
-                              
-                              try {
-                                // Retrieve the transaction ID created earlier
-                                const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units?.[0]?.custom_id);
-
-                                const details = await actions.order.capture();
-                                
-                                if (details.status === 'COMPLETED') {
-                                    handlePayPalSuccess('UNLIMITED', eventDuration, txId);
-                                } else if ((details.status as string) === 'PENDING') {
-                                    setShowBuyUnlimitedModal(false);
-                                    showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your quota will be added once PayPal clears the payment.');
-                                } else {
-                                    showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
-                                }
-                              } catch (err: any) {
-                                console.error("PayPal Capture Error:", err);
-                                if (err?.message?.includes('INSTRUMENT_DECLINED')) {
-                                  showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
-                                } else {
-                                  showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
-                                }
+                          return actions.order.create({
+                            intent: "CAPTURE",
+                            purchase_units: [{
+                              description: `CoroAI Unlimited Event (${eventDuration} Hours)`,
+                              custom_id: transactionId,
+                              amount: {
+                                currency_code: "USD",
+                                value: finalPriceUSD
                               }
-                            }}
-                            onCancel={() => {
-                              showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
-                            }}
-                            onError={(err) => {
-                              console.error("PayPal Error:", err);
-                              showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
-                            }}
-                          />
-                        </PayPalScriptProvider>
-                        <button
-                          onClick={() => setIsPayPalCheckout(false)}
-                          className="w-full mt-3 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
-                        >
-                          Change Package
-                        </button>
-                      </>
+                            }]
+                          });
+                        }}
+                        onApprove={async (data, actions) => {
+                          if (!actions.order) return;
+                          
+                          try {
+                            // Retrieve the transaction ID created earlier
+                            const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units?.[0]?.custom_id);
+
+                            const details = await actions.order.capture();
+                            
+                            if (details.status === 'COMPLETED') {
+                                handlePayPalSuccess('UNLIMITED', eventDuration, txId);
+                            } else if ((details.status as string) === 'PENDING') {
+                                setShowBuyUnlimitedModal(false);
+                                showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your quota will be added once PayPal clears the payment.');
+                            } else {
+                                showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
+                            }
+                          } catch (err: any) {
+                            console.error("PayPal Capture Error:", err);
+                            if (err?.message?.includes('INSTRUMENT_DECLINED')) {
+                              showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
+                            } else {
+                              showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
+                            }
+                          }
+                        }}
+                        onCancel={() => {
+                          showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
+                        }}
+                        onError={(err) => {
+                          console.error("PayPal Error:", err);
+                          showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
+                        }}
+                      />
+                    </PayPalScriptProvider>
+                    {isPayPalCheckout && (
+                      <button
+                        onClick={() => setIsPayPalCheckout(false)}
+                        className="w-full mt-3 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
+                      >
+                        Change Package
+                      </button>
                     )}
                   </div>
                 )}
