@@ -31,6 +31,7 @@ export default function VendorDashboard() {
   const [buyUnlimitedModalTab, setBuyUnlimitedModalTab] = useState<'event' | 'rent'>('event');
   const [instagramUsername, setInstagramUsername] = useState('');
   const [buyCurrency, setBuyCurrency] = useState<'IDR' | 'USD'>('IDR');
+  const [showCurrencySelectionModal, setShowCurrencySelectionModal] = useState<'credit' | 'unlimited' | null>(null);
   const [creditAmount, setCreditAmount] = useState<number>(10);
   const [eventDuration, setEventDuration] = useState<number>(2);
   const [usdToIdrRate, setUsdToIdrRate] = useState<number>(16000);
@@ -1562,7 +1563,7 @@ export default function VendorDashboard() {
             <div className="mt-auto pt-4 flex items-center justify-between">
               <p className="text-xs text-gray-500">1 Credit = 1 AI Generation</p>
               <button 
-                onClick={() => setShowBuyCreditsModal(true)}
+                onClick={() => setShowCurrencySelectionModal('credit')}
                 className="text-xs bg-[#bc13fe] hover:bg-[#a010d8] text-white px-3 py-1.5 rounded-md font-bold transition-colors"
               >
                 {t.buyCredits}
@@ -1587,7 +1588,7 @@ export default function VendorDashboard() {
               </p>
               <div className="flex gap-2">
                 <button 
-                  onClick={() => setShowBuyUnlimitedModal(true)}
+                  onClick={() => setShowCurrencySelectionModal('unlimited')}
                   className="text-xs bg-[#bc13fe] hover:bg-[#a010d8] text-white px-3 py-1.5 rounded-md font-bold transition-colors"
                 >
                   BUY UNLIMITED
@@ -1905,6 +1906,64 @@ export default function VendorDashboard() {
         </div>
       )}
 
+      {/* Currency Selection Modal */}
+      {showCurrencySelectionModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
+          <div className="bg-[#111]/90 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-sm relative shadow-2xl">
+            <button 
+              onClick={() => setShowCurrencySelectionModal(null)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-white mb-6">Select Currency</h2>
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={() => {
+                  setBuyCurrency('USD');
+                  if (showCurrencySelectionModal === 'credit') {
+                    setShowBuyCreditsModal(true);
+                  } else {
+                    setShowBuyUnlimitedModal(true);
+                  }
+                  setShowCurrencySelectionModal(null);
+                }}
+                className="w-full text-left bg-black/40 hover:bg-[#bc13fe]/20 border border-white/10 hover:border-[#bc13fe]/50 p-4 rounded-xl transition-all group flex flex-col items-center justify-center gap-2"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-bold text-white group-hover:text-[#bc13fe]">USD</span>
+                  <img src="https://flagcdn.com/w40/us.png" alt="USA Flag" className="w-8 h-auto object-contain" />
+                </div>
+                <div className="text-xs text-gray-400 text-center uppercase tracking-widest leading-relaxed">
+                  Pay with Paypal<br/>debit or credit card
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  setBuyCurrency('IDR');
+                  if (showCurrencySelectionModal === 'credit') {
+                    setShowBuyCreditsModal(true);
+                  } else {
+                    setShowBuyUnlimitedModal(true);
+                  }
+                  setShowCurrencySelectionModal(null);
+                }}
+                className="w-full text-left bg-black/40 hover:bg-[#bc13fe]/20 border border-white/10 hover:border-[#bc13fe]/50 p-4 rounded-xl transition-all group flex flex-col items-center justify-center gap-2"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl font-bold text-white group-hover:text-[#bc13fe]">IDR</span>
+                  <img src="https://flagcdn.com/w40/id.png" alt="Indonesia Flag" className="w-8 h-auto object-contain border border-white/10" />
+                </div>
+                <div className="text-xs text-gray-400 text-center uppercase tracking-widest leading-relaxed">
+                  Pay with qris &amp; bank Transfer
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Buy Credits Modal */}
       {showBuyCreditsModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
@@ -1918,24 +1977,6 @@ export default function VendorDashboard() {
             
             <div className="flex items-center justify-between mb-4 pr-8">
               <h2 className="text-xl font-bold text-white">{buyCurrency === 'USD' ? 'Buy Package' : 'Beli Paket'}</h2>
-            </div>
-
-            {/* Currency Toggle */}
-            <div className="flex justify-center mb-6">
-              <div className="flex items-center bg-black/50 rounded-xl p-1.5 border border-white/10 w-full max-w-sm">
-                <button
-                  onClick={() => setBuyCurrency('USD')}
-                  className={`flex-1 px-6 py-3 text-sm font-bold rounded-lg transition-colors ${buyCurrency === 'USD' ? 'bg-[#bc13fe] text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                >
-                  USD
-                </button>
-                <button
-                  onClick={() => setBuyCurrency('IDR')}
-                  className={`flex-1 px-6 py-3 text-sm font-bold rounded-lg transition-colors ${buyCurrency === 'IDR' ? 'bg-[#bc13fe] text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                >
-                  IDR
-                </button>
-              </div>
             </div>
 
             {/* Tabs */}
@@ -1958,9 +1999,65 @@ export default function VendorDashboard() {
             <div className="min-h-[150px] mb-8">
               {buyModalTab === 'credit' && (
                 <div className="space-y-6">
+                  {/* Preset Packages */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[10, 50, 100, 250, 500, 1000, 1500, 2000].map(amount => {
+                       const priceIDR = getCreditPriceIDR(amount);
+                       const priceUSD = getCreditPriceUSD(amount);
+                       
+                       const baseIDR = amount * 9500;
+                       const baseUSD = amount * 0.65;
+                       
+                       let discount = 0;
+                       if (amount > 10) {
+                         discount = buyCurrency === 'USD' 
+                           ? Math.round((1 - priceUSD / baseUSD) * 100)
+                           : Math.round((1 - priceIDR / baseIDR) * 100);
+                       }
+
+                       let badge = null;
+                       if (amount === 50) badge = buyCurrency === 'USD' ? "START" : "MULAI";
+                       if (amount === 250) badge = "POPULAR";
+                       if (amount === 1000) badge = "BEST VALUE";
+
+                       const isSelected = creditAmount === amount;
+                       
+                       return (
+                         <button
+                           key={amount}
+                           onClick={() => setCreditAmount(amount)}
+                           className={`relative border rounded-xl overflow-hidden flex flex-col p-3 transition-colors ${isSelected ? 'border-[#bc13fe] bg-[#bc13fe]/20 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 hover:border-[#bc13fe]/50 bg-black/40 hover:bg-black/60'}`}
+                         >
+                           {badge && (
+                             <div className="absolute top-0 right-0 bg-gradient-to-r from-blue-600 to-[#bc13fe] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg shadow-sm">
+                               {badge}
+                             </div>
+                           )}
+                           <div className="flex items-baseline gap-1">
+                             <span className="text-white font-heading font-bold text-xl leading-none">{amount}</span>
+                             <span className="text-[9px] font-bold font-mono tracking-widest text-[#bc13fe] uppercase">Crdts</span>
+                           </div>
+                           <span className={`font-bold mt-1.5 text-sm ${isSelected ? 'text-[#bc13fe]' : 'text-gray-300'}`}>{formatPrice(priceIDR, priceUSD)}</span>
+                           <div className="flex items-center gap-1.5 mt-2 h-3 text-left w-full">
+                             {discount > 0 && (
+                               <>
+                                 <span className="text-[10px] text-gray-500 line-through">
+                                   {formatPrice(baseIDR, baseUSD)}
+                                 </span>
+                                 <span className="text-[9px] text-emerald-400 font-bold bg-emerald-400/10 px-1 rounded-sm">
+                                   -{discount}%
+                                 </span>
+                               </>
+                             )}
+                           </div>
+                         </button>
+                       );
+                    })}
+                  </div>
+
                   <div>
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-sm text-gray-300 font-medium">{buyCurrency === 'USD' ? 'Amount of Credits' : 'Jumlah Kredit'}</label>
+                      <label className="text-sm text-gray-300 font-medium">{buyCurrency === 'USD' ? 'Or custom amount:' : 'Atau jumlah khusus:'}</label>
                       <input 
                         type="number" 
                         min="10" 
@@ -1984,15 +2081,15 @@ export default function VendorDashboard() {
                       onChange={(e) => setCreditAmount(parseInt(e.target.value))}
                       className="w-full accent-[#bc13fe]"
                     />
-                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <div className="flex justify-between text-[10px] text-gray-500 font-mono mt-1">
                       <span>10</span>
                       <span>2000</span>
                     </div>
                   </div>
                   
                   <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
-                    <span className="text-gray-400 text-sm">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
-                    <span className="text-2xl font-bold text-[#bc13fe]">{formatPrice(getCreditPriceIDR(creditAmount), getCreditPriceUSD(creditAmount))}</span>
+                    <span className="text-gray-400 text-sm font-bold tracking-widest uppercase">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
+                    <span className="text-3xl font-heading font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{formatPrice(getCreditPriceIDR(creditAmount), getCreditPriceUSD(creditAmount))}</span>
                   </div>
                 </div>
               )}
@@ -2051,50 +2148,6 @@ export default function VendorDashboard() {
               </div>
             ) : (
               <div className="flex flex-col gap-2 w-full mt-2">
-                <button
-                  onClick={async () => {
-                    try {
-                      const { data: { session } } = await supabase.auth.getSession();
-                      if (!session) throw new Error("Not authenticated");
-                      const amount = getBaseAmountForDoku('credit');
-                      const res = await fetch('/api/payment/create', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                        body: JSON.stringify({ vendor_id: vendor?.id, type: 'CREDIT', amount, quantity: creditAmount, payment_method: 'CREDIT_CARD' })
-                      });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                      if (data.payment_url) {
-                        // @ts-ignore
-                        loadJokulCheckout(data.payment_url);
-                      }
-                    } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
-                  }}
-                  className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'IDR' ? 'hidden' : ''}`}
-                >
-                  <span className="flex items-center gap-3">
-                    <span className="text-xl">💳</span> 
-                    <span className="flex items-center gap-2">
-                      Pay with Card
-                      <div className="flex items-center gap-1 opacity-90 ml-1">
-                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                          <img src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Visa_Inc._logo_%282005%E2%80%932014%29.png" alt="Visa" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                        </div>
-                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                        </div>
-                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                          <img src="https://upload.wikimedia.org/wikipedia/commons/4/40/JCB_logo.svg" alt="JCB" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                        </div>
-                      </div>
-                    </span>
-                  </span>
-                  <span className="text-[#bc13fe]">{formatPrice(
-                    Math.ceil(getBaseAmountForDoku('credit') * 1.028 + 2000), 
-                    getCreditPriceUSD(creditAmount) * 1.028 + (2000 / usdToIdrRate)
-                  )}</span>
-                </button>
-
                 <button
                   onClick={async () => {
                     try {
@@ -2247,7 +2300,7 @@ export default function VendorDashboard() {
                   }}
                   className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
                 >
-                  <span className="flex items-center gap-3"><span className="text-xl">💬</span> Pay via WhatsApp</span>
+                  <span className="flex items-center gap-3"><span className="text-xl">💬</span> Need negotiation? pay with whatsapp</span>
                   <span className="text-[#25D366]">{formatPrice(
                     Math.ceil(getCreditPriceIDR(creditAmount) * 1.03),
                     getCreditPriceUSD(creditAmount) * 1.03
@@ -2282,24 +2335,6 @@ export default function VendorDashboard() {
             
             <div className="flex items-center justify-between mb-4 pr-8">
               <h2 className="text-xl font-bold text-white">{buyCurrency === 'USD' ? 'Buy Package' : 'Beli Paket'}</h2>
-            </div>
-
-            {/* Currency Toggle */}
-            <div className="flex justify-center mb-6">
-              <div className="flex items-center bg-black/50 rounded-xl p-1.5 border border-white/10 w-full max-w-sm">
-                <button
-                  onClick={() => setBuyCurrency('USD')}
-                  className={`flex-1 px-6 py-3 text-sm font-bold rounded-lg transition-colors ${buyCurrency === 'USD' ? 'bg-[#bc13fe] text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                >
-                  USD
-                </button>
-                <button
-                  onClick={() => setBuyCurrency('IDR')}
-                  className={`flex-1 px-6 py-3 text-sm font-bold rounded-lg transition-colors ${buyCurrency === 'IDR' ? 'bg-[#bc13fe] text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                >
-                  IDR
-                </button>
-              </div>
             </div>
 
             {/* Tabs */}
@@ -2395,50 +2430,6 @@ export default function VendorDashboard() {
               </div>
             ) : (
               <div className="flex flex-col gap-2 w-full mt-2">
-                <button
-                  onClick={async () => {
-                    try {
-                      const { data: { session } } = await supabase.auth.getSession();
-                      if (!session) throw new Error("Not authenticated");
-                      const amount = getBaseAmountForDoku('unlimited');
-                      const res = await fetch('/api/payment/create', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                        body: JSON.stringify({ vendor_id: vendor?.id, type: 'UNLIMITED', amount, quantity: eventDuration, payment_method: 'CREDIT_CARD' })
-                      });
-                      const data = await res.json();
-                      if (!res.ok) throw new Error(data.error || 'Failed to create payment');
-                      if (data.payment_url) {
-                        // @ts-ignore
-                        loadJokulCheckout(data.payment_url);
-                      }
-                    } catch (err: any) { alert("Failed to initiate payment: " + err.message); }
-                  }}
-                  className={`w-full px-4 py-3 bg-[#1A1A24] hover:bg-[#2A2A35] border border-white/10 text-white rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm ${buyCurrency === 'IDR' ? 'hidden' : ''}`}
-                >
-                  <span className="flex items-center gap-3">
-                    <span className="text-xl">💳</span> 
-                    <span className="flex items-center gap-2">
-                      Pay with Card
-                      <div className="flex items-center gap-1 opacity-90 ml-1">
-                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                          <img src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Visa_Inc._logo_%282005%E2%80%932014%29.png" alt="Visa" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                        </div>
-                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                          <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                        </div>
-                        <div className="h-4 w-7 bg-white rounded-sm flex items-center justify-center p-0.5">
-                          <img src="https://upload.wikimedia.org/wikipedia/commons/4/40/JCB_logo.svg" alt="JCB" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-                        </div>
-                      </div>
-                    </span>
-                  </span>
-                  <span className="text-[#bc13fe]">{formatPrice(
-                    Math.ceil(getBaseAmountForDoku('unlimited') * 1.028 + 2000),
-                    (eventPrices[eventDuration] / 15000) * 1.028 + (2000 / usdToIdrRate)
-                  )}</span>
-                </button>
-
                 <button
                   onClick={async () => {
                     try {
@@ -2592,7 +2583,7 @@ export default function VendorDashboard() {
                   }}
                   className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
                 >
-                  <span className="flex items-center gap-3"><span className="text-xl">💬</span> Pay via WhatsApp</span>
+                  <span className="flex items-center gap-3"><span className="text-xl">💬</span> Need negotiation? pay with whatsapp</span>
                   <span className="text-[#25D366]">{formatPrice(
                     Math.ceil(getBaseAmountForDoku('unlimited') * 1.03),
                     (eventPrices[eventDuration] / 15000) * 1.03
