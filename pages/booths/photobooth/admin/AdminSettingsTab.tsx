@@ -203,7 +203,7 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
             </div>
 
             {/* ENABLE VIDEO GENERATION */}
-            <div className="flex flex-col gap-4 bg-[#bc13fe]/10 p-5 rounded-lg border border-[#bc13fe]/20">
+            <div className="flex flex-col gap-4 bg-[#bc13fe]/10 p-5 rounded-lg border border-[#bc13fe]/20 tour-video-settings">
               <div className="flex items-center justify-between">
                 <div className="flex flex-col">
                    <label className="text-[10px] text-[#bc13fe] uppercase tracking-widest font-bold">ENABLE VIDEO GENERATION</label>
@@ -219,6 +219,19 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                   <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#bc13fe]"></div>
                 </label>
               </div>
+              
+              {localSettings.boothMode === 'video' && (
+                <div className="flex flex-col gap-3 mt-4 border-t border-[#bc13fe]/20 pt-4">
+                  <h3 className="font-heading text-lg text-[#bc13fe] uppercase italic">Video Setting</h3>
+                  <label className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Video Prompt</label>
+                  <textarea 
+                    className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-white focus:border-[#bc13fe] outline-none transition-colors h-24 rounded-lg custom-scrollbar" 
+                    value={localSettings.videoPrompt || ''} 
+                    onChange={e => setLocalSettings({...localSettings, videoPrompt: e.target.value})}
+                    placeholder="Describe motion (e.g. slow motion, subtle movement...)"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -425,42 +438,6 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
 
              </div>
 
-          </div>
-
-          {/* Video Settings */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10 tour-video-settings">
-            <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Video Setting</h3>
-            
-            <div className="flex flex-col gap-3">
-              <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Video Resolution</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setLocalSettings({...localSettings, videoResolution: '480p'})}
-                  className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.videoResolution === '480p' ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-                >
-                   <span className="font-bold">480p (FAST)</span>
-                </button>
-                <button
-                  onClick={() => setLocalSettings({...localSettings, videoResolution: '720p'})}
-                  className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase flex flex-col items-center gap-1 ${localSettings.videoResolution === '720p' ? 'bg-blue-600 text-white shadow-lg border-blue-400' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-                >
-                   <span className="font-bold">720p (STANDARD)</span>
-                </button>
-              </div>
-              <p className="text-[9px] text-gray-500">* 480p is faster. 720p provides better quality but takes longer.</p>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Video Prompt</label>
-              <textarea 
-                className="bg-black/50 border border-white/10 p-4 font-mono text-xs text-white focus:border-[#bc13fe] outline-none transition-colors h-24 rounded-lg" 
-                value={localSettings.videoPrompt || ''} 
-                onChange={e => setLocalSettings({...localSettings, videoPrompt: e.target.value})}
-                placeholder="Describe motion (e.g. slow motion, subtle movement...)"
-                disabled={localSettings.boothMode === 'photo'}
-              />
-              {localSettings.boothMode === 'photo' && <p className="text-[9px] text-red-500 italic">* Disabled in Photobooth Mode</p>}
-            </div>
           </div>
 
           {/* Output Config */}
