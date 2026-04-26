@@ -180,7 +180,7 @@ const BartenderMenuPage: React.FC<BartenderMenuPageProps> = ({ settings, guestNa
           },
         });
 
-        const audioPart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData && p.inlineData.mimeType.startsWith('audio/'));
+        const audioPart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData && p.inlineData.mimeType?.startsWith('audio/'));
         const base64Audio = audioPart?.inlineData?.data;
 
         if (base64Audio) {

@@ -646,12 +646,14 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       let fullText = '';
       for await (const chunk of responseStream) {
         const text = chunk.text;
-        for (let i = 0; i < text.length; i++) {
-          fullText += text[i];
-          handleConceptChange(index, 'prompt', fullText);
-          const el = document.getElementById('concept-prompt-textarea');
-          if (el) { el.scrollTop = el.scrollHeight; }
-          await new Promise(r => setTimeout(r, 15));
+        if (text) {
+          for (let i = 0; i < text.length; i++) {
+            fullText += text[i];
+            handleConceptChange(index, 'prompt', fullText);
+            const el = document.getElementById('concept-prompt-textarea');
+            if (el) { el.scrollTop = el.scrollHeight; }
+            await new Promise(r => setTimeout(r, 15));
+          }
         }
       }
     } catch (err) {
@@ -731,12 +733,14 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       let fullText = '';
       for await (const chunk of responseStream) {
         const text = chunk.text;
-        for (let i = 0; i < text.length; i++) {
-          fullText += text[i];
-          handleConceptChange(index, 'prompt', fullText);
-          const el = document.getElementById('concept-prompt-textarea');
-          if (el) { el.scrollTop = el.scrollHeight; }
-          await new Promise(r => setTimeout(r, 15));
+        if (text) {
+          for (let i = 0; i < text.length; i++) {
+            fullText += text[i];
+            handleConceptChange(index, 'prompt', fullText);
+            const el = document.getElementById('concept-prompt-textarea');
+            if (el) { el.scrollTop = el.scrollHeight; }
+            await new Promise(r => setTimeout(r, 15));
+          }
         }
       }
       if (isActive && tourType === 'concept' && stepIndex === 5) {
@@ -758,19 +762,22 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
     }
     
     setIsAiEditing(true);
+    const concept = localConcepts[index];
+    const originalPrompt = concept.prompt;
     try {
       const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
       if (!apiKey) throw new Error("API Key not configured");
       const ai = new GoogleGenAI({ apiKey });
       
-      const concept = localConcepts[index];
       const model = ai.models;
       
       const systemInstruction = CONCEPT_DESIGNER_SYSTEM_PROMPT;
       
-      let contents: any = `Here is the current photobooth prompt:\n\n${concept.prompt}\n\nThe user wants to edit this concept with the following instruction:\n"${aiEditInstruction}"\n\nPlease rewrite the photobooth prompt applying only the edits requested by the user, while preserving the structure and the rest of the original prompt's aesthetic. Return ONLY the final structured prompt and absolutely NOTHING else. No conversational text.`;
+      let contents: any = `Here is the current photobooth prompt:\n\n${originalPrompt}\n\nThe user wants to edit this concept with the following instruction:\n"${aiEditInstruction}"\n\nPlease rewrite the photobooth prompt applying only the edits requested by the user, while preserving the structure and the rest of the original prompt's aesthetic. Return ONLY the final structured prompt and absolutely NOTHING else. No conversational text.`;
       
-      const response = await model.generateContent({
+      handleConceptChange(index, 'prompt', '');
+
+      const responseStream = await model.generateContentStream({
         model: 'gemini-3-flash-preview',
         contents,
         config: {
@@ -779,14 +786,24 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
         }
       });
       
-      const newPrompt = response.text?.trim();
-      if (newPrompt) {
-        handleConceptChange(index, 'prompt', newPrompt);
+      let fullText = '';
+      for await (const chunk of responseStream) {
+        const text = chunk.text;
+        if (text) {
+          for (let i = 0; i < text.length; i++) {
+            fullText += text[i];
+            handleConceptChange(index, 'prompt', fullText);
+            const el = document.getElementById('concept-prompt-textarea');
+            if (el) { el.scrollTop = el.scrollHeight; }
+            await new Promise(r => setTimeout(r, 15));
+          }
+        }
       }
       setAiEditInstruction('');
       setShowAiEdit(false);
     } catch (err) {
       console.error("Failed to edit concept with AI:", err);
+      handleConceptChange(index, 'prompt', originalPrompt);
       await showDialog('alert', 'Error', 'Failed to edit concept. Please check your API key or try again.');
     } finally {
       setIsAiEditing(false);
@@ -1323,28 +1340,70 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
                     <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase">Prompt Instructions</label>
                     {!isTemplateOrSmart && (
                       <div className={`w-full flex flex-col gap-2 ${index === localConcepts.length - 1 ? 'tour-prompt' : ''}`}>
-                        <textarea 
-                           id="concept-prompt-textarea"
-                           className="bg-black/40 border border-white/10 p-4 text-[11px] font-mono h-28 text-white outline-none focus:border-[#bc13fe] focus:ring-1 focus:ring-[#bc13fe]/50 resize-y w-full rounded-xl shadow-inner custom-scrollbar transition-all" 
-                           value={concept.prompt} 
-                           onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
-                           placeholder="Describe the aesthetic, background, mood, lighting..."
-                        />
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-1">
-                          <span className="text-[10px] text-gray-400 font-bold tracking-wider uppercase">Auto-Enhance Prompt</span>
-                          <button
-                            onClick={() => handleEnhancePrompt(index)}
-                            disabled={isEnhancing === index || !concept.prompt.trim()}
-                            className={`bg-gradient-to-r from-blue-600/80 to-[#bc13fe]/80 hover:from-blue-500 hover:to-[#bc13fe] text-white rounded-xl px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:grayscale shadow-[0_0_15px_rgba(188,19,254,0.3)] hover:shadow-[0_0_25px_rgba(188,19,254,0.5)] border border-white/10 ${index === localConcepts.length - 1 ? 'tour-optimize-prompt' : ''}`}
-                          >
-                            {isEnhancing === index ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Sparkles className="w-4 h-4" />
-                            )}
-                            OPTIMIZE
-                          </button>
-                        </div>
+                         <textarea 
+                            id="concept-prompt-textarea"
+                            className="bg-black/40 border border-white/10 p-4 text-[11px] font-mono h-28 text-white outline-none focus:border-[#bc13fe] focus:ring-1 focus:ring-[#bc13fe]/50 resize-y w-full rounded-xl shadow-inner custom-scrollbar transition-all" 
+                            value={concept.prompt} 
+                            onChange={e => handleConceptChange(index, 'prompt', e.target.value)} 
+                            placeholder="Describe the aesthetic, background, mood, lighting..."
+                            readOnly={isAiEditing || isEnhancing === index}
+                         />
+                         
+                         {!showAiEdit && (
+                           <div className="flex flex-col gap-2 mt-1">
+                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                               <button 
+                                 onClick={() => setShowAiEdit(true)}
+                                 className="text-[10px] bg-white/10 hover:bg-[#bc13fe]/20 text-white hover:text-[#bc13fe] border border-white/20 hover:border-[#bc13fe]/50 px-3 py-1.5 flex-1 sm:flex-none uppercase font-bold tracking-wider transition-all flex items-center justify-center gap-2 rounded-xl"
+                               >
+                                  <Edit className="w-3 h-3" /> Edit this prompt concept
+                               </button>
+                               
+                               <button
+                                 onClick={() => handleEnhancePrompt(index)}
+                                 disabled={isEnhancing === index || !concept.prompt.trim()}
+                                 className={`bg-gradient-to-r from-blue-600/80 to-[#bc13fe]/80 hover:from-blue-500 hover:to-[#bc13fe] text-white rounded-xl px-4 py-1.5 flex-1 sm:flex-none text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:grayscale shadow-[0_0_15px_rgba(188,19,254,0.3)] hover:shadow-[0_0_25px_rgba(188,19,254,0.5)] border border-white/10 ${index === localConcepts.length - 1 ? 'tour-optimize-prompt' : ''}`}
+                               >
+                                 {isEnhancing === index ? (
+                                   <Loader2 className="w-4 h-4 animate-spin" />
+                                 ) : (
+                                   <Sparkles className="w-4 h-4" />
+                                 )}
+                                 OPTIMIZE
+                               </button>
+                             </div>
+                           </div>
+                         )}
+
+                         {showAiEdit && (
+                            <div className="w-full flex flex-col gap-2 animate-in fade-in zoom-in duration-300 bg-black/60 p-4 rounded-xl border border-white/10">
+                               <label className="text-[10px] text-[#bc13fe] uppercase font-bold tracking-widest text-left">Instruction for AI</label>
+                               <textarea 
+                                  className="w-full bg-black/40 border border-white/20 focus:border-[#bc13fe] rounded-lg p-3 text-[11px] text-white resize-none outline-none custom-scrollbar transition-all"
+                                  placeholder="e.g., Change the suit to red, make the background a cyberpunk city, change object holding to a sword..."
+                                  rows={2}
+                                  value={aiEditInstruction}
+                                  onChange={e => setAiEditInstruction(e.target.value)}
+                               />
+                               <div className="flex justify-end gap-2 mt-1">
+                                  <button 
+                                     onClick={() => { setShowAiEdit(false); setAiEditInstruction(''); }}
+                                     disabled={isAiEditing}
+                                     className="text-[10px] uppercase font-bold tracking-wider px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+                                  >
+                                     Cancel
+                                  </button>
+                                  <button 
+                                     onClick={() => handleAiEditSmartConcept(index)}
+                                     disabled={isAiEditing || !aiEditInstruction.trim()}
+                                     className="text-[10px] uppercase font-bold tracking-wider px-3 py-1.5 rounded-lg bg-[#bc13fe] hover:bg-purple-500 text-white transition-colors disabled:opacity-50 disabled:grayscale flex items-center gap-2"
+                                  >
+                                     {isAiEditing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} 
+                                     {isAiEditing ? 'Editing...' : 'Apply Edit'}
+                                  </button>
+                               </div>
+                            </div>
+                         )}
                       </div>
                     )}
                  </div>
