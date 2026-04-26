@@ -32,6 +32,7 @@ export default function VendorDashboard() {
   const [instagramUsername, setInstagramUsername] = useState('');
   const [buyCurrency, setBuyCurrency] = useState<'IDR' | 'USD'>('IDR');
   const [showCurrencySelectionModal, setShowCurrencySelectionModal] = useState<'credit' | 'unlimited' | null>(null);
+  const [isPayPalCheckout, setIsPayPalCheckout] = useState(false);
   const [creditAmount, setCreditAmount] = useState<number>(10);
   const [eventDuration, setEventDuration] = useState<number>(2);
   const [usdToIdrRate, setUsdToIdrRate] = useState<number>(16000);
@@ -1921,6 +1922,7 @@ export default function VendorDashboard() {
               <button
                 onClick={() => {
                   setBuyCurrency('USD');
+                  setIsPayPalCheckout(false);
                   if (showCurrencySelectionModal === 'credit') {
                     setShowBuyCreditsModal(true);
                   } else {
@@ -1980,112 +1982,118 @@ export default function VendorDashboard() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 mb-6 border-b border-white/10 pb-2 overflow-x-auto hide-scrollbar">
-              <button
-                onClick={() => setBuyModalTab('credit')}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'credit' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-              >
-                {buyCurrency === 'USD' ? 'Buy Credit' : 'Beli Kredit'}
-              </button>
-              <button
-                onClick={() => setBuyModalTab('free')}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'free' ? 'bg-[#bc13fe] text-white' : 'text-[#bc13fe] hover:text-white hover:bg-white/5'}`}
-              >
-                {buyCurrency === 'USD' ? 'Free Credit' : 'Kredit Gratis'}
-              </button>
-            </div>
+            {!isPayPalCheckout && (
+              <div className="flex gap-2 mb-6 border-b border-white/10 pb-2 overflow-x-auto hide-scrollbar">
+                <button
+                  onClick={() => { setBuyModalTab('credit'); setIsPayPalCheckout(false); }}
+                  className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'credit' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                >
+                  {buyCurrency === 'USD' ? 'Buy Credit' : 'Beli Kredit'}
+                </button>
+                <button
+                  onClick={() => { setBuyModalTab('free'); setIsPayPalCheckout(false); }}
+                  className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyModalTab === 'free' ? 'bg-[#bc13fe] text-white' : 'text-[#bc13fe] hover:text-white hover:bg-white/5'}`}
+                >
+                  {buyCurrency === 'USD' ? 'Free Credit' : 'Kredit Gratis'}
+                </button>
+              </div>
+            )}
 
             {/* Tab Content */}
             <div className="min-h-[150px] mb-8">
               {buyModalTab === 'credit' && (
                 <div className="space-y-6">
-                  {/* Preset Packages */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {[10, 50, 100, 250, 500, 1000, 1500, 2000].map(amount => {
-                       const priceIDR = getCreditPriceIDR(amount);
-                       const priceUSD = getCreditPriceUSD(amount);
-                       
-                       const baseIDR = amount * 9500;
-                       const baseUSD = amount * 0.65;
-                       
-                       let discount = 0;
-                       if (amount > 10) {
-                         discount = buyCurrency === 'USD' 
-                           ? Math.round((1 - priceUSD / baseUSD) * 100)
-                           : Math.round((1 - priceIDR / baseIDR) * 100);
-                       }
+                  {!isPayPalCheckout && (
+                    <>
+                      {/* Preset Packages */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[10, 50, 100, 250, 500, 1000, 1500, 2000].map(amount => {
+                           const priceIDR = getCreditPriceIDR(amount);
+                           const priceUSD = getCreditPriceUSD(amount);
+                           
+                           const baseIDR = amount * 9500;
+                           const baseUSD = amount * 0.65;
+                           
+                           let discount = 0;
+                           if (amount > 10) {
+                             discount = buyCurrency === 'USD' 
+                               ? Math.round((1 - priceUSD / baseUSD) * 100)
+                               : Math.round((1 - priceIDR / baseIDR) * 100);
+                           }
 
-                       let badge = null;
-                       if (amount === 50) badge = buyCurrency === 'USD' ? "START" : "MULAI";
-                       if (amount === 250) badge = "POPULAR";
-                       if (amount === 1000) badge = "BEST VALUE";
+                           let badge = null;
+                           if (amount === 50) badge = buyCurrency === 'USD' ? "START" : "MULAI";
+                           if (amount === 250) badge = "POPULAR";
+                           if (amount === 1000) badge = "BEST VALUE";
 
-                       const isSelected = creditAmount === amount;
-                       
-                       return (
-                         <button
-                           key={amount}
-                           onClick={() => setCreditAmount(amount)}
-                           className={`relative border rounded-xl overflow-hidden flex flex-col p-3 transition-colors ${isSelected ? 'border-[#bc13fe] bg-[#bc13fe]/20 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 hover:border-[#bc13fe]/50 bg-black/40 hover:bg-black/60'}`}
-                         >
-                           {badge && (
-                             <div className="absolute top-0 right-0 bg-gradient-to-r from-blue-600 to-[#bc13fe] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg shadow-sm">
-                               {badge}
-                             </div>
-                           )}
-                           <div className="flex items-baseline gap-1">
-                             <span className="text-white font-heading font-bold text-xl leading-none">{amount}</span>
-                             <span className="text-[9px] font-bold font-mono tracking-widest text-[#bc13fe] uppercase">Crdts</span>
-                           </div>
-                           <span className={`font-bold mt-1.5 text-sm ${isSelected ? 'text-[#bc13fe]' : 'text-gray-300'}`}>{formatPrice(priceIDR, priceUSD)}</span>
-                           <div className="flex items-center gap-1.5 mt-2 h-3 text-left w-full">
-                             {discount > 0 && (
-                               <>
-                                 <span className="text-[10px] text-gray-500 line-through">
-                                   {formatPrice(baseIDR, baseUSD)}
-                                 </span>
-                                 <span className="text-[9px] text-emerald-400 font-bold bg-emerald-400/10 px-1 rounded-sm">
-                                   -{discount}%
-                                 </span>
-                               </>
-                             )}
-                           </div>
-                         </button>
-                       );
-                    })}
-                  </div>
+                           const isSelected = creditAmount === amount;
+                           
+                           return (
+                             <button
+                               key={amount}
+                               onClick={() => setCreditAmount(amount)}
+                               className={`relative border rounded-xl overflow-hidden flex flex-col p-3 transition-colors ${isSelected ? 'border-[#bc13fe] bg-[#bc13fe]/20 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 hover:border-[#bc13fe]/50 bg-black/40 hover:bg-black/60'}`}
+                             >
+                               {badge && (
+                                 <div className="absolute top-0 right-0 bg-gradient-to-r from-blue-600 to-[#bc13fe] text-white text-[8px] font-bold px-1.5 py-0.5 rounded-bl-lg shadow-sm">
+                                   {badge}
+                                 </div>
+                               )}
+                               <div className="flex items-baseline gap-1">
+                                 <span className="text-white font-heading font-bold text-xl leading-none">{amount}</span>
+                                 <span className="text-[9px] font-bold font-mono tracking-widest text-[#bc13fe] uppercase">Crdts</span>
+                               </div>
+                               <span className={`font-bold mt-1.5 text-sm ${isSelected ? 'text-[#bc13fe]' : 'text-gray-300'}`}>{formatPrice(priceIDR, priceUSD)}</span>
+                               <div className="flex items-center gap-1.5 mt-2 h-3 text-left w-full">
+                                 {discount > 0 && (
+                                   <>
+                                     <span className="text-[10px] text-gray-500 line-through">
+                                       {formatPrice(baseIDR, baseUSD)}
+                                     </span>
+                                     <span className="text-[9px] text-emerald-400 font-bold bg-emerald-400/10 px-1 rounded-sm">
+                                       -{discount}%
+                                     </span>
+                                   </>
+                                 )}
+                               </div>
+                             </button>
+                           );
+                        })}
+                      </div>
 
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-sm text-gray-300 font-medium">{buyCurrency === 'USD' ? 'Or custom amount:' : 'Atau jumlah khusus:'}</label>
-                      <input 
-                        type="number" 
-                        min="10" 
-                        value={creditAmount || ''}
-                        onChange={(e) => {
-                          const val = e.target.value === '' ? 0 : parseInt(e.target.value);
-                          if (!isNaN(val)) setCreditAmount(val);
-                        }}
-                        onBlur={() => {
-                          if (creditAmount < 10) setCreditAmount(10);
-                        }}
-                        className="w-24 bg-black/50 border border-white/10 rounded-lg px-2 py-1 text-white text-right focus:outline-none focus:border-[#bc13fe]"
-                      />
-                    </div>
-                    <input 
-                      type="range" 
-                      min="10" 
-                      max="2000" 
-                      step="10"
-                      value={creditAmount}
-                      onChange={(e) => setCreditAmount(parseInt(e.target.value))}
-                      className="w-full accent-[#bc13fe]"
-                    />
-                    <div className="flex justify-between text-[10px] text-gray-500 font-mono mt-1">
-                      <span>10</span>
-                      <span>2000</span>
-                    </div>
-                  </div>
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-sm text-gray-300 font-medium">{buyCurrency === 'USD' ? 'Or custom amount:' : 'Atau jumlah khusus:'}</label>
+                          <input 
+                            type="number" 
+                            min="10" 
+                            value={creditAmount || ''}
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                              if (!isNaN(val)) setCreditAmount(val);
+                            }}
+                            onBlur={() => {
+                              if (creditAmount < 10) setCreditAmount(10);
+                            }}
+                            className="w-24 bg-black/50 border border-white/10 rounded-lg px-2 py-1 text-white text-right focus:outline-none focus:border-[#bc13fe]"
+                          />
+                        </div>
+                        <input 
+                          type="range" 
+                          min="10" 
+                          max="2000" 
+                          step="10"
+                          value={creditAmount}
+                          onChange={(e) => setCreditAmount(parseInt(e.target.value))}
+                          className="w-full accent-[#bc13fe]"
+                        />
+                        <div className="flex justify-between text-[10px] text-gray-500 font-mono mt-1">
+                          <span>10</span>
+                          <span>2000</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                   
                   <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
                     <span className="text-gray-400 text-sm font-bold tracking-widest uppercase">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
@@ -2215,107 +2223,128 @@ export default function VendorDashboard() {
                 {/* PAYPAL INTEGRATION FOR USD */}
                 {buyCurrency === 'USD' && (
                   <div className="w-full relative z-50">
-                    <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
-                      <span>Includes PayPal Fee (4.4% + $0.30)</span>
-                      <span className="font-bold text-[#bc13fe]">
-                        ${((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2)}
-                      </span>
-                    </div>
-                    <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
-                      <PayPalButtons 
-                        style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
-                        createOrder={async (data, actions) => {
-                          const { data: { session } } = await supabase.auth.getSession();
-                          if (!session || !vendor?.id) throw new Error("Not authenticated");
-                          
-                          const finalPriceUSD = ((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2);
+                    {!isPayPalCheckout ? (
+                      <button
+                        onClick={() => setIsPayPalCheckout(true)}
+                        className="w-full px-4 py-3 bg-[#FFC439] hover:bg-[#F4BB33] text-[#003087] rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-sm"
+                      >
+                        <span className="text-xl">💳</span> Continue to PayPal or Card
+                      </button>
+                    ) : (
+                      <>
+                        <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
+                          <span>Includes PayPal Fee (4.4% + $0.30)</span>
+                          <span className="font-bold text-[#bc13fe]">
+                            ${((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2)}
+                          </span>
+                        </div>
+                        <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+                          <PayPalButtons 
+                            style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
+                            createOrder={async (data, actions) => {
+                              const { data: { session } } = await supabase.auth.getSession();
+                              if (!session || !vendor?.id) throw new Error("Not authenticated");
+                              
+                              const finalPriceUSD = ((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2);
 
-                          const res = await fetch('/api/payment/create', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                              body: JSON.stringify({ vendor_id: vendor.id, type: 'CREDIT', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: creditAmount, payment_method: 'PAYPAL' })
-                          });
-                          const paymentData = await res.json();
-                          const transactionId = paymentData.transaction_id;
+                              const res = await fetch('/api/payment/create', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                                  body: JSON.stringify({ vendor_id: vendor.id, type: 'CREDIT', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: creditAmount, payment_method: 'PAYPAL' })
+                              });
+                              const paymentData = await res.json();
+                              const transactionId = paymentData.transaction_id;
 
-                          return actions.order.create({
-                            intent: "CAPTURE",
-                            purchase_units: [{
-                              description: `${creditAmount} CoroAI Credits`,
-                              custom_id: transactionId,
-                              amount: {
-                                currency_code: "USD",
-                                value: finalPriceUSD
+                              return actions.order.create({
+                                intent: "CAPTURE",
+                                purchase_units: [{
+                                  description: `${creditAmount} CoroAI Credits`,
+                                  custom_id: transactionId,
+                                  amount: {
+                                    currency_code: "USD",
+                                    value: finalPriceUSD
+                                  }
+                                }]
+                              });
+                            }}
+                            onApprove={async (data, actions) => {
+                              if (!actions.order) return;
+                              
+                              try {
+                                const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units?.[0]?.custom_id);
+
+                                const details = await actions.order.capture();
+                                
+                                if (details.status === 'COMPLETED') {
+                                    handlePayPalSuccess('CREDIT', creditAmount, txId);
+                                } else if ((details.status as string) === 'PENDING') {
+                                    setShowBuyCreditsModal(false);
+                                    showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your credits will be added once PayPal clears the payment.');
+                                } else {
+                                    showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
+                                }
+                              } catch (err: any) {
+                                console.error("PayPal Capture Error:", err);
+                                if (err?.message?.includes('INSTRUMENT_DECLINED')) {
+                                  showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
+                                } else {
+                                  showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
+                                }
                               }
-                            }]
-                          });
-                        }}
-                        onApprove={async (data, actions) => {
-                          if (!actions.order) return;
-                          
-                          try {
-                            const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units?.[0]?.custom_id);
-
-                            const details = await actions.order.capture();
-                            
-                            if (details.status === 'COMPLETED') {
-                                handlePayPalSuccess('CREDIT', creditAmount, txId);
-                            } else if ((details.status as string) === 'PENDING') {
-                                setShowBuyCreditsModal(false);
-                                showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your credits will be added once PayPal clears the payment.');
-                            } else {
-                                showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
-                            }
-                          } catch (err: any) {
-                            console.error("PayPal Capture Error:", err);
-                            if (err?.message?.includes('INSTRUMENT_DECLINED')) {
-                              showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
-                            } else {
-                              showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
-                            }
-                          }
-                        }}
-                        onCancel={() => {
-                          showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
-                        }}
-                        onError={(err) => {
-                          console.error("PayPal Error:", err);
-                          showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
-                        }}
-                      />
-                    </PayPalScriptProvider>
+                            }}
+                            onCancel={() => {
+                              showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
+                            }}
+                            onError={(err) => {
+                              console.error("PayPal Error:", err);
+                              showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
+                            }}
+                          />
+                        </PayPalScriptProvider>
+                        <button
+                          onClick={() => setIsPayPalCheckout(false)}
+                          className="w-full mt-3 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
+                        >
+                          Change Package
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
 
-                <button
-                  onClick={() => {
-                    const baseAmount = getBaseAmountForDoku('credit');
-                    const finalWaPrice = Math.ceil(baseAmount * 1.03);
-                    const finalWaPriceUSD = getCreditPriceUSD(creditAmount) * 1.03;
-                    let text = buyCurrency === 'USD' 
-                      ? `Hi I want to buy Credit\n${vendor?.email || 'Vendor Email'}\nSelected package: ${creditAmount} Credits\nTotal price: ${formatPrice(finalWaPrice, finalWaPriceUSD)}`
-                      : `Hi saya ingin membeli Kredit\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${creditAmount} Kredit\nTotal harga: ${formatPrice(finalWaPrice)}`;
-                    const encodedText = encodeURIComponent(text);
-                    window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
-                  }}
-                  className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
-                >
-                  <span className="flex items-center gap-3"><span className="text-xl">💬</span> Need negotiation? pay with whatsapp</span>
-                  <span className="text-[#25D366]">{formatPrice(
-                    Math.ceil(getCreditPriceIDR(creditAmount) * 1.03),
-                    getCreditPriceUSD(creditAmount) * 1.03
-                  )}</span>
-                </button>
-                
-                {/* Cancel Button below payment options */}
-                <div className="w-full pt-4 mt-2 border-t border-white/10">
-                  <button
-                    onClick={() => setShowBuyCreditsModal(false)}
-                    className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
-                  >
-                    {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
-                  </button>
-                </div>
+                {!isPayPalCheckout && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const baseAmount = getBaseAmountForDoku('credit');
+                        const finalWaPrice = Math.ceil(baseAmount * 1.03);
+                        const finalWaPriceUSD = getCreditPriceUSD(creditAmount) * 1.03;
+                        let text = buyCurrency === 'USD' 
+                          ? `Hi I want to buy Credit\n${vendor?.email || 'Vendor Email'}\nSelected package: ${creditAmount} Credits\nTotal price: ${formatPrice(finalWaPrice, finalWaPriceUSD)}`
+                          : `Hi saya ingin membeli Kredit\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${creditAmount} Kredit\nTotal harga: ${formatPrice(finalWaPrice)}`;
+                        const encodedText = encodeURIComponent(text);
+                        window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
+                      }}
+                      className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
+                    >
+                      <span className="flex items-center gap-3"><span className="text-xl">💬</span> Need negotiation? pay with whatsapp</span>
+                      <span className="text-[#25D366]">{formatPrice(
+                        Math.ceil(getCreditPriceIDR(creditAmount) * 1.03),
+                        getCreditPriceUSD(creditAmount) * 1.03
+                      )}</span>
+                    </button>
+                    
+                    {/* Cancel Button below payment options */}
+                    <div className="w-full pt-4 mt-2 border-t border-white/10">
+                      <button
+                        onClick={() => setShowBuyCreditsModal(false)}
+                        className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
+                      >
+                        {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -2338,37 +2367,41 @@ export default function VendorDashboard() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 mb-6 border-b border-white/10 pb-2 overflow-x-auto hide-scrollbar">
-              <button
-                onClick={() => setBuyUnlimitedModalTab('event')}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyUnlimitedModalTab === 'event' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-              >
-                {buyCurrency === 'USD' ? 'Unlimited / Event' : 'Unlimited / Event'}
-              </button>
-              <button
-                onClick={() => setBuyUnlimitedModalTab('rent')}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyUnlimitedModalTab === 'rent' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-              >
-                {buyCurrency === 'USD' ? 'Rent Duration' : 'Durasi Sewa'}
-              </button>
-            </div>
+            {!isPayPalCheckout && (
+              <div className="flex gap-2 mb-6 border-b border-white/10 pb-2 overflow-x-auto hide-scrollbar">
+                <button
+                  onClick={() => { setBuyUnlimitedModalTab('event'); setIsPayPalCheckout(false); }}
+                  className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyUnlimitedModalTab === 'event' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                >
+                  {buyCurrency === 'USD' ? 'Unlimited / Event' : 'Unlimited / Event'}
+                </button>
+                <button
+                  onClick={() => { setBuyUnlimitedModalTab('rent'); setIsPayPalCheckout(false); }}
+                  className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors whitespace-nowrap ${buyUnlimitedModalTab === 'rent' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                >
+                  {buyCurrency === 'USD' ? 'Rent Duration' : 'Durasi Sewa'}
+                </button>
+              </div>
+            )}
 
             {/* Tab Content */}
             <div className="min-h-[150px] mb-8">
               {buyUnlimitedModalTab === 'event' && (
                 <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm text-gray-300 font-medium mb-2">{buyCurrency === 'USD' ? 'Event Duration' : 'Durasi Event'}</label>
-                    <select 
-                      value={eventDuration}
-                      onChange={(e) => setEventDuration(parseInt(e.target.value))}
-                      className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
-                    >
-                      {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(hours => (
-                        <option key={hours} value={hours}>{hours} {buyCurrency === 'USD' ? 'Hours' : 'Jam'}</option>
-                      ))}
-                    </select>
-                  </div>
+                  {!isPayPalCheckout && (
+                    <div>
+                      <label className="block text-sm text-gray-300 font-medium mb-2">{buyCurrency === 'USD' ? 'Event Duration' : 'Durasi Event'}</label>
+                      <select 
+                        value={eventDuration}
+                        onChange={(e) => setEventDuration(parseInt(e.target.value))}
+                        className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
+                      >
+                        {[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(hours => (
+                          <option key={hours} value={hours}>{hours} {buyCurrency === 'USD' ? 'Hours' : 'Jam'}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   
                   <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
                     <span className="text-gray-400 text-sm">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
@@ -2379,17 +2412,19 @@ export default function VendorDashboard() {
 
               {buyUnlimitedModalTab === 'rent' && (
                 <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm text-gray-300 font-medium mb-2">{buyCurrency === 'USD' ? 'Rent Duration' : 'Durasi Sewa'}</label>
-                    <select 
-                      value={rentDuration}
-                      onChange={(e) => setRentDuration(e.target.value as 'minggu' | 'bulan')}
-                      className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
-                    >
-                      <option value="minggu">{buyCurrency === 'USD' ? 'Per Week' : 'Per Minggu'}</option>
-                      <option value="bulan">{buyCurrency === 'USD' ? 'Per Month' : 'Per Bulan'}</option>
-                    </select>
-                  </div>
+                  {!isPayPalCheckout && (
+                    <div>
+                      <label className="block text-sm text-gray-300 font-medium mb-2">{buyCurrency === 'USD' ? 'Rent Duration' : 'Durasi Sewa'}</label>
+                      <select 
+                        value={rentDuration}
+                        onChange={(e) => setRentDuration(e.target.value as 'minggu' | 'bulan')}
+                        className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#bc13fe] appearance-none"
+                      >
+                        <option value="minggu">{buyCurrency === 'USD' ? 'Per Week' : 'Per Minggu'}</option>
+                        <option value="bulan">{buyCurrency === 'USD' ? 'Per Month' : 'Per Bulan'}</option>
+                      </select>
+                    </div>
+                  )}
                   
                   <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex justify-between items-center">
                     <span className="text-gray-400 text-sm">{buyCurrency === 'USD' ? 'Total Price' : 'Total Harga'}</span>
@@ -2497,108 +2532,129 @@ export default function VendorDashboard() {
                 {/* PAYPAL INTEGRATION FOR USD */}
                 {buyCurrency === 'USD' && (
                   <div className="w-full relative z-50">
-                    <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
-                      <span>Includes PayPal Fee (4.4% + $0.30)</span>
-                      <span className="font-bold text-[#bc13fe]">
-                        ${(((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2)}
-                      </span>
-                    </div>
-                    <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
-                      <PayPalButtons 
-                        style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
-                        createOrder={async (data, actions) => {
-                          const { data: { session } } = await supabase.auth.getSession();
-                          if (!session || !vendor?.id) throw new Error("Not authenticated");
-                          
-                          const finalPriceUSD = (((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2);
+                    {!isPayPalCheckout ? (
+                      <button
+                        onClick={() => setIsPayPalCheckout(true)}
+                        className="w-full px-4 py-3 bg-[#FFC439] hover:bg-[#F4BB33] text-[#003087] rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-sm"
+                      >
+                        <span className="text-xl">💳</span> Continue to PayPal or Card
+                      </button>
+                    ) : (
+                      <>
+                        <div className="w-full flex justify-between items-center px-2 mb-2 text-xs text-gray-400">
+                          <span>Includes PayPal Fee (4.4% + $0.30)</span>
+                          <span className="font-bold text-[#bc13fe]">
+                            ${(((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2)}
+                          </span>
+                        </div>
+                        <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+                          <PayPalButtons 
+                            style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
+                            createOrder={async (data, actions) => {
+                              const { data: { session } } = await supabase.auth.getSession();
+                              if (!session || !vendor?.id) throw new Error("Not authenticated");
+                              
+                              const finalPriceUSD = (((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2);
 
-                          const res = await fetch('/api/payment/create', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                              body: JSON.stringify({ vendor_id: vendor.id, type: 'UNLIMITED', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: eventDuration, payment_method: 'PAYPAL' })
-                          });
-                          const paymentData = await res.json();
-                          const transactionId = paymentData.transaction_id;
+                              const res = await fetch('/api/payment/create', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                                  body: JSON.stringify({ vendor_id: vendor.id, type: 'UNLIMITED', amount: Math.round(parseFloat(finalPriceUSD) * usdToIdrRate), quantity: eventDuration, payment_method: 'PAYPAL' })
+                              });
+                              const paymentData = await res.json();
+                              const transactionId = paymentData.transaction_id;
 
-                          return actions.order.create({
-                            intent: "CAPTURE",
-                            purchase_units: [{
-                              description: `CoroAI Unlimited Event (${eventDuration} Hours)`,
-                              custom_id: transactionId,
-                              amount: {
-                                currency_code: "USD",
-                                value: finalPriceUSD
+                              return actions.order.create({
+                                intent: "CAPTURE",
+                                purchase_units: [{
+                                  description: `CoroAI Unlimited Event (${eventDuration} Hours)`,
+                                  custom_id: transactionId,
+                                  amount: {
+                                    currency_code: "USD",
+                                    value: finalPriceUSD
+                                  }
+                                }]
+                              });
+                            }}
+                            onApprove={async (data, actions) => {
+                              if (!actions.order) return;
+                              
+                              try {
+                                // Retrieve the transaction ID created earlier
+                                const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units?.[0]?.custom_id);
+
+                                const details = await actions.order.capture();
+                                
+                                if (details.status === 'COMPLETED') {
+                                    handlePayPalSuccess('UNLIMITED', eventDuration, txId);
+                                } else if ((details.status as string) === 'PENDING') {
+                                    setShowBuyUnlimitedModal(false);
+                                    showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your quota will be added once PayPal clears the payment.');
+                                } else {
+                                    showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
+                                }
+                              } catch (err: any) {
+                                console.error("PayPal Capture Error:", err);
+                                if (err?.message?.includes('INSTRUMENT_DECLINED')) {
+                                  showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
+                                } else {
+                                  showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
+                                }
                               }
-                            }]
-                          });
-                        }}
-                        onApprove={async (data, actions) => {
-                          if (!actions.order) return;
-                          
-                          try {
-                            // Retrieve the transaction ID created earlier
-                            const txId = (actions.order as any).custom_id || await actions.order.get().then(res => res.purchase_units?.[0]?.custom_id);
-
-                            const details = await actions.order.capture();
-                            
-                            if (details.status === 'COMPLETED') {
-                                handlePayPalSuccess('UNLIMITED', eventDuration, txId);
-                            } else if ((details.status as string) === 'PENDING') {
-                                setShowBuyUnlimitedModal(false);
-                                showDialog('alert', 'Payment Pending', 'Your payment is pending (e.g., eCheck). Your quota will be added once PayPal clears the payment.');
-                            } else {
-                                showDialog('alert', 'Payment Failed', `Payment status: ${details.status}. Please try again or use another method.`);
-                            }
-                          } catch (err: any) {
-                            console.error("PayPal Capture Error:", err);
-                            if (err?.message?.includes('INSTRUMENT_DECLINED')) {
-                              showDialog('alert', 'Card Declined', 'Your card was declined. Please try a different payment method.');
-                            } else {
-                              showDialog('alert', 'Payment Error', 'An error occurred while capturing your payment. Please try again.');
-                            }
-                          }
-                        }}
-                        onCancel={() => {
-                          showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
-                        }}
-                        onError={(err) => {
-                          console.error("PayPal Error:", err);
-                          showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
-                        }}
-                      />
-                    </PayPalScriptProvider>
+                            }}
+                            onCancel={() => {
+                              showDialog('alert', 'Payment Cancelled', 'You have cancelled the PayPal payment.');
+                            }}
+                            onError={(err) => {
+                              console.error("PayPal Error:", err);
+                              showDialog('alert', 'PayPal Error', 'There was a technical issue communicating with PayPal. Please check your connection and try again.');
+                            }}
+                          />
+                        </PayPalScriptProvider>
+                        <button
+                          onClick={() => setIsPayPalCheckout(false)}
+                          className="w-full mt-3 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
+                        >
+                          Change Package
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
 
-                <button
-                  onClick={() => {
-                    const baseAmount = getBaseAmountForDoku('unlimited');
-                    const finalWaPrice = Math.ceil(baseAmount * 1.03);
-                    const finalWaPriceUSD = (eventPrices[eventDuration] / 15000) * 1.03;
-                    let text = buyCurrency === 'USD' 
-                      ? `Hi I want to buy Buy per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nSelected package: ${eventDuration} hours\nTotal price: ${formatPrice(finalWaPrice, finalWaPriceUSD)}`
-                      : `Hi saya ingin membeli Beli per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${eventDuration} jam\nTotal harga: ${formatPrice(finalWaPrice)}`;
-                    const encodedText = encodeURIComponent(text);
-                    window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
-                  }}
-                  className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
-                >
-                  <span className="flex items-center gap-3"><span className="text-xl">💬</span> Need negotiation? pay with whatsapp</span>
-                  <span className="text-[#25D366]">{formatPrice(
-                    Math.ceil(getBaseAmountForDoku('unlimited') * 1.03),
-                    (eventPrices[eventDuration] / 15000) * 1.03
-                  )}</span>
-                </button>
-                
-                {/* Cancel Button below payment options */}
-                <div className="w-full pt-4 mt-2 border-t border-white/10">
-                  <button
-                    onClick={() => setShowBuyUnlimitedModal(false)}
-                    className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
-                  >
-                    {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
-                  </button>
-                </div>
+                {!isPayPalCheckout && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const baseAmount = getBaseAmountForDoku('unlimited');
+                        const finalWaPrice = Math.ceil(baseAmount * 1.03);
+                        const finalWaPriceUSD = (eventPrices[eventDuration] / 15000) * 1.03;
+                        let text = buyCurrency === 'USD' 
+                          ? `Hi I want to buy Buy per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nSelected package: ${eventDuration} hours\nTotal price: ${formatPrice(finalWaPrice, finalWaPriceUSD)}`
+                          : `Hi saya ingin membeli Beli per Event - Unlimited Generate photo & video\n${vendor?.email || 'Vendor Email'}\nPaket yang diambil: ${eventDuration} jam\nTotal harga: ${formatPrice(finalWaPrice)}`;
+                        const encodedText = encodeURIComponent(text);
+                        window.open(`https://wa.me/6282381230888?text=${encodedText}`, '_blank');
+                      }}
+                      className="w-full px-4 py-3 bg-[#25D366]/20 hover:bg-[#25D366]/30 border border-[#25D366]/50 text-[#cfefdb] rounded-xl text-sm font-bold transition-colors flex items-center justify-between shadow-sm mt-2"
+                    >
+                      <span className="flex items-center gap-3"><span className="text-xl">💬</span> Need negotiation? pay with whatsapp</span>
+                      <span className="text-[#25D366]">{formatPrice(
+                        Math.ceil(getBaseAmountForDoku('unlimited') * 1.03),
+                        (eventPrices[eventDuration] / 15000) * 1.03
+                      )}</span>
+                    </button>
+                    
+                    {/* Cancel Button below payment options */}
+                    <div className="w-full pt-4 mt-2 border-t border-white/10">
+                      <button
+                        onClick={() => setShowBuyUnlimitedModal(false)}
+                        className="w-full px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
+                      >
+                        {buyCurrency === 'USD' ? 'CANCEL' : 'BATAL'}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
