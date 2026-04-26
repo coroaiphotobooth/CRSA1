@@ -645,8 +645,12 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       
       let fullText = '';
       for await (const chunk of responseStream) {
-        fullText += chunk.text;
-        handleConceptChange(index, 'prompt', fullText);
+        const text = chunk.text;
+        for (let i = 0; i < text.length; i += 2) {
+          fullText += text.substring(i, i + 2);
+          handleConceptChange(index, 'prompt', fullText);
+          await new Promise(r => setTimeout(r, 10));
+        }
       }
     } catch (err) {
       console.error("Enhancement failed:", err);
@@ -724,8 +728,12 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       
       let fullText = '';
       for await (const chunk of responseStream) {
-        fullText += chunk.text;
-        handleConceptChange(index, 'prompt', fullText);
+        const text = chunk.text;
+        for (let i = 0; i < text.length; i += 2) {
+          fullText += text.substring(i, i + 2);
+          handleConceptChange(index, 'prompt', fullText);
+          await new Promise(r => setTimeout(r, 10));
+        }
       }
       if (isActive && tourType === 'concept' && stepIndex === 5) {
         setTourState({ stepIndex: 6 });
