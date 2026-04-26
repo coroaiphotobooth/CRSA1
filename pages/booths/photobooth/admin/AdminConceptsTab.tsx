@@ -523,7 +523,8 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       concept_id: newId,
       name: 'NEW CONCEPT',
       prompt: '',
-      thumbnail: 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500'
+      thumbnail: 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500',
+      ...({ _isNew: true } as any)
     };
     setLocalConcepts(prev => {
       const newList = [...prev, newConcept];
@@ -576,8 +577,13 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       return;
     }
 
-    // Always ask if the user wants to enhance the prompt
-    setConfirmEnhanceIndex(index);
+    // Always ask if the user wants to enhance the prompt for newly created concepts
+    if ((concept as any)._isNew) {
+      setLocalConcepts(prev => prev.map((c, i) => i === index ? { ...c, _isNew: false } : c));
+      setConfirmEnhanceIndex(index);
+    } else {
+      setEditingConceptIndex(null);
+    }
   };
 
   const handleSaveAsIs = () => {
@@ -588,6 +594,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
   const executeEnhancePrompt = async (index: number) => {
     setConfirmEnhanceIndex(null);
     setIsSilentlyOptimizing(index);
+    const originalPrompt = localConcepts[index]?.prompt || "";
     try {
       const concept = localConcepts[index];
       console.log("Enhancing prompt...");
@@ -595,7 +602,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       if (!apiKey) throw new Error("API Key not configured");
       const ai = new GoogleGenAI({ apiKey });
       
-      let contents: any = "Please optimize and structure this prompt perfectly. Return ONLY the final structured prompt and absolutely NOTHING else. No conversational text, no greetings, no explanations.\n\n" + concept.prompt;
+      let contents: any = "Please optimize and structure this prompt perfectly. Return ONLY the final structured prompt and absolutely NOTHING else. No conversational text, no greetings, no explanations.\n\n" + originalPrompt;
       
       const hasAnyRefImage = !!concept.refImage || !!concept.reference_image_split || !!concept.reference_image_bg;
       if (hasAnyRefImage) {
@@ -621,11 +628,13 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
         if (concept.reference_image_split) await pushImagePart(concept.reference_image_split);
         if (concept.reference_image_bg) await pushImagePart(concept.reference_image_bg);
         
-        parts.push({ text: concept.prompt });
+        parts.push({ text: originalPrompt });
         contents = { parts };
       }
 
-      const response = await ai.models.generateContent({
+      handleConceptChange(index, 'prompt', '');
+
+      const responseStream = await ai.models.generateContentStream({
         model: 'gemini-3-flash-preview',
         contents: contents,
         config: {
@@ -634,15 +643,16 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
         }
       });
       
-      const enhancedPrompt = response.text?.trim();
-      if (enhancedPrompt) {
-        handleConceptChange(index, 'prompt', enhancedPrompt);
+      let fullText = '';
+      for await (const chunk of responseStream) {
+        fullText += chunk.text;
+        handleConceptChange(index, 'prompt', fullText);
       }
     } catch (err) {
       console.error("Enhancement failed:", err);
+      handleConceptChange(index, 'prompt', originalPrompt);
     } finally {
       setIsSilentlyOptimizing(null);
-      setEditingConceptIndex(null);
     }
   };
 
@@ -651,6 +661,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
     if (!concept || !concept.prompt.trim()) return;
 
     setIsEnhancing(index);
+    const originalPrompt = concept.prompt;
     try {
       const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
       if (!apiKey) {
@@ -661,7 +672,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       const hasAnyRefImage = !!concept.refImage || !!concept.reference_image_split || !!concept.reference_image_bg;
       const systemInstruction = CONCEPT_DESIGNER_SYSTEM_PROMPT;
 
-      let contents: any = "Please optimize and structure this prompt perfectly. Return ONLY the final structured prompt and absolutely NOTHING else. No conversational text, no greetings, no explanations.\n\n" + concept.prompt;
+      let contents: any = "Please optimize and structure this prompt perfectly. Return ONLY the final structured prompt and absolutely NOTHING else. No conversational text, no greetings, no explanations.\n\n" + originalPrompt;
       
       if (hasAnyRefImage) {
         try {
@@ -692,7 +703,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
           if (concept.reference_image_split) await pushImagePart(concept.reference_image_split);
           if (concept.reference_image_bg) await pushImagePart(concept.reference_image_bg);
           
-          parts.push({ text: concept.prompt });
+          parts.push({ text: originalPrompt });
           
           contents = { parts };
         } catch (imgErr) {
@@ -700,7 +711,9 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
         }
       }
 
-      const response = await model.generateContent({
+      handleConceptChange(index, 'prompt', '');
+
+      const responseStream = await model.generateContentStream({
         model: 'gemini-3-flash-preview',
         contents: contents,
         config: {
@@ -709,15 +722,17 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
         }
       });
       
-      const enhancedPrompt = response.text?.trim();
-      if (enhancedPrompt) {
-        handleConceptChange(index, 'prompt', enhancedPrompt);
-        if (isActive && tourType === 'concept' && stepIndex === 5) {
-          setTourState({ stepIndex: 6 });
-        }
+      let fullText = '';
+      for await (const chunk of responseStream) {
+        fullText += chunk.text;
+        handleConceptChange(index, 'prompt', fullText);
+      }
+      if (isActive && tourType === 'concept' && stepIndex === 5) {
+        setTourState({ stepIndex: 6 });
       }
     } catch (err) {
       console.error("Failed to enhance prompt:", err);
+      handleConceptChange(index, 'prompt', originalPrompt);
       await showDialog('alert', 'Error', 'Failed to enhance prompt. Please check your API key or try again.');
     } finally {
       setIsEnhancing(null);
