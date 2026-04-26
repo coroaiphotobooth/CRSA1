@@ -4,12 +4,13 @@ import { Concept, PhotoboothSettings, TemplateConcept, ConceptTemplate } from '.
 import { saveConceptsToGas } from '../../../../lib/appsScript';
 import { supabase } from '../../../../lib/supabase';
 import { useDialog } from '../../../../components/DialogProvider';
-import { Loader2, Sparkles, Plus, X, Palette, Trash2, Edit, GripHorizontal } from 'lucide-react';
+import { Loader2, Sparkles, Plus, X, Palette, Trash2, Edit, GripHorizontal, Save, Upload } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { CONCEPT_DESIGNER_SYSTEM_PROMPT } from '../../../../lib/gemini';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { getEnhancedPrompt } from '../../../../lib/promptEnhancer';
 
 import { useTourState, setTourState } from '../../../../lib/tourState';
 
@@ -120,12 +121,33 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
   const [isCreatingFromImage, setIsCreatingFromImage] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
 
+  // Concept Studio Modal local state
+  const [showCSModal, setShowCSModal] = useState(false);
+  const [csName, setCsName] = useState('');
+  const [csManOutfit, setCsManOutfit] = useState<File | null>(null);
+  const [csWomanOutfit, setCsWomanOutfit] = useState<File | null>(null);
+  const [csBackground, setCsBackground] = useState<File | null>(null);
+  const [csStyle, setCsStyle] = useState('3D Render (recommended)');
+  const [csComposition, setCsComposition] = useState('Full Body');
+  const [isCsGenerating, setIsCsGenerating] = useState(false);
+
   // Edit Modal State
   const [editingConceptIndex, setEditingConceptIndex] = useState<number | null>(null);
+
+  // AI Edit Concept State
+  const [showAiEdit, setShowAiEdit] = useState(false);
+  const [aiEditInstruction, setAiEditInstruction] = useState('');
+  const [isAiEditing, setIsAiEditing] = useState(false);
 
   useEffect(() => {
     setIsDirty(JSON.stringify(localConcepts) !== JSON.stringify(concepts));
   }, [localConcepts, concepts]);
+
+  useEffect(() => {
+    setShowAiEdit(false);
+    setAiEditInstruction('');
+    setIsAiEditing(false);
+  }, [editingConceptIndex]);
 
   useImperativeHandle(ref, () => ({
     saveConcepts: async () => {
@@ -328,6 +350,168 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       await showDialog('alert', 'Error', 'Failed to generate prompt from image. Please try again.');
     } finally {
       setIsCreatingFromImage(false);
+    }
+  };
+
+  const csStitchImages = async (img1File: File, img2File: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img1 = new Image();
+      const img2 = new Image();
+      let loaded = 0;
+
+      const onload = () => {
+        loaded++;
+        if (loaded === 2) {
+          const canvas = document.createElement('canvas');
+          const targetHeight = 1024;
+          const img1Width = (img1.width / img1.height) * targetHeight;
+          const img2Width = (img2.width / img2.height) * targetHeight;
+          
+          canvas.width = img1Width + img2Width;
+          canvas.height = targetHeight;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error("Could not get canvas context"));
+            return;
+          }
+          
+          ctx.drawImage(img1, 0, 0, img1Width, targetHeight);
+          ctx.drawImage(img2, img1Width, 0, img2Width, targetHeight);
+          
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        }
+      };
+
+      img1.onload = onload;
+      img2.onload = onload;
+      img1.onerror = reject;
+      img2.onerror = reject;
+
+      img1.src = URL.createObjectURL(img1File);
+      img2.src = URL.createObjectURL(img2File);
+    });
+  };
+
+  const csResizeAndCompressImage = (file: File, maxWidth = 1024): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleCreateWithConceptStudio = async () => {
+    if (!csName.trim()) {
+      await showDialog('alert', 'Error', 'Please enter a concept name.');
+      return;
+    }
+    
+    if (!csBackground && (!csManOutfit && !csWomanOutfit)) {
+      await showDialog('alert', 'Error', 'Please upload at least a background or an outfit.');
+      return;
+    }
+
+    setIsCsGenerating(true);
+    try {
+      const newId = crypto.randomUUID();
+      const folderName = settings.storage_folder || eventId || 'concept_studio';
+      let stitchedUrl = '';
+      let bgUrl = '';
+
+      if (csManOutfit && csWomanOutfit) {
+        const stitchedBase64 = await csStitchImages(csManOutfit, csWomanOutfit);
+        const stFileName = `${folderName}/assets/studio-stitched-${Date.now()}.jpg`;
+        const stBlob = await (await fetch(stitchedBase64)).blob();
+        const { error: err1 } = await supabase.storage.from('photobooth').upload(stFileName, stBlob, { contentType: 'image/jpeg' });
+        if (!err1) {
+          const { data } = supabase.storage.from('photobooth').getPublicUrl(stFileName);
+          stitchedUrl = data.publicUrl;
+        }
+      } else if (csManOutfit || csWomanOutfit) {
+        // Technically concept studio wants both for stitching. If only one is provided, just compress it as the stitched url?
+        // Wait, standard Concept Studio logic strictly wants either both outfits OR none.
+        // If they provided only one, let's just make it a normal ref image or alert them.
+        await showDialog('alert', 'Missing Inputs', 'Please upload both Man and Woman outfits for accurate gender clothing replacement.');
+        setIsCsGenerating(false);
+        return;
+      }
+
+      if (csBackground) {
+        const bgBase64 = await csResizeAndCompressImage(csBackground);
+        const bgFileName = `${folderName}/assets/studio-bg-${Date.now()}.jpg`;
+        const bgBlob = await (await fetch(bgBase64)).blob();
+        const { error: err2 } = await supabase.storage.from('photobooth').upload(bgFileName, bgBlob, { contentType: 'image/jpeg' });
+        if (!err2) {
+          const { data } = supabase.storage.from('photobooth').getPublicUrl(bgFileName);
+          bgUrl = data.publicUrl;
+        }
+      }
+
+      // Generate the enhanced prompt using the same structure as Concept Studio
+      const { enhancedStyle, enhancedPrompt } = getEnhancedPrompt('', csStyle, csComposition);
+      
+      const parts = [];
+      parts.push("Redraw the people in the main photo.\nCRITICAL INSTRUCTION:\n1. Analyze the people in the main photo. Count them and identify their genders.\n2. YOU MUST ONLY draw the exact number of people present in the main photo. Do not add any extra people.");
+      
+      if (stitchedUrl) {
+         parts.push("3. Look at the provided reference images. Reference Image 1 is a split image showing a male outfit on the LEFT and a female outfit on the RIGHT.\n4. For EVERY male in the main photo, dress them in the exact outfit shown on the LEFT side of Reference Image 1.\n5. For EVERY female in the main photo, dress them in the exact outfit shown on the RIGHT side of Reference Image 1.");
+      }
+      if (bgUrl) {
+         parts.push(`6. Place them in the exact environment shown in the background reference image (Reference Image ${stitchedUrl ? '2' : '1'}).`);
+      }
+      parts.push(`Style: ${enhancedStyle}.\nAdditional instructions: A ${csComposition} shot. ${enhancedPrompt}`);
+
+      const mergedPrompt = parts.join('\n');
+
+      const newConcept: Concept = {
+        id: newId,
+        concept_id: 'concept_studio_' + newId,
+        name: csName,
+        prompt: mergedPrompt,
+        thumbnail: 'https://picsum.photos/seed/' + newId.substring(0, 8) + '/300/500',
+        reference_image_split: stitchedUrl || undefined,
+        reference_image_bg: bgUrl || undefined,
+        style_preset: csStyle
+      };
+
+      setLocalConcepts(prev => [...prev, newConcept]);
+      
+      // Cleanup
+      setShowCSModal(false);
+      setCsName('');
+      setCsManOutfit(null);
+      setCsWomanOutfit(null);
+      setCsBackground(null);
+      setCsStyle('3D Render (recommended)');
+      setCsComposition('Full Body');
+
+      await showDialog('alert', 'Success', 'Concept Studio setup added! Please save everything and upload a preview thumbnail when you are ready.');
+
+    } catch (e) {
+      console.error("Studio concept error:", e);
+    } finally {
+      setIsCsGenerating(false);
     }
   };
 
@@ -539,6 +723,48 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       await showDialog('alert', 'Error', 'Failed to enhance prompt. Please check your API key or try again.');
     } finally {
       setIsEnhancing(null);
+    }
+  };
+
+  const handleAiEditSmartConcept = async (index: number) => {
+    if (!aiEditInstruction.trim()) {
+      setShowAiEdit(false);
+      return;
+    }
+    
+    setIsAiEditing(true);
+    try {
+      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+      if (!apiKey) throw new Error("API Key not configured");
+      const ai = new GoogleGenAI({ apiKey });
+      
+      const concept = localConcepts[index];
+      const model = ai.models;
+      
+      const systemInstruction = CONCEPT_DESIGNER_SYSTEM_PROMPT;
+      
+      let contents: any = `Here is the current photobooth prompt:\n\n${concept.prompt}\n\nThe user wants to edit this concept with the following instruction:\n"${aiEditInstruction}"\n\nPlease rewrite the photobooth prompt applying only the edits requested by the user, while preserving the structure and the rest of the original prompt's aesthetic. Return ONLY the final structured prompt and absolutely NOTHING else. No conversational text.`;
+      
+      const response = await model.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents,
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+        }
+      });
+      
+      const newPrompt = response.text?.trim();
+      if (newPrompt) {
+        handleConceptChange(index, 'prompt', newPrompt);
+      }
+      setAiEditInstruction('');
+      setShowAiEdit(false);
+    } catch (err) {
+      console.error("Failed to edit concept with AI:", err);
+      await showDialog('alert', 'Error', 'Failed to edit concept. Please check your API key or try again.');
+    } finally {
+      setIsAiEditing(false);
     }
   };
 
@@ -888,6 +1114,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
                     {!isTemplateOrSmart ? (
                       <div className={`flex flex-col gap-2 flex-1 items-start ${index === localConcepts.length - 1 ? 'tour-reference' : ''}`}>
                          <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase truncate">References (Optional)</label>
+                         <p className="text-[10px] text-white/50 leading-relaxed mb-1 max-w-sm">You can upload clothes, backgrounds, products, etc., and say what you want to create, then click optimize.</p>
                          <div className="flex flex-wrap gap-3">
                            {/* REF 1 */}
                            <div className="flex flex-col gap-1 w-[80px]">
@@ -1017,11 +1244,51 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
                        </div>
                     ) : (
                       <div className="flex-1 bg-black/40 border border-white/10 rounded-lg flex flex-col items-center justify-center p-4 text-center min-h-[140px]">
-                         <Sparkles className="w-8 h-8 text-[#bc13fe]/50 mb-2" />
-                         <span className="text-sm font-heading font-bold uppercase tracking-widest text-white/70">
-                            {(concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_')) ? 'AI GENERATED' : 'TEMPLATE'}
-                         </span>
-                         <p className="text-[10px] text-gray-500 mt-2">Locked simple prompt.</p>
+                         {!showAiEdit ? (
+                            <>
+                               <Sparkles className="w-8 h-8 text-[#bc13fe]/50 mb-2" />
+                               <span className="text-sm font-heading font-bold uppercase tracking-widest text-white/70">
+                                  {(concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_')) ? 'AI GENERATED' : 'TEMPLATE'}
+                               </span>
+                               <p className="text-[10px] text-gray-500 mt-2">Locked simple prompt.</p>
+                               {(concept.concept_id?.startsWith('smart_') || concept.id.startsWith('smart_') || concept.concept_id?.startsWith('concept_studio_') || concept.id.startsWith('concept_studio_')) && (
+                                  <button 
+                                     onClick={() => setShowAiEdit(true)}
+                                     className="mt-4 text-[10px] bg-white/10 hover:bg-[#bc13fe]/20 text-white hover:text-[#bc13fe] border border-white/20 hover:border-[#bc13fe]/50 px-3 py-1.5 rounded-full uppercase font-bold tracking-wider transition-all flex items-center gap-2"
+                                  >
+                                     <Edit className="w-3 h-3" /> Edit this concept
+                                  </button>
+                               )}
+                            </>
+                         ) : (
+                            <div className="w-full flex flex-col gap-2 animate-in fade-in zoom-in duration-300">
+                               <label className="text-[10px] text-[#bc13fe] uppercase font-bold tracking-widest text-left">Instruction for AI</label>
+                               <textarea 
+                                  className="w-full bg-black/60 border border-white/20 focus:border-[#bc13fe] rounded-lg p-3 text-[11px] text-white resize-none outline-none custom-scrollbar transition-all"
+                                  placeholder="e.g., Change the suit to red, make the background a cyberpunk city, change object holding to a sword..."
+                                  rows={3}
+                                  value={aiEditInstruction}
+                                  onChange={e => setAiEditInstruction(e.target.value)}
+                               />
+                               <div className="flex justify-end gap-2 mt-1">
+                                  <button 
+                                     onClick={() => { setShowAiEdit(false); setAiEditInstruction(''); }}
+                                     className="text-[10px] uppercase font-bold tracking-wider px-3 py-1.5 rounded-lg text-gray-400 hover:text-white transition-colors"
+                                     disabled={isAiEditing}
+                                  >
+                                     Cancel
+                                  </button>
+                                  <button 
+                                     onClick={() => handleAiEditSmartConcept(index)}
+                                     disabled={isAiEditing || !aiEditInstruction.trim()}
+                                     className="text-[10px] uppercase font-bold tracking-wider px-3 py-1.5 rounded-lg bg-[#bc13fe] hover:bg-purple-500 text-white transition-colors disabled:opacity-50 disabled:grayscale flex items-center gap-2"
+                                  >
+                                     {isAiEditing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} 
+                                     {isAiEditing ? 'Editing...' : 'Done Editing'}
+                                  </button>
+                               </div>
+                            </div>
+                         )}
                       </div>
                     )}
                  </div>
@@ -1129,11 +1396,11 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
                   </div>
                </button>
 
-               {/* 3. Create in Concept Studio */}
+               {/* 3. Create with Concept Studio */}
                <button 
                   onClick={() => {
                      setShowCreationSelectionModal(false);
-                     navigate('/dashboard?tab=studio');
+                     setShowCSModal(true);
                   }}
                   className="w-full text-left bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 hover:border-amber-500/50 p-4 rounded-2xl transition-all duration-300 group flex items-start gap-4 shadow-inner"
                >
@@ -1141,8 +1408,8 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
                      <Edit className="w-6 h-6" />
                   </div>
                   <div>
-                     <h3 className="font-bold text-base text-white group-hover:text-amber-400 transition-colors uppercase tracking-wide">Create in Concept Studio</h3>
-                     <p className="text-xs text-white/50 mt-1">Go to the Studio to experiment, test generation, and save templates.</p>
+                     <h3 className="font-bold text-base text-white group-hover:text-amber-400 transition-colors uppercase tracking-wide">Create with Concept Studio</h3>
+                     <p className="text-xs text-white/50 mt-1">Set up man outfit, woman outfit, background, and rendering style manually.</p>
                   </div>
                </button>
 
@@ -1244,6 +1511,165 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create with Concept Studio Modal */}
+      {showCSModal && (
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowCSModal(false)}></div>
+          <div className="relative bg-black/40 backdrop-blur-3xl border border-white/10 ring-1 ring-white/5 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-[0_0_50px_rgba(188,19,254,0.15)] flex-1 overflow-y-auto custom-scrollbar">
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-transparent z-10 sticky top-0 bg-black/80 backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                 <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b animate-pulse"></div>
+                 <h2 className="text-xl font-heading tracking-wider font-bold text-white/90 uppercase">Create with Concept Studio</h2>
+              </div>
+              <button onClick={() => setShowCSModal(false)} className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 p-1.5 rounded-full transition-all">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 flex flex-col gap-6 w-full">
+              <div>
+                <label className="text-[10px] font-bold tracking-widest text-amber-400 uppercase block mb-2">Concept Name</label>
+                <input 
+                  type="text" 
+                  value={csName}
+                  onChange={(e) => setCsName(e.target.value)}
+                  placeholder="E.g. Astronaut Wedding"
+                  className="w-full bg-black/40 border border-white/10 p-4 rounded-xl font-heading text-base font-bold text-white outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 shadow-inner transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* References */}
+                <div className="space-y-6">
+                  <div className="glass-card p-6 rounded-2xl border border-white/10">
+                    <h3 className="text-sm font-bold text-amber-400 uppercase tracking-widest mb-4">Reference Images</h3>
+                    <p className="text-xs text-white/50 mb-4 leading-relaxed">Upload clothes or backgrounds. Outfits will be stitched together automatically.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Man Outfit */}
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">Man Outfit</label>
+                        <div className="relative aspect-[3/4] bg-black/50 border-2 border-dashed border-white/20 rounded-xl overflow-hidden hover:border-amber-500/50 transition-colors group">
+                          {csManOutfit ? (
+                            <>
+                              <img src={URL.createObjectURL(csManOutfit)} alt="Man" className="w-full h-full object-cover" />
+                              <button onClick={() => setCsManOutfit(null)} className="absolute top-2 right-2 bg-black/50 p-1 rounded-full text-white hover:bg-red-500 transition-colors backdrop-blur-sm">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer">
+                              <Upload className="w-6 h-6 text-gray-500 mb-2 group-hover:text-amber-400 transition-colors" />
+                              <span className="text-[10px] text-gray-500 uppercase tracking-widest">Upload</span>
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => { if(e.target.files && e.target.files[0]) setCsManOutfit(e.target.files[0]); }} />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Woman Outfit */}
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">Woman Outfit</label>
+                        <div className="relative aspect-[3/4] bg-black/50 border-2 border-dashed border-white/20 rounded-xl overflow-hidden hover:border-amber-500/50 transition-colors group">
+                          {csWomanOutfit ? (
+                            <>
+                              <img src={URL.createObjectURL(csWomanOutfit)} alt="Woman" className="w-full h-full object-cover" />
+                              <button onClick={() => setCsWomanOutfit(null)} className="absolute top-2 right-2 bg-black/50 p-1 rounded-full text-white hover:bg-red-500 transition-colors backdrop-blur-sm">
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer">
+                              <Upload className="w-6 h-6 text-gray-500 mb-2 group-hover:text-amber-400 transition-colors" />
+                              <span className="text-[10px] text-gray-500 uppercase tracking-widest">Upload</span>
+                              <input type="file" accept="image/*" className="hidden" onChange={(e) => { if(e.target.files && e.target.files[0]) setCsWomanOutfit(e.target.files[0]); }} />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 space-y-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">Background Setup</label>
+                      <div className="relative aspect-video bg-black/50 border-2 border-dashed border-white/20 rounded-xl overflow-hidden hover:border-amber-500/50 transition-colors group">
+                        {csBackground ? (
+                          <>
+                            <img src={URL.createObjectURL(csBackground)} alt="Background" className="w-full h-full object-cover" />
+                            <button onClick={() => setCsBackground(null)} className="absolute top-2 right-2 bg-black/50 p-1 rounded-full text-white hover:bg-red-500 transition-colors backdrop-blur-sm">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer">
+                            <Upload className="w-8 h-8 text-gray-500 mb-2 group-hover:text-amber-400 transition-colors" />
+                            <span className="text-[10px] text-gray-500 uppercase tracking-widest">Upload Background</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={(e) => { if(e.target.files && e.target.files[0]) setCsBackground(e.target.files[0]); }} />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Settings */}
+                <div className="space-y-6">
+                  <div className="glass-card p-6 rounded-2xl border border-white/10">
+                    <h3 className="text-sm font-bold text-amber-400 uppercase tracking-widest mb-4">Settings</h3>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">Style Preset</label>
+                        <select 
+                          value={csStyle}
+                          onChange={(e) => setCsStyle(e.target.value)}
+                          className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500"
+                        >
+                          <option value="3D Render (recommended)">3D Render (recommended)</option>
+                          <option value="Photorealistic">Photorealistic</option>
+                          <option value="Anime">Anime</option>
+                          <option value="Cartoon Look">Cartoon Look</option>
+                          <option value="Sketch Art">Sketch Art</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-400">Composition</label>
+                        <select 
+                          value={csComposition}
+                          onChange={(e) => setCsComposition(e.target.value)}
+                          className="w-full bg-black/50 border border-white/10 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500"
+                        >
+                          <option value="Full Body">Full Body</option>
+                          <option value="Medium Shot">Medium Shot (Waist up)</option>
+                          <option value="Close Up">Close Up (Face & Shoulders)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={handleCreateWithConceptStudio}
+                      disabled={isCsGenerating || !csName.trim()}
+                      className="w-full mt-6 py-4 bg-gradient-to-r from-amber-600/80 to-amber-500/80 hover:from-amber-500 hover:to-amber-400 text-white rounded-xl text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 border border-white/10 shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)]"
+                    >
+                      {isCsGenerating ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          CONFIGURING CONCEPT...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-5 h-5" />
+                          ADD CONCEPT
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
