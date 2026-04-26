@@ -33,6 +33,8 @@ export default function VendorDashboard() {
   const [buyCurrency, setBuyCurrency] = useState<'IDR' | 'USD'>('IDR');
   const [showCurrencySelectionModal, setShowCurrencySelectionModal] = useState<'credit' | 'unlimited' | null>(null);
   const [isPayPalCheckout, setIsPayPalCheckout] = useState(false);
+  const [paypalKey, setPaypalKey] = useState(0);
+  const [isPayPalLoading, setIsPayPalLoading] = useState(false);
   const [creditAmount, setCreditAmount] = useState<number>(10);
   const [eventDuration, setEventDuration] = useState<number>(2);
   const [usdToIdrRate, setUsdToIdrRate] = useState<number>(16000);
@@ -2229,11 +2231,18 @@ export default function VendorDashboard() {
                         ${((getCreditPriceUSD(creditAmount) + 0.3) / 0.956).toFixed(2)}
                       </span>
                     </div>
-                    <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+                    {isPayPalLoading && (
+                      <div className="text-center text-xs text-[#bc13fe] mb-2 animate-pulse">
+                        Opening payment form, please wait...
+                      </div>
+                    )}
+                    <PayPalScriptProvider key={`credit-${paypalKey}`} options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
                       <PayPalButtons 
                         style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
                         onClick={(data, actions) => {
                           setIsPayPalCheckout(true);
+                          setIsPayPalLoading(true);
+                          setTimeout(() => setIsPayPalLoading(false), 3000);
                         }}
                         createOrder={async (data, actions) => {
                           const { data: { session } } = await supabase.auth.getSession();
@@ -2297,7 +2306,7 @@ export default function VendorDashboard() {
                     </PayPalScriptProvider>
                     {isPayPalCheckout && (
                       <button
-                        onClick={() => setIsPayPalCheckout(false)}
+                        onClick={() => { setIsPayPalCheckout(false); setPaypalKey(prev => prev + 1); }}
                         className="w-full mt-3 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
                       >
                         Change Package
@@ -2532,11 +2541,18 @@ export default function VendorDashboard() {
                         ${(((eventPrices[eventDuration] / 15000) + 0.3) / 0.956).toFixed(2)}
                       </span>
                     </div>
-                    <PayPalScriptProvider options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
+                    {isPayPalLoading && (
+                      <div className="text-center text-xs text-[#bc13fe] mb-2 animate-pulse">
+                        Opening payment form, please wait...
+                      </div>
+                    )}
+                    <PayPalScriptProvider key={`unlimited-${paypalKey}`} options={{ clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test", currency: "USD", intent: "capture" }}>
                       <PayPalButtons 
                         style={{ layout: "vertical", shape: "rect", color: "gold", label: "pay", height: 45 }}
                         onClick={(data, actions) => {
                           setIsPayPalCheckout(true);
+                          setIsPayPalLoading(true);
+                          setTimeout(() => setIsPayPalLoading(false), 3000);
                         }}
                         createOrder={async (data, actions) => {
                           const { data: { session } } = await supabase.auth.getSession();
@@ -2601,7 +2617,7 @@ export default function VendorDashboard() {
                     </PayPalScriptProvider>
                     {isPayPalCheckout && (
                       <button
-                        onClick={() => setIsPayPalCheckout(false)}
+                        onClick={() => { setIsPayPalCheckout(false); setPaypalKey(prev => prev + 1); }}
                         className="w-full mt-3 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold transition-colors"
                       >
                         Change Package
