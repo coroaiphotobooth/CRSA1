@@ -232,100 +232,40 @@ export const generateAIImage = async (base64Source: string, concept: Concept, ou
 
       let executionPrompt = finalPrompt;
       const parts: any[] = [];
+      const isConceptStudio = concept.concept_id?.startsWith('concept_studio_') || concept.id?.startsWith('concept_studio_');
 
       // 1. Construct Prompt based on Mode
       if (promptMode === 'booth') {
-          if (concept.reference_image_split || concept.reference_image_bg) {
-              executionPrompt = `IDENTITY-PRESERVING FACE RENDERING
-
-You are creating a professional AI photobooth transformation using:
-- MAIN PHOTO = the person / subject
-- REFERENCE IMAGE 1 = clothing or style reference
-- REFERENCE IMAGE 2 = concept, background, or environment reference
-
-Preserve the subject’s recognizable identity, including core facial structure, face shape, skin tone, age impression, hairstyle, and key facial characteristics.
-
-IMPORTANT:
-Do NOT copy-paste or preserve the original face as a flat photographic layer.
-Instead, re-render the subject naturally so the face, skin, hair, neck, and overall head blend seamlessly with the new outfit, environment, lighting, color grading, shadows, and artistic style.
-
-The face must remain clearly recognizable as the same person, but it should visually belong to the new concept.
-Apply consistent rendering across the face, hair, skin, neck, body, clothing, and background so the final image looks like one coherent, high-quality photobooth portrait.
-
-The result should look like a single fully integrated image, not a collage or composite.
-
-Avoid:
-- pasted-face or cut-out look
-- flat or detached facial rendering
-- mismatched skin lighting or color
-- different texture or resolution between face and body
-- hard edges
-- ghosting
-- floating subject
-- unnatural blending
-- face that looks sharper or flatter than the rest of the image
-
-Follow this specific prompt:
-${finalPrompt}`;
+          if (isConceptStudio && (concept.reference_image_split || concept.reference_image_bg)) {
+               // Will be explicitly handled
           } else {
-              executionPrompt = `IDENTITY-PRESERVING FACE RENDERING
+              executionPrompt = `IDENTITY-PRESERVING RENDERING
 
-You are creating a professional AI photobooth transformation using:
-- FIRST image = the person / subject
-- SECOND image = concept, background, style, lighting, or environment reference
+Maintain the subject's identity, facial features, and expressions exactly as in the MAIN PHOTO. Do not copy-paste the face as a flat layer. Seamlessly integrate the face with the requested concept, lighting, and style.
 
-Preserve the subject’s recognizable identity, including core facial structure, face shape, skin tone, age impression, hairstyle, and key facial characteristics.
+CRITICAL INSTRUCTION:
+- The final image MUST BE PHOTOREALISTIC AND LIFELIKE.
+- DO NOT apply a 3D render, digital painting, CGI, or waxy cartoon effect unless the prompt below specifically asks for an illustration or 3D style. 
+- Keep skin textures natural and photographic.
 
-IMPORTANT:
-Do NOT copy-paste or preserve the original face as a flat photographic layer.
-Instead, re-render the subject naturally so the face, skin, hair, neck, and overall head blend seamlessly with the new outfit, environment, lighting, color grading, shadows, and artistic style.
-
-The face must remain clearly recognizable as the same person, but it should visually belong to the new concept.
-Apply consistent rendering across the face, hair, skin, neck, body, clothing, and background so the final image looks like one coherent, high-quality photobooth portrait.
-
-The result should look like a single fully integrated image, not a collage or composite.
-
-Avoid:
-- pasted-face or cut-out look
-- flat or detached facial rendering
-- mismatched skin lighting or color
-- different texture or resolution between face and body
-- hard edges
-- ghosting
-- floating subject
-- unnatural blending
-- face that looks sharper or flatter than the rest of the image
-
-Follow this specific prompt:
+Prompt:
 ${finalPrompt}`;
           }
       } else if (promptMode === 'wrapped') {
-          executionPrompt = `IDENTITY-PRESERVING FACE RENDERING
+          executionPrompt = `IDENTITY-PRESERVING RENDERING
 
 Edit the provided image according to the prompt while preserving the recognizable identity of every person.
 
 Rules:
 - Detect all people in the photo.
-- Keep the same number of people.
-- Do not remove, replace, merge, or add any person.
-- Preserve each person’s recognizable identity, including facial structure, face shape, skin tone, age impression, hairstyle, and key facial features.
-- Do not copy-paste the original face directly.
+- Keep the exact same number of people.
+- Preserve each person’s recognizable identity, including facial structure, skin tone, and key facial features.
+- Do not copy-paste the original face directly as a flat sticker.
+- Seamlessly integrate each face so it matches the requested concept, lighting, and environment.
 
-Re-render each face naturally so it matches the requested concept, lighting, color grading, skin texture, outfit, and overall artistic style.
-Ensure the face, hair, neck, skin, body, clothing, and background blend seamlessly as one coherent image.
-
-The final result must look like a polished, natural, fully integrated photobooth image, not a collage or pasted composite.
-
-Avoid:
-- pasted-face look
-- cut-out effect
-- detached or overly sharp face
-- mismatched lighting between face and body
-- inconsistent texture or resolution
-- hard edges
-- ghosting
-- unnatural blending
-- face that does not follow the visual style of the concept
+CRITICAL INSTRUCTION:
+- The result MUST BE PHOTOREALISTIC unless explicitly requested otherwise. 
+- AVOID 3D render styles, digital painting looks, or waxy skin. Keep skin textures natural and photographic.
 
 Instruction:
 ${finalPrompt}`;
@@ -373,8 +313,6 @@ ${finalPrompt}`;
           return { data, mimeType };
         }
       };
-
-      const isConceptStudio = concept.concept_id?.startsWith('concept_studio_') || concept.id?.startsWith('concept_studio_');
 
       if (promptMode === 'booth' && isConceptStudio && (concept.reference_image_split || concept.reference_image_bg)) {
         // MATCH CONCEPT STUDIO EXACTLY
