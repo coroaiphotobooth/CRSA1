@@ -615,14 +615,19 @@ const GalleryPage: React.FC<GalleryPageProps> = ({
                          <p className="text-purple-300 font-mono text-xs uppercase tracking-widest">Preparing Original Image...</p>
                      </div>
                  ) : (
-                     <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {concepts.map(c => (
-                          <div key={c.id} onClick={() => handleConceptSelect(c)} className="relative group cursor-pointer rounded-lg overflow-hidden border border-white/10 hover:border-purple-500 transition-all">
-                             <img src={c.thumbnail} className="w-full h-40 object-cover transition-transform group-hover:scale-105" />
-                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><span className="text-white font-heading text-sm uppercase">SELECT</span></div>
-                             <div className="absolute bottom-0 inset-x-0 bg-black/80 p-2 text-center"><p className="text-[10px] text-white font-bold uppercase truncate">{c.name}</p></div>
-                          </div>
-                        ))}
+                     <div className="flex-1 overflow-y-auto p-6 md:p-8 content-start">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6 h-max">
+                           {concepts.map(c => (
+                             <div key={c.id} onClick={() => handleConceptSelect(c)} className="relative group cursor-pointer rounded-xl overflow-hidden border-2 border-white/10 opacity-60 hover:opacity-100 hover:border-glow transition-all aspect-[2/3]">
+                                <img src={c.thumbnail} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80" />
+                                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
+                                    <span className="bg-glow text-white px-4 py-2 flex items-center gap-2 rounded-full font-heading text-xs uppercase shadow-[0_0_15px_rgba(var(--glow-color-rgb),0.5)]">✨ REGENERATE</span>
+                                </div>
+                                <div className="absolute bottom-0 inset-x-0 p-3 text-center z-10"><p className="text-xs md:text-sm text-white font-black uppercase drop-shadow-md truncate">{c.name}</p></div>
+                             </div>
+                           ))}
+                        </div>
                      </div>
                  )}
                  {!isRegenerating && (

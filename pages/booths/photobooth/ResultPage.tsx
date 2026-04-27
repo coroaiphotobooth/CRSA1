@@ -501,18 +501,21 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
                     <h2 className="text-xl font-heading text-white neon-text uppercase italic">Select New Concept</h2>
                     <button onClick={() => setShowConceptSelector(false)} className="text-white/50 hover:text-white">✕</button>
                  </div>
-                 <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {concepts.map(c => (
-                      <div key={c.id} onClick={() => setSelectedRegenConcept(c)} className={`relative group cursor-pointer rounded-lg overflow-hidden border transition-all ${selectedRegenConcept?.id === c.id ? 'border-orange-500 ring-2 ring-orange-500/50' : 'border-white/10 hover:border-glow'}`}>
-                         <img src={c.thumbnail} className="w-full h-40 object-cover transition-transform group-hover:scale-105" />
-                         {selectedRegenConcept?.id === c.id && (
-                             <div className="absolute inset-0 bg-orange-500/20 flex items-center justify-center">
-                                 <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center shadow-lg"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div>
-                             </div>
-                         )}
-                         <div className="absolute bottom-0 inset-x-0 bg-black/80 p-2 text-center"><p className="text-[10px] text-white font-bold uppercase truncate">{c.name}</p></div>
-                      </div>
-                    ))}
+                 <div className="flex-1 overflow-y-auto p-6 md:p-8 content-start">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 md:gap-6 h-max">
+                        {concepts.map(c => (
+                          <div key={c.id} onClick={() => setSelectedRegenConcept(c)} className={`relative group cursor-pointer rounded-xl overflow-hidden border-2 transition-all aspect-[2/3] ${selectedRegenConcept?.id === c.id ? 'border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.5)]' : 'border-white/10 hover:border-glow opacity-60 hover:opacity-100'}`}>
+                             <img src={c.thumbnail} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                             {selectedRegenConcept?.id === c.id && (
+                                 <div className="absolute inset-0 bg-orange-500/20 flex items-center justify-center">
+                                     <div className="w-8 h-8 md:w-10 md:h-10 bg-orange-500 rounded-full flex items-center justify-center shadow-lg"><svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div>
+                                 </div>
+                             )}
+                             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80" />
+                             <div className="absolute bottom-0 inset-x-0 p-3 text-center z-10"><p className="text-xs md:text-sm text-white font-black uppercase drop-shadow-md truncate">{c.name}</p></div>
+                          </div>
+                        ))}
+                    </div>
                  </div>
                  <div className="p-6 border-t border-white/10 flex flex-col md:flex-row justify-between gap-4 bg-black/50">
                     <label className="flex items-center gap-3 cursor-pointer group select-none">
