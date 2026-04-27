@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { supabase } from '../../lib/supabase';
-import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft, Palette, Monitor, Camera, Wine, ClipboardList } from 'lucide-react';
+import { Loader2, LogOut, Plus, Settings, Play, Image as ImageIcon, Video, Coins, Trash2, Download, CloudUpload, X, ShieldAlert, ArrowLeft, Palette, Monitor, Camera, Wine, ClipboardList, Sparkles } from 'lucide-react';
 import { Vendor, Event } from '../../types';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -208,10 +208,13 @@ export default function VendorDashboard() {
   const [rentDuration, setRentDuration] = useState<'minggu' | 'bulan'>('minggu');
   const [newEventName, setNewEventName] = useState('');
   const [newEventDescription, setNewEventDescription] = useState('AI PHOTOBOOTH EXPERIENCE');
-  const [newEventType, setNewEventType] = useState<'photobooth' | 'guestbook' | 'bartender' | 'registration'>('photobooth');
+  const [newEventType, setNewEventType] = useState<'photobooth' | 'interactive' | 'guestbook' | 'bartender' | 'registration'>('interactive');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<{ current: number, total: number } | null>(null);
   const [showDownloadOptions, setShowDownloadOptions] = useState<string | null>(null);
+  const [showLeadsModal, setShowLeadsModal] = useState<string | null>(null);
+  const [vendorLeads, setVendorLeads] = useState<any[]>([]);
+  const [isFetchingLeads, setIsFetchingLeads] = useState(false);
   const [backupProgress, setBackupProgress] = useState<{ current: number, total: number, success: number, fail: number } | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -768,6 +771,9 @@ export default function VendorDashboard() {
               eventDescription: newEventDescription.trim(),
               storage_folder: folderName,
               eventType: newEventType,
+              boothType: newEventType === 'interactive' ? 'interactive' : 'standard',
+              interactiveFlow: newEventType === 'interactive' ? ['launch', 'concept_select', 'capture', 'processing', 'result'] : [],
+              interactivePages: [],
               uiSettings: {
                 ...(initialSettings.uiSettings || {}),
                 launchLayout: initialSettings.uiSettings?.launchLayout || 'split_left_right'
@@ -880,6 +886,73 @@ export default function VendorDashboard() {
         await showDialog('alert', 'Error', `Failed to delete event: ${err.message}`);
       }
     }
+  };
+
+  const handleViewLeads = async (eventId: string) => {
+    setShowLeadsModal(eventId);
+    setIsFetchingLeads(true);
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .select('id, created_at, guest_message, result_image_url')
+        .eq('event_id', eventId)
+        .not('guest_message', 'is', null)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      const parsedLeads = (data || []).map(d => {
+        let parsed = {};
+        try {
+          parsed = JSON.parse(d.guest_message);
+        } catch(e) {}
+        return {
+          id: d.id,
+          date: d.created_at,
+          image: d.result_image_url,
+          data: parsed
+        };
+      });
+      setVendorLeads(parsedLeads);
+    } catch (err: any) {
+      console.error("Failed to fetch leads:", err);
+      // alert or show error
+    } finally {
+      setIsFetchingLeads(false);
+    }
+  };
+
+  const exportLeadsToCSV = () => {
+    if (vendorLeads.length === 0) return;
+    
+    // get unique headers
+    const headers = new Set<string>();
+    vendorLeads.forEach(lead => Object.keys(lead.data || {}).forEach(k => headers.add(k)));
+    const headerList = Array.from(headers);
+    
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Date,Image URL," + headerList.join(",") + "\\n";
+    
+    vendorLeads.forEach(lead => {
+      const row = [
+        new Date(lead.date).toLocaleString(),
+        lead.image || ''
+      ];
+      headerList.forEach(h => {
+        let val = lead.data[h] || '';
+        if (typeof val === 'string') val = val.replace(/"/g, '""');
+        row.push(`"${val}"`);
+      });
+      csvContent += row.join(",") + "\n";
+    });
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `leads_${showLeadsModal}.csv`);
+    document.body.appendChild(link); // Required for FF
+    link.click();
+    link.remove();
   };
 
   const handleDownloadAllData = async (eventId: string, mode: 'result_only' | 'result_and_original' = 'result_only') => {
@@ -1631,7 +1704,7 @@ export default function VendorDashboard() {
               onClick={() => {
                 setNewEventName('');
                 setNewEventDescription('');
-                setNewEventType('photobooth');
+                setNewEventType('interactive');
                 setShowCreateModal(true);
               }}
               className="px-4 py-2 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-lg font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-[#bc13fe]/20 tour-create-event-btn"
@@ -1656,7 +1729,7 @@ export default function VendorDashboard() {
                   onClick={() => {
                     setNewEventName('');
                     setNewEventDescription('');
-                    setNewEventType('photobooth');
+                    setNewEventType('interactive');
                     setShowCreateModal(true);
                   }}
                   className="px-6 py-3 bg-[#bc13fe] hover:bg-[#a010d8] text-white rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-[#bc13fe]/20"
@@ -1674,7 +1747,7 @@ export default function VendorDashboard() {
                 onClick={() => {
                   setNewEventName('');
                   setNewEventDescription('');
-                  setNewEventType('photobooth');
+                  setNewEventType('interactive');
                   setShowCreateModal(true);
                 }}
                 className="glass-card p-6 rounded-2xl border-2 border-dashed border-white/10 hover:border-[#bc13fe]/50 transition-all flex flex-col items-center justify-center gap-4 group min-h-[250px] bg-white/[0.01]"
@@ -1790,6 +1863,15 @@ export default function VendorDashboard() {
                       )}
 
                     </div>
+                    {event.settings?.boothType === 'interactive' && (
+                       <button 
+                        onClick={() => handleViewLeads(event.id)}
+                        className="w-full mt-1 py-2 bg-[#bc13fe]/10 hover:bg-[#bc13fe]/20 text-[#bc13fe] rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <ClipboardList className="w-3 h-3" />
+                         Lihat Data Form
+                      </button>
+                    )}
                     <div className="flex gap-2 mt-1">
                       <button 
                         onClick={() => setShowDownloadOptions(event.id)}
@@ -1826,6 +1908,79 @@ export default function VendorDashboard() {
         ) : (
           <ConceptStudio vendorId={vendor?.id || ''} onClose={() => setActiveTab('events')} />
         )}
+
+        {/* Leads Modal */}
+      {showLeadsModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[10001]">
+          <div className="bg-[#111]/90 backdrop-blur-md border border-white/10 p-6 rounded-2xl w-full max-w-4xl max-h-[80vh] flex flex-col relative">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <ClipboardList className="w-5 h-5 text-[#bc13fe]" /> Data Form Interactive
+              </h2>
+              <button 
+                onClick={() => setShowLeadsModal(null)}
+                className="text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-sm text-gray-400">Menampilkan data formulir dari event ini.</p>
+              <button 
+                onClick={exportLeadsToCSV}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                disabled={vendorLeads.length === 0 || isFetchingLeads}
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-auto rounded-xl border border-white/10 relative">
+              {isFetchingLeads ? (
+                 <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 gap-3">
+                   <Loader2 className="w-8 h-8 animate-spin text-[#bc13fe]" />
+                   <p className="text-sm">Memuat data...</p>
+                 </div>
+              ) : vendorLeads.length === 0 ? (
+                 <div className="absolute inset-0 flex items-center justify-center text-gray-500">
+                   Belum ada data formulir.
+                 </div>
+              ) : (
+                <table className="w-full text-left text-sm text-gray-300">
+                  <thead className="bg-[#bc13fe]/20 text-[#bc13fe] uppercase text-[10px] font-bold tracking-wider sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3">Tanggal</th>
+                      <th className="px-4 py-3">Foto Result</th>
+                      {Array.from(new Set(vendorLeads.flatMap(l => Object.keys(l.data || {})))).map(k => (
+                        <th key={k} className="px-4 py-3">{k}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/10">
+                    {vendorLeads.map((lead) => (
+                      <tr key={lead.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap">{new Date(lead.date).toLocaleString()}</td>
+                        <td className="px-4 py-3">
+                          {lead.image ? (
+                             <a href={lead.image} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline inline-flex items-center gap-1">
+                               <ImageIcon className="w-3 h-3" /> Lihat
+                             </a>
+                          ) : '-'}
+                        </td>
+                        {Array.from(new Set(vendorLeads.flatMap(l => Object.keys(l.data || {})))).map(k => (
+                          <td key={k} className="px-4 py-3">{lead.data[k] || '-'}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
         {/* Progress Modals */}
       {showDownloadOptions && (
@@ -2693,15 +2848,16 @@ export default function VendorDashboard() {
               {(vendor?.email === 'demo@coroai.app' || vendor?.email === 'coroaiphotobooth@gmail.com') && (
                 <div className="mb-6">
                   <label className="block text-sm text-gray-400 mb-2">Event Type</label>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-4 mt-2">
                     <button
                       type="button"
                       onClick={() => {
-                          setNewEventType('photobooth');
+                          setNewEventType('interactive');
+                          if (newEventName === '') setNewEventName('AI Photobooth Event');
                       }}
-                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${newEventType === 'photobooth' ? 'border-[#bc13fe] bg-[#bc13fe]/20' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
+                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${newEventType === 'interactive' ? 'border-[#bc13fe] bg-[#bc13fe]/20' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
                     >
-                      <Camera className={`w-5 h-5 ${newEventType === 'photobooth' ? 'text-[#bc13fe]' : 'text-gray-400'}`} />
+                      <Sparkles className={`w-5 h-5 ${newEventType === 'interactive' ? 'text-[#bc13fe]' : 'text-gray-400'}`} />
                       <span className="font-bold text-xs uppercase tracking-wider">Photobooth</span>
                     </button>
                     <button
@@ -2714,17 +2870,6 @@ export default function VendorDashboard() {
                     >
                       <Wine className={`w-5 h-5 ${newEventType === 'bartender' ? 'text-blue-400' : 'text-gray-400'}`} />
                       <span className="font-bold text-xs uppercase tracking-wider">Bartender</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                          setNewEventType('registration');
-                          if (newEventName === '') setNewEventName('VIP Registration Event');
-                      }}
-                      className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-2 transition-all ${newEventType === 'registration' ? 'border-green-500 bg-green-500/20' : 'border-white/10 bg-white/5 hover:bg-white/10'}`}
-                    >
-                      <ClipboardList className={`w-5 h-5 ${newEventType === 'registration' ? 'text-green-400' : 'text-gray-400'}`} />
-                      <span className="font-bold text-xs uppercase tracking-wider">Registration</span>
                     </button>
                   </div>
                 </div>

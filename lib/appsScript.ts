@@ -104,6 +104,7 @@ export const saveSessionToCloud = async (sessionData: any): Promise<{success: bo
           video_status: sessionData.isVideoRequested ? 'pending' : 'idle',
           video_prompt: sessionData.videoPrompt || '',
           guest_name: finalGuestName,
+          guest_message: sessionData.interactiveFormData ? JSON.stringify(sessionData.interactiveFormData) : undefined,
           ...(sessionData.originalImageUrl && { original_image_url: sessionData.originalImageUrl })
         }, { onConflict: 'id' });
         

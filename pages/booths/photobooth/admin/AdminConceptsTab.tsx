@@ -4,7 +4,7 @@ import { Concept, PhotoboothSettings, TemplateConcept, ConceptTemplate } from '.
 import { saveConceptsToGas } from '../../../../lib/appsScript';
 import { supabase } from '../../../../lib/supabase';
 import { useDialog } from '../../../../components/DialogProvider';
-import { Loader2, Sparkles, Plus, X, Palette, Trash2, Edit, GripHorizontal, Save, Upload } from 'lucide-react';
+import { Loader2, Sparkles, Plus, X, Palette, Trash2, Edit, GripHorizontal, Save, Upload, Image as ImageIcon, FileText } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { CONCEPT_DESIGNER_SYSTEM_PROMPT } from '../../../../lib/gemini';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -1625,7 +1625,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
                     </>
                   ) : (
                     <>
-                      <Image className="w-5 h-5" />
+                      <ImageIcon className="w-5 h-5" />
                       EXACT MATCH (USE IMAGE AS REFERENCE)
                     </>
                   )}

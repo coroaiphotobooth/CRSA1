@@ -73,6 +73,9 @@ export interface UIDisplaySettings {
   resultButtonsPosition: 'bottom' | 'right' | 'top';
   confirmPhotoBeforeGenerate?: boolean;
   themeEventInfoPosition?: 'none' | 'top' | 'bottom';
+  launchScreenOrder?: string[];
+  processingStyle?: string;
+  processingText?: string;
 }
 
 export interface PhotoboothSettings {
@@ -84,7 +87,10 @@ export interface PhotoboothSettings {
   folderId: string;
   originalFolderId?: string; 
   storage_folder?: string;
-  eventType?: 'photobooth' | 'guestbook' | 'bartender' | 'registration';
+  eventType?: 'photobooth' | 'interactive' | 'guestbook' | 'bartender' | 'registration';
+  boothType?: 'standard' | 'interactive'; // Distinguish sub-types if eventType === 'photobooth' or 'interactive'
+  interactiveFlow?: string[]; // Array of step ids like ['launch', 'form_1', 'concept_select', 'capture', 'result', 'thanks_1']
+  interactivePages?: any[]; // Store custom page/form configs here
   bartenderMenu?: BartenderMenuItem[];
   spreadsheetId?: string; 
   selectedModel: string;
@@ -186,7 +192,8 @@ export enum AppState {
   GALLERY = 'GALLERY',
   ADMIN = 'ADMIN',
   MONITOR = 'MONITOR',
-  FAST_THANKS = 'FAST_THANKS'
+  FAST_THANKS = 'FAST_THANKS',
+  INTERACTIVE_FLOW = 'INTERACTIVE_FLOW'
 }
 
 export interface Vendor {

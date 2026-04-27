@@ -23,6 +23,8 @@ import AdminPage from './pages/booths/photobooth/admin/AdminPage';
 import MonitorPage from './pages/booths/photobooth/MonitorPage';
 import FastThanksPage from './pages/booths/photobooth/FastThanksPage';
 import GuestResultPage from './pages/booths/photobooth/GuestResultPage';
+import InteractiveFormPage from './pages/booths/photobooth/InteractiveFormPage';
+import InteractiveVideoPage from './pages/booths/photobooth/InteractiveVideoPage';
 import { usePresence } from './hooks/usePresence';
 import LoginPage from './pages/auth/LoginPage';
 import VendorDashboard from './pages/dashboard/VendorDashboard';
@@ -56,9 +58,11 @@ const PhotoboothFlow: React.FC = () => {
     : location.pathname.startsWith('/admin') ? AppState.ADMIN : AppState.LANDING;
 
   const [currentPage, setCurrentPage] = useState<AppState>(initialPage);
-  const [adminTab, setAdminTab] = useState<'settings' | 'concepts' | 'vip' | 'display'>('settings');
+  const [adminTab, setAdminTab] = useState<'settings' | 'concepts' | 'vip' | 'interactive'>('settings');
   const [selectedConcept, setSelectedConcept] = useState<Concept | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [interactiveStepIndex, setInteractiveStepIndex] = useState(0);
+  const [interactiveFormData, setInteractiveFormData] = useState<Record<string, any>>({});
   const [settings, setSettings] = useState<PhotoboothSettings>(DEFAULT_SETTINGS);
   const [concepts, setConcepts] = useState<Concept[]>(DEFAULT_CONCEPTS);
   const [eventLoadStatus, setEventLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -379,6 +383,8 @@ const PhotoboothFlow: React.FC = () => {
     setCapturedImage(null);
     setRegenUltraQuality(false);
     setCurrentSession(null); 
+    setInteractiveStepIndex(0);
+    setInteractiveFormData({});
   };
 
   const handleRegenerate = (image: string, concept: Concept, useUltra: boolean = false, sessionData?: {id: string, url: string, originalId?: string}) => {
@@ -520,7 +526,155 @@ const PhotoboothFlow: React.FC = () => {
       });
   };
 
+  const isInteractive = settings.boothType === 'interactive';
+  const interactiveFlowArray = settings.interactiveFlow || ['launch', 'concept_select', 'capture', 'processing', 'result'];
+
+  const advanceInteractive = (dataPatch?: any) => {
+    if (dataPatch) {
+      setInteractiveFormData(prev => ({ ...prev, ...dataPatch }));
+    }
+    if (interactiveStepIndex < interactiveFlowArray.length - 1) {
+      setInteractiveStepIndex(idx => idx + 1);
+    } else {
+      handleReset();
+    }
+  };
+
+  const retreatInteractive = () => {
+    if (interactiveStepIndex > 0) {
+      setInteractiveStepIndex(idx => idx - 1);
+    }
+  };
+
   const renderPage = () => {
+    if (isInteractive && ![AppState.ADMIN, AppState.GALLERY, AppState.MONITOR].includes(currentPage)) {
+      const currentStepId = interactiveFlowArray[interactiveStepIndex];
+      
+      if (currentStepId === 'launch') {
+        if (settings.enableVipMode) {
+          return (
+            <VipLandingPage 
+               onStart={() => advanceInteractive()} 
+               onGallery={() => setCurrentPage(AppState.GALLERY)}
+               onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} 
+               settings={settings} 
+               isVIPAdmin={isVIPAdmin} 
+            />
+          );
+        }
+        return <LandingPage onStart={() => advanceInteractive()} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} isVIPAdmin={isVIPAdmin} />;
+      }
+      if (currentStepId === 'concept_select') {
+        return (
+          <ThemesPage 
+            concepts={concepts} 
+            onSelect={(c) => { 
+                setSelectedConcept(c); 
+                advanceInteractive();
+            }} 
+            onBack={() => retreatInteractive()}
+            onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }}
+            onGallery={() => setCurrentPage(AppState.GALLERY)}
+            settings={settings}
+            isVIPAdmin={isVIPAdmin}
+          />
+        );
+      }
+      if (currentStepId === 'capture') {
+        return <CameraPage 
+            onCapture={(img) => {
+                setCapturedImage(img);
+                setRegenUltraQuality(false); 
+                setCurrentSession(null);
+                advanceInteractive();
+            }} 
+            onGenerate={() => {}} 
+            onBack={() => retreatInteractive()} 
+            capturedImage={capturedImage} 
+            orientation={settings.orientation} 
+            cameraRotation={settings.cameraRotation}
+            aspectRatio={settings.outputRatio}
+            settings={settings} 
+            onUpdateSettings={handleUpdateSettings} 
+        />;
+      }
+      if (currentStepId === 'processing' || currentStepId === 'result') {
+        // In original flow, generating goes to ResultPage, which handles both processing and result.
+        // We will jump straight to ResultPage. It handles FAST vs Normal mode.
+        const isAIEnabled = interactiveFlowArray.includes('processing');
+        if (isAIEnabled && concepts.length === 0) {
+          return (
+            <div className="w-full h-[100dvh] flex flex-col items-center justify-center relative p-6 text-center overflow-hidden bg-black bg-radial-gradient">
+              <div className="text-center bg-black/50 p-8 rounded-2xl border border-white/10 backdrop-blur-md flex flex-col items-center">
+                <h3 className="text-xl font-bold text-white mb-6">No Concepts Available</h3>
+                <p className="text-gray-400 mb-6 text-sm max-w-sm">The event administrator has not added any concepts yet.</p>
+                <button 
+                  onClick={() => { setAdminTab('concepts'); setCurrentPage(AppState.ADMIN); }}
+                  className="px-6 py-3 bg-[#bc13fe] hover:bg-purple-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-[#bc13fe]/20 uppercase tracking-widest text-sm"
+                >
+                  Admin Settings
+                </button>
+              </div>
+            </div>
+          );
+        }
+
+        if (isAIEnabled && !selectedConcept && concepts.length > 0) {
+            // Assign a random concept to state immediately before proceeding to render processing/result
+            setTimeout(() => setSelectedConcept(concepts[Math.floor(Math.random() * concepts.length)]), 0);
+            return <div className="w-full h-full bg-black flex items-center justify-center text-white text-xs">PREPARING...</div>;
+        }
+
+        const conceptToUse = selectedConcept || concepts[0]; // Fallback, shouldn't reach if isAI is enabled due to above IF
+
+        const isFast = settings.processingMode === 'fast';
+        if (isFast && currentStepId === 'processing') {
+            if (capturedImage && conceptToUse && !interactiveFormData._hasProcessed) {
+                processInBackground(capturedImage, conceptToUse);
+                setInteractiveFormData(prev => ({ ...prev, _hasProcessed: true }));
+            }
+            // we skip processing screen for fast mode or show fast thanks?
+            return <FastThanksPage onDone={() => advanceInteractive()} />;
+        }
+        return <ResultPage 
+            capturedImage={capturedImage!} 
+            concept={conceptToUse as any} 
+            settings={settings} 
+            concepts={concepts} 
+            onDone={() => handleReset()} 
+            onGallery={() => setCurrentPage(AppState.GALLERY)} 
+            isUltraQuality={regenUltraQuality}
+            existingSession={currentSession} 
+            interactiveFormData={interactiveFormData}
+            skipAI={!isAIEnabled}
+        />;
+      }
+      if (currentStepId?.startsWith('form')) {
+        const pageConfig = settings.interactivePages?.find(p => p.id === currentStepId);
+        return (
+          <InteractiveFormPage 
+            pageConfig={pageConfig}
+            settings={settings}
+            onNext={(data) => advanceInteractive(data)}
+            onBack={() => retreatInteractive()}
+            onAdmin={() => { setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
+          />
+        );
+      }
+      if (currentStepId?.startsWith('video')) {
+        const pageConfig = settings.interactivePages?.find(p => p.id === currentStepId);
+        return (
+          <InteractiveVideoPage 
+            pageConfig={pageConfig}
+            settings={settings}
+            onNext={() => advanceInteractive()}
+            onBack={() => retreatInteractive()}
+            onAdmin={() => { setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
+          />
+        );
+      }
+    }
+
     switch (currentPage) {
       case AppState.LANDING:
         if (settings.uiSettings?.photoboothFlow === 'no_launch_concept_photo') {
@@ -608,6 +762,7 @@ const PhotoboothFlow: React.FC = () => {
             onGallery={() => setCurrentPage(AppState.GALLERY)} 
             isUltraQuality={regenUltraQuality}
             existingSession={currentSession} 
+            interactiveFormData={interactiveFormData}
         />;
       case AppState.FAST_THANKS:
         return <FastThanksPage onDone={handleReset} />;

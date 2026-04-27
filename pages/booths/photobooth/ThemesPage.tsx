@@ -8,7 +8,7 @@ interface ThemesPageProps {
   concepts: Concept[];
   onSelect: (concept: Concept) => void;
   onBack: () => void;
-  onAdmin?: (tab?: 'settings' | 'concepts' | 'display' | 'vip') => void;
+  onAdmin?: (tab?: 'settings' | 'concepts' | 'interactive' | 'vip') => void;
   onGallery?: () => void;
   settings?: PhotoboothSettings;
   isVIPAdmin?: boolean;
@@ -130,10 +130,10 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
                   Settings Concept
                 </button>
                 <button 
-                  onClick={() => { setIsMenuOpen(false); onAdmin?.('display'); }}
+                  onClick={() => { setIsMenuOpen(false); onAdmin?.('interactive'); }}
                   className={`px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors ${isVIPAdmin ? 'border-b border-white/5' : ''}`}
                 >
-                  Settings UI Display
+                  Interactive & Display
                 </button>
                 {isVIPAdmin && (
                   <button 

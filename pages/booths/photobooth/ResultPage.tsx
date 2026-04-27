@@ -11,16 +11,18 @@ import { useDialog } from '../../../components/DialogProvider';
 
 interface ResultPageProps {
   capturedImage: string;
-  concept: Concept;
+  concept?: Concept;
   settings: PhotoboothSettings;
   concepts: Concept[]; 
   onDone: () => void;
   onGallery: () => void;
   isUltraQuality?: boolean;
   existingSession?: {id: string, url: string, originalId?: string} | null;
+  interactiveFormData?: Record<string, any>;
+  skipAI?: boolean;
 }
 
-const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initialConcept, settings, concepts, onDone, onGallery, isUltraQuality = false, existingSession }) => {
+const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initialConcept, settings, concepts, onDone, onGallery, isUltraQuality = false, existingSession, interactiveFormData = {}, skipAI }) => {
   const [concept, setConcept] = useState(initialConcept);
   const [isProcessing, setIsProcessing] = useState(true);
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -119,20 +121,27 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
         ? OverlayCache.preloadOverlay(settings.overlayImage)
         : Promise.resolve(null);
 
-      if (settings.activeEventId) {
-        const hasCredits = await decrementCredits(settings.activeEventId);
-        if (!hasCredits) {
-          throw new Error("Insufficient credits for this event.");
-        }
-      }
+      let aiOutput = capturedImage;
 
-      setProgress(currentQuality ? "GENERATING ULTRA QUALITY (SLOW)..." : "GENERATING AI VISUALS...");
-      const aiOutput = await generateAIImage(capturedImage, concept, outputRatio, currentQuality);
+      if (!skipAI) {
+        if (!concept) throw new Error("AI Processing requires a selected concept.");
+        if (settings.activeEventId) {
+          const hasCredits = await decrementCredits(settings.activeEventId);
+          if (!hasCredits) {
+            throw new Error("Insufficient credits for this event.");
+          }
+        }
+        setProgress(currentQuality ? "GENERATING ULTRA QUALITY (SLOW)..." : "GENERATING AI VISUALS...");
+        aiOutput = await generateAIImage(capturedImage, concept, outputRatio, currentQuality);
+      } else {
+        setProgress("PROCESSING ORIGINAL PHOTO...");
+        await new Promise(res => setTimeout(res, 500));
+      }
 
       setProgress("APPLYING FINAL TOUCHES...");
       await overlayPreloadTask;
       let finalImage = await applyOverlay(aiOutput, settings.overlayImage, targetWidth, targetHeight);
-      
+
       let doublePrintImage = null;
       const isDuplicateMode = settings.doublePrintMode === 'duplicate' || (settings.enableDoublePrint && (!settings.doublePrintMode || settings.doublePrintMode === 'disabled'));
       const isSingle2RMode = settings.doublePrintMode === 'single_2r';
@@ -160,7 +169,7 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
       }
 
       const uploadRes = await uploadToDrive(finalImage, {
-          conceptName: concept.name,
+          conceptName: concept?.name || "Original",
           eventName: settings.eventName,
           eventId: settings.activeEventId,
           folderId: sessionRes.folderId, 
@@ -179,7 +188,8 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
           sessionId: sessionRes.folderId,
           eventId: settings.activeEventId,
           resultImageUrl: directLink,
-          originalImageUrl: originalRes.id ? getGoogleDriveDirectLink(originalRes.id) : (existingSession?.originalId || undefined)
+          originalImageUrl: originalRes.id ? getGoogleDriveDirectLink(originalRes.id) : (existingSession?.originalId || undefined),
+          interactiveFormData
         });
       }
       
@@ -385,28 +395,65 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
   };
 
   if (isProcessing) {
+    const procStyle = settings.uiSettings?.processingStyle || 'progress_bar';
+    const mainText = settings.uiSettings?.processingText || 'GENERATING AI VISUALS...';
+    
     return (
       <div className="w-full h-[100dvh] flex flex-col items-center justify-center relative p-6 text-center overflow-hidden bg-black/90 backdrop-blur-md">
         <div className="absolute inset-0 z-0 flex items-center justify-center p-4">
           <img src={capturedImage} className="max-w-full max-h-full object-contain opacity-50 blur-lg" alt="Preview" />
           <div className="absolute inset-0 bg-black/60" />
         </div>
-        <div className="relative z-10 flex flex-col items-center">
-          <div className="relative w-40 h-40 md:w-64 md:h-64 mb-8 shrink-0">
-             <div className="absolute inset-0 border-[6px] border-white/5 rounded-full" />
-             <div className="absolute inset-0 border-[6px] border-t-glow rounded-full animate-spin shadow-[0_0_30px_rgba(var(--glow-color-rgb),0.4)]" />
-             <div className="absolute inset-0 flex items-center justify-center flex-col">
-               <span className="text-[10px] tracking-[0.3em] text-glow font-bold mb-1 uppercase italic">Processing</span>
-               <span className="text-3xl md:text-5xl font-heading text-white italic">{timer}<span className="text-lg md:text-2xl text-white/50 ml-1">s</span></span>
-             </div>
-          </div>
-          <div className="max-w-md bg-black/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl">
-            <h2 className="text-xl md:text-2xl font-heading mb-3 neon-text italic uppercase tracking-tighter">{progress}</h2>
-            <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden mb-3">
-              <div className="bg-glow h-full animate-[progress_10s_ease-in-out_infinite]" style={{width: '60%'}} />
+        <div className="relative z-10 flex flex-col items-center w-full">
+          
+          {procStyle === 'progress_bar' && (
+            <>
+              <div className="relative w-40 h-40 md:w-64 md:h-64 mb-8 shrink-0">
+                 <div className="absolute inset-0 border-[6px] border-white/5 rounded-full" />
+                 <div className="absolute inset-0 border-[6px] border-t-glow rounded-full animate-spin shadow-[0_0_30px_rgba(var(--glow-color-rgb),0.4)]" />
+                 <div className="absolute inset-0 flex items-center justify-center flex-col">
+                   <span className="text-[10px] tracking-[0.3em] text-glow font-bold mb-1 uppercase italic">Processing</span>
+                   <span className="text-3xl md:text-5xl font-heading text-white italic">{timer}<span className="text-lg md:text-2xl text-white/50 ml-1">s</span></span>
+                 </div>
+              </div>
+              <div className="max-w-md w-full bg-black/40 backdrop-blur-xl p-6 rounded-3xl border border-white/10 shadow-2xl">
+                <h2 className="text-xl md:text-2xl font-heading mb-3 neon-text italic uppercase tracking-tighter">{mainText}</h2>
+                <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden mb-3">
+                  <div className="bg-glow h-full animate-[progress_10s_ease-in-out_infinite]" style={{width: '60%'}} />
+                </div>
+                <p className="text-[8px] text-glow/70 uppercase tracking-widest animate-pulse">{progress}</p>
+              </div>
+            </>
+          )}
+
+          {procStyle === 'scanline' && (
+            <div className="relative w-72 h-96 border-2 border-glow shadow-[0_0_50px_rgba(var(--glow-color-rgb),0.3)] rounded-xl overflow-hidden mb-8">
+              <img src={capturedImage} className="absolute inset-0 w-full h-full object-cover opacity-60" />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-glow/20 to-transparent animate-pulse" />
+              <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)]" style={{ backgroundSize: '100% 4px' }} />
+              <div className="absolute bottom-6 left-0 right-0 text-center z-10 w-full flex justify-center">
+                <div className="inline-block bg-black/80 text-glow px-4 py-2 border border-glow/30 rounded-full text-[10px] font-bold font-mono uppercase tracking-widest backdrop-blur-md">
+                  {mainText}
+                </div>
+              </div>
             </div>
-            <p className="text-[8px] text-gray-500 uppercase tracking-widest animate-pulse">Initializing Generative AI System...</p>
-          </div>
+          )}
+
+          {procStyle === 'countdown' && (
+            <div className="flex flex-col items-center justify-center mt-12 bg-black/50 p-12 rounded-3xl border border-white/10 backdrop-blur-md">
+               <div className="text-glow text-xs md:text-sm tracking-[0.4em] uppercase font-bold text-center mb-6 animate-pulse">{mainText}</div>
+               <div className="text-[120px] md:text-[200px] font-heading font-black text-white italic leading-none drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">{timer}</div>
+               <div className="text-white/40 text-xs md:text-sm mt-8 font-mono tracking-widest text-center uppercase">{progress}</div>
+            </div>
+          )}
+
+          {procStyle === 'text_only' && (
+            <div className="max-w-3xl w-full px-6 py-20 flex flex-col items-center justify-center bg-transparent">
+              <h2 className="text-4xl md:text-6xl font-heading font-black text-white italic uppercase tracking-[0.1em] mb-6 text-center drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] animate-pulse">{mainText}</h2>
+              <p className="text-glow tracking-[0.3em] uppercase text-sm md:text-lg text-center font-bold">{progress}</p>
+            </div>
+          )}
+
         </div>
       </div>
     );

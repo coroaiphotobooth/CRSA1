@@ -439,28 +439,6 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
              </div>
 
           </div>
-
-          {/* Output Config */}
-          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10 tour-output-config">
-            <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Output Configuration</h3>
-            <div className="flex flex-col gap-3">
-              <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Output Aspect Ratio</label>
-              <div className="grid grid-cols-2 gap-3">
-                {(['9:16', '16:9', '2:3', '3:2'] as AspectRatio[]).map(r => (
-                  <button
-                    key={r}
-                    onClick={() => handleRatioChange(r)}
-                    className={`py-4 border border-white/10 rounded font-mono text-xs transition-all flex flex-col items-center gap-1 ${localSettings.outputRatio === r ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
-                  >
-                    <span className="text-sm font-bold">{r}</span>
-                    <span className="text-[8px] opacity-70 uppercase">
-                      {r === '9:16' ? 'Portrait' : r === '16:9' ? 'Landscape' : r === '2:3' ? 'Photo Portrait' : 'Photo Landscape'}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Assets Column */}
@@ -532,6 +510,7 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
           </div>
 
           {/* Camera Config */}
+          {localSettings.boothType !== 'interactive' && (
           <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit backdrop-blur-md bg-black/60 rounded-xl tour-camera-config">
             <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Camera Configuration</h3>
             
@@ -678,6 +657,7 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
               </div>
             </div>
           </div>
+          )}
 
           {/* Monitor Config */}
           <div className="glass-card p-6 md:p-10 flex flex-col gap-8 border-white/10 h-fit backdrop-blur-md bg-black/60 rounded-xl tour-output-monitor">
@@ -707,6 +687,28 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                     className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase ${localSettings.monitorImageSize === s ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                   >
                     {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Output Config */}
+          <div className="glass-card p-6 md:p-10 flex flex-col gap-8 h-fit backdrop-blur-md bg-black/60 rounded-xl border border-white/10 tour-output-config">
+            <h3 className="font-heading text-xl text-[#bc13fe] border-b border-white/5 pb-4 uppercase italic">Output Configuration</h3>
+            <div className="flex flex-col gap-3">
+              <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Output Aspect Ratio</label>
+              <div className="grid grid-cols-2 gap-3">
+                {(['9:16', '16:9', '2:3', '3:2'] as AspectRatio[]).map(r => (
+                  <button
+                    key={r}
+                    onClick={() => handleRatioChange(r)}
+                    className={`py-4 border border-white/10 rounded font-mono text-xs transition-all flex flex-col items-center gap-1 ${localSettings.outputRatio === r ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                  >
+                    <span className="text-sm font-bold">{r}</span>
+                    <span className="text-[8px] opacity-70 uppercase">
+                      {r === '9:16' ? 'Portrait' : r === '16:9' ? 'Landscape' : r === '2:3' ? 'Photo Portrait' : 'Photo Landscape'}
+                    </span>
                   </button>
                 ))}
               </div>
