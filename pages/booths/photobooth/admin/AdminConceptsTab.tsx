@@ -118,7 +118,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
   const [createFromImageName, setCreateFromImageName] = useState('');
   const [createFromImageFile, setCreateFromImageFile] = useState<File | null>(null);
   const [createFromImagePreview, setCreateFromImagePreview] = useState<string | null>(null);
-  const [isCreatingFromImage, setIsCreatingFromImage] = useState(false);
+  const [isCreatingFromImage, setIsCreatingFromImage] = useState<false | 'exact' | 'similar'>(false);
   const [isDirty, setIsDirty] = useState(false);
 
   // Concept Studio Modal local state
@@ -255,7 +255,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
     }
   };
 
-  const handleCreateFromImage = async () => {
+  const handleCreateFromImage = async (mode: 'exact' | 'similar') => {
     if (!createFromImageName.trim()) {
       await showDialog('alert', 'Error', 'Please enter a concept name.');
       return;
@@ -266,7 +266,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
     }
 
     try {
-      setIsCreatingFromImage(true);
+      setIsCreatingFromImage(mode);
       
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
@@ -335,7 +335,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
         name: createFromImageName,
         prompt: generatedPrompt,
         thumbnail: thumbUrl,
-        refImage: undefined
+        reference_image_bg: mode === 'exact' ? thumbUrl : undefined
       };
       
       setLocalConcepts(prev => [...prev, newConcept]);
@@ -592,6 +592,7 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
   };
 
   const executeEnhancePrompt = async (index: number) => {
+    setLocalConcepts(prev => prev.map((c, i) => i === index ? { ...c, _isNew: false } : c));
     setConfirmEnhanceIndex(null);
     setIsSilentlyOptimizing(index);
     const originalPrompt = localConcepts[index]?.prompt || "";
@@ -647,12 +648,12 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       for await (const chunk of responseStream) {
         const text = chunk.text;
         if (text) {
-          for (let i = 0; i < text.length; i++) {
-            fullText += text[i];
+          for (let i = 0; i < text.length; i += 2) {
+            fullText += text.substring(i, i + 2);
             handleConceptChange(index, 'prompt', fullText);
             const el = document.getElementById('concept-prompt-textarea');
             if (el) { el.scrollTop = el.scrollHeight; }
-            await new Promise(r => setTimeout(r, 15));
+            await new Promise(r => setTimeout(r, 2));
           }
         }
       }
@@ -667,6 +668,8 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
   const handleEnhancePrompt = async (index: number) => {
     const concept = localConcepts[index];
     if (!concept || !concept.prompt.trim()) return;
+
+    setLocalConcepts(prev => prev.map((c, i) => i === index ? { ...c, _isNew: false } : c));
 
     setIsEnhancing(index);
     const originalPrompt = concept.prompt;
@@ -734,12 +737,12 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
       for await (const chunk of responseStream) {
         const text = chunk.text;
         if (text) {
-          for (let i = 0; i < text.length; i++) {
-            fullText += text[i];
+          for (let i = 0; i < text.length; i += 2) {
+            fullText += text.substring(i, i + 2);
             handleConceptChange(index, 'prompt', fullText);
             const el = document.getElementById('concept-prompt-textarea');
             if (el) { el.scrollTop = el.scrollHeight; }
-            await new Promise(r => setTimeout(r, 15));
+            await new Promise(r => setTimeout(r, 2));
           }
         }
       }
@@ -1609,23 +1612,42 @@ const AdminConceptsTab = forwardRef<AdminConceptsTabRef, AdminConceptsTabProps>(
                 </div>
               </div>
 
-              <button 
-                onClick={handleCreateFromImage}
-                disabled={isCreatingFromImage || !createFromImageName.trim() || !createFromImageFile}
-                className="w-full py-4 bg-gradient-to-r from-blue-600/80 to-[#bc13fe]/80 hover:from-blue-500 hover:to-[#bc13fe] text-white rounded-xl text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 mt-2 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] border border-white/10"
-              >
-                {isCreatingFromImage ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    GENERATING PROMPT...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5" />
-                    CREATE FROM AI IMAGE
-                  </>
-                )}
-              </button>
+              <div className="flex flex-col gap-3 mt-2">
+                <button 
+                  onClick={() => handleCreateFromImage('exact')}
+                  disabled={!!isCreatingFromImage || !createFromImageName.trim() || !createFromImageFile}
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-600/80 to-[#bc13fe]/80 hover:from-blue-500 hover:to-[#bc13fe] text-white rounded-xl text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] border border-white/10"
+                >
+                  {isCreatingFromImage === 'exact' ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      GENERATING...
+                    </>
+                  ) : (
+                    <>
+                      <Image className="w-5 h-5" />
+                      EXACT MATCH (USE IMAGE AS REFERENCE)
+                    </>
+                  )}
+                </button>
+                <button 
+                  onClick={() => handleCreateFromImage('similar')}
+                  disabled={!!isCreatingFromImage || !createFromImageName.trim() || !createFromImageFile}
+                  className="w-full py-3 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-all disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-2 border border-white/10"
+                >
+                  {isCreatingFromImage === 'similar' ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      GENERATING...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4" />
+                      SIMILAR STYLE (TEXT PROMPT ONLY)
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
