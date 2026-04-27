@@ -636,12 +636,16 @@ const PhotoboothFlow: React.FC = () => {
             // we skip processing screen for fast mode or show fast thanks?
             return <FastThanksPage onDone={() => advanceInteractive()} />;
         }
+        const hasNextPage = interactiveStepIndex < interactiveFlowArray.length - 1;
+
         return <ResultPage 
             capturedImage={capturedImage!} 
             concept={conceptToUse as any} 
             settings={settings} 
             concepts={concepts} 
             onDone={() => handleReset()} 
+            hasNextPage={hasNextPage}
+            onNext={() => advanceInteractive()}
             onGallery={() => setCurrentPage(AppState.GALLERY)} 
             isUltraQuality={regenUltraQuality}
             existingSession={currentSession} 

@@ -203,9 +203,52 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
     setShowAddPageMenu(false);
   };
 
+  const addConceptSelectScreen = () => {
+    if (!currentFlow.includes('concept_select')) {
+      const newFlow = [...(localSettings.interactiveFlow || [])];
+      const captureIndex = newFlow.indexOf('capture');
+      if (captureIndex !== -1) {
+        newFlow.splice(captureIndex, 0, 'concept_select');
+      } else {
+        newFlow.push('concept_select');
+      }
+      setLocalSettings(prev => ({ ...prev, interactiveFlow: newFlow }));
+      setIsDirty(true);
+    }
+    setShowAddPageMenu(false);
+  };
+
+  const addCaptureScreen = () => {
+    if (!currentFlow.includes('capture')) {
+      const newFlow = [...(localSettings.interactiveFlow || [])];
+      const resultIndex = newFlow.indexOf('result');
+      if (resultIndex !== -1) {
+        newFlow.splice(resultIndex, 0, 'capture');
+      } else {
+        newFlow.push('capture');
+      }
+      setLocalSettings(prev => ({ ...prev, interactiveFlow: newFlow }));
+      setIsDirty(true);
+    }
+    setShowAddPageMenu(false);
+  };
+
+  const addResultScreen = () => {
+    if (!currentFlow.includes('result')) {
+      const newFlow = [...(localSettings.interactiveFlow || [])];
+      newFlow.push('result');
+      setLocalSettings(prev => ({ ...prev, interactiveFlow: newFlow }));
+      setIsDirty(true);
+    }
+    setShowAddPageMenu(false);
+  };
+
   const removeStep = async (stepId: string) => {
     if (stepId === 'processing') {
       const confirmed = await showDialog('confirm', 'Remove AI Processing', "This will make it a standard photobooth without AI generation. Are you sure?");
+      if (!confirmed) return;
+    } else if (stepId === 'concept_select') {
+      const confirmed = await showDialog('confirm', 'Remove Concept Selection', "Removing the Concept Selection page will make the concept selection random. Are you sure?");
       if (!confirmed) return;
     }
     setLocalSettings(prev => ({ ...prev, interactiveFlow: (prev.interactiveFlow || []).filter(id => id !== stepId) }));
@@ -266,6 +309,7 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
     const available = AVAILABLE_STEPS.find(s => s.id === stepId);
     if (available) return available.icon;
     if (stepId.startsWith('form')) return <FileText className="w-4 h-4 text-[#bc13fe]" />;
+    if (stepId.startsWith('video')) return <Video className="w-4 h-4 text-[#bc13fe]" />;
     return <Settings className="w-4 h-4" />;
   };
 
@@ -527,7 +571,7 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
          </div>
       </div>
     );
-  } else if (typeof activeConfigPage === 'object' && activeConfigPage !== null) {
+  } else if (typeof activeConfigPage === 'object' && activeConfigPage !== null && activeConfigPage.type === 'form') {
     rightPanelContent = (
       <div className="w-full h-full flex flex-col animate-in fade-in duration-300">
         <div className="flex justify-between items-center mb-6 pb-6 border-b border-white/10">
@@ -818,7 +862,9 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                 <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
                   {currentFlow.map((stepId, index) => {
                     const isFixed = AVAILABLE_STEPS.find(s => s.id === stepId)?.fixed;
-                    const isCustom = stepId.startsWith('form');
+                    const isForm = stepId.startsWith('form');
+                    const isVideo = stepId.startsWith('video');
+                    const isCustom = isForm || isVideo;
                     const isActive = typeof activeConfigPage === 'string' ? activeConfigPage === stepId : activeConfigPage?.id === stepId;
                     
                     return (
@@ -847,7 +893,8 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                               </div>
                               <div className="flex flex-col">
                                 <span>{renderStepName(stepId)}</span>
-                                {isCustom && <span className="text-[9px] text-[#bc13fe] font-normal lowercase tracking-normal">custom form / q&a</span>}
+                                {isForm && <span className="text-[9px] text-[#bc13fe] font-normal lowercase tracking-normal">custom form / q&a</span>}
+                                {isVideo && <span className="text-[9px] text-[#bc13fe] font-normal lowercase tracking-normal">custom video page</span>}
                               </div>
                             </div>
                             
@@ -887,9 +934,24 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                     <Smartphone className="w-4 h-4 text-[#bc13fe]" /> Add Launch Screen
                   </button>
                 )}
+                {!currentFlow.includes('concept_select') && (
+                  <button onClick={addConceptSelectScreen} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest border-b border-white/5 flex items-center gap-3">
+                    <ImageIcon className="w-4 h-4 text-[#bc13fe]" /> Add Concept Selection
+                  </button>
+                )}
+                {!currentFlow.includes('capture') && (
+                  <button onClick={addCaptureScreen} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest border-b border-white/5 flex items-center gap-3">
+                    <Camera className="w-4 h-4 text-[#bc13fe]" /> Add Capture Screen
+                  </button>
+                )}
                 {!currentFlow.includes('processing') && (
                   <button onClick={addProcessingScreen} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest border-b border-white/5 flex items-center gap-3">
                     <Wand2 className="w-4 h-4 text-[#bc13fe]" /> Add AI Processing
+                  </button>
+                )}
+                {!currentFlow.includes('result') && (
+                  <button onClick={addResultScreen} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest border-b border-white/5 flex items-center gap-3">
+                    <CheckCircle className="w-4 h-4 text-[#bc13fe]" /> Add Result Screen
                   </button>
                 )}
                 <button onClick={() => addCustomForm('New Form')} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest border-b border-white/5 flex items-center gap-3">

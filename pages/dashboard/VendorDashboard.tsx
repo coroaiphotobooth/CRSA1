@@ -1246,8 +1246,8 @@ export default function VendorDashboard() {
       error: "Error",
       close: "CLOSE",
       expired: "EXPIRED / DELETE SOON",
-      deadlineDays: "DEADLINE: {days} DAYS LEFT",
-      deadline: "DEADLINE: {days} DAYS"
+      deadlineDays: "EXPIRED IN: {days} DAYS LEFT",
+      deadline: "EXPIRED IN: {days} DAYS"
     },
     id: {
       welcome: "Selamat datang kembali,",
@@ -1285,8 +1285,8 @@ export default function VendorDashboard() {
       error: "Kesalahan",
       close: "TUTUP",
       expired: "KEDALUWARSA / SEGERA DIHAPUS",
-      deadlineDays: "TENGGAT WAKTU: {days} HARI LAGI",
-      deadline: "TENGGAT WAKTU: {days} HARI"
+      deadlineDays: "EXPIRED IN: {days} DAYS LEFT",
+      deadline: "EXPIRED IN: {days} DAYS"
     }
   };
 
