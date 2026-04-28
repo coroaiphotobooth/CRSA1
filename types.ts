@@ -67,7 +67,16 @@ export interface UIDisplaySettings {
   fontColor?: string;
   conceptLayout: 'grid' | 'carousel';
   photoboothFlow: 'launch_concept_photo' | 'launch_photo_concept' | 'no_launch_concept_photo';
-  launchLayout: 'split_left_right' | 'top_bottom' | 'background_only' | 'vip_checkin';
+  launchLayout: 'split_left_right' | 'top_bottom' | 'background_only' | 'vip_checkin' | 'button_with_gallery' | 'button_only' | 'custom_text';
+  launchButtonLabel?: string;
+  launchTextLabel?: string;
+  launchTextSize?: string;
+  launchTextFont?: string;
+  launchTextColor?: string;
+  launchTextShadow?: string;
+  launchTextShadowColor?: string;
+  launchEnableNameEvent?: boolean;
+  launchEnableDescEvent?: boolean;
   launchType?: 'standard' | 'video';
   videoIdleUrl?: string;
   videoGreetingUrl?: string;

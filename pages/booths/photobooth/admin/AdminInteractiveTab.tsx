@@ -340,18 +340,88 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
            <div className={UI_CONTAINER}>
                <label className={UI_LABEL}>Standard Launch Layout</label>
                <div className="flex flex-col gap-3 mt-2">
-                 <button onClick={() => updateUIChange('launchLayout', 'split_left_right')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'split_left_right' || !localUI.launchLayout ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                   <div><div className="font-bold text-white uppercase text-xs mb-0.5">Horizontal View (Desktop)</div></div>
+                 <button onClick={() => updateUIChange('launchLayout', 'button_with_gallery')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'button_with_gallery' || !localUI.launchLayout ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                   <div><div className="font-bold text-white uppercase text-xs mb-0.5">Use Launch & Gallery Button</div></div>
                  </button>
-                 <button onClick={() => updateUIChange('launchLayout', 'top_bottom')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'top_bottom' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                   <div><div className="font-bold text-white uppercase text-xs mb-0.5">Vertical View (Top / Bottom)</div></div>
+                 <button onClick={() => updateUIChange('launchLayout', 'button_only')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'button_only' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                   <div><div className="font-bold text-white uppercase text-xs mb-0.5">Use Launch Button Only</div></div>
                  </button>
-                 <button onClick={() => updateUIChange('launchLayout', 'background_only')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'background_only' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                   <div><div className="font-bold text-white uppercase text-xs mb-0.5">Only Background (Click Anywhere)</div></div>
+                 <button onClick={() => updateUIChange('launchLayout', 'custom_text')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'custom_text' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                   <div><div className="font-bold text-white uppercase text-xs mb-0.5">Use Custom Text to Start</div></div>
                  </button>
                  <button onClick={() => updateUIChange('launchLayout', 'vip_checkin')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'vip_checkin' ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
                    <div><div className="font-bold text-amber-500 uppercase text-xs mb-0.5">VIP Check-In (Scanner Mode)</div></div>
                  </button>
+               </div>
+               
+               {(localUI.launchLayout === 'button_with_gallery' || localUI.launchLayout === 'button_only' || !localUI.launchLayout) && (
+                 <div className="mt-4">
+                   <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-1">Launch Button Label</label>
+                   <input type="text" value={localUI.launchButtonLabel || 'LAUNCH'} onChange={(e) => updateUIChange('launchButtonLabel', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#bc13fe]/50" />
+                 </div>
+               )}
+
+               {localUI.launchLayout === 'custom_text' && (
+                 <div className="mt-4 flex flex-col gap-3">
+                   <div>
+                     <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-1">Text Label</label>
+                     <input type="text" value={localUI.launchTextLabel || 'START NOW'} onChange={(e) => updateUIChange('launchTextLabel', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#bc13fe]/50" />
+                   </div>
+                   <div className="grid grid-cols-2 gap-3">
+                     <div>
+                       <label className="text-[10px] font-bold tracking-widest text-white/50 uppercase block mb-1">Text Size</label>
+                       <select value={localUI.launchTextSize || 'text-3xl md:text-5xl'} onChange={(e) => updateUIChange('launchTextSize', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#bc13fe]/50">
+                         <option value="text-xl md:text-3xl">Small</option>
+                         <option value="text-3xl md:text-5xl">Medium</option>
+                         <option value="text-5xl md:text-7xl">Large</option>
+                         <option value="text-7xl md:text-9xl">Extra Large</option>
+                       </select>
+                     </div>
+                     <div>
+                       <label className="text-[10px] font-bold tracking-widest text-white/50 uppercase block mb-1">Text Color</label>
+                       <div className="flex gap-2 items-center">
+                         <input type="color" value={localUI.launchTextColor || '#ffffff'} onChange={(e) => updateUIChange('launchTextColor', e.target.value)} className="w-8 h-8 rounded shrink-0 cursor-pointer bg-transparent border-0 p-0" />
+                         <input type="text" value={localUI.launchTextColor || '#ffffff'} onChange={(e) => updateUIChange('launchTextColor', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#bc13fe]/50" placeholder="#ffffff" />
+                       </div>
+                     </div>
+                   </div>
+                   <div>
+                     <label className="text-[10px] font-bold tracking-widest text-white/50 uppercase block mb-1">Font Family</label>
+                     <select value={localUI.launchTextFont || ''} onChange={(e) => updateUIChange('launchTextFont', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#bc13fe]/50">
+                        <option value="">Default Font (Match Theme)</option>
+                        <option value="'Space Grotesk', sans-serif">Space Grotesk</option>
+                        <option value="'Inter', sans-serif">Inter</option>
+                        <option value="'Playfair Display', serif">Playfair Display (Serif)</option>
+                        <option value="'Courier New', monospace">Courier New (Monospace)</option>
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="'Times New Roman', serif">Times New Roman</option>
+                        <option value="'Comic Sans MS', cursive">Comic Sans (Playful)</option>
+                     </select>
+                   </div>
+                   <div>
+                     <label className="text-[10px] font-bold tracking-widest text-white/50 uppercase block mb-1">Text Shadow</label>
+                     <div className="flex gap-2 items-center">
+                       <input type="color" value={localUI.launchTextShadowColor || '#ffffff'} onChange={(e) => {
+                           updateUIChange('launchTextShadowColor', e.target.value);
+                           const current = localUI.launchTextShadow || '0px 0px 15px rgba(255,255,255,0.8)';
+                           const updatedShadow = current.replace(/(#[0-9a-fA-F]{3,8}|rgba?\(.*?\)|[a-zA-Z]+)$/i, e.target.value);
+                           updateUIChange('launchTextShadow', updatedShadow);
+                       }} className="w-8 h-8 rounded shrink-0 cursor-pointer bg-transparent border-0 p-0" />
+                       <input type="text" value={localUI.launchTextShadow || '0px 0px 15px rgba(255,255,255,0.8)'} onChange={(e) => updateUIChange('launchTextShadow', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#bc13fe]/50" />
+                     </div>
+                   </div>
+                 </div>
+               )}
+
+               <div className="mt-4 pt-4 border-t border-white/10 flex flex-col gap-2">
+                 <label className="flex items-center gap-3 cursor-pointer">
+                   <input type="checkbox" checked={localUI.launchEnableNameEvent !== false} onChange={(e) => updateUIChange('launchEnableNameEvent', e.target.checked)} className="w-4 h-4 accent-[#bc13fe]" />
+                   <span className="text-white text-xs font-bold">Enable Event Name</span>
+                 </label>
+                 <label className="flex items-center gap-3 cursor-pointer">
+                   <input type="checkbox" checked={localUI.launchEnableDescEvent !== false} onChange={(e) => updateUIChange('launchEnableDescEvent', e.target.checked)} className="w-4 h-4 accent-[#bc13fe]" />
+                   <span className="text-white text-xs font-bold">Enable Event Description</span>
+                 </label>
                </div>
            </div>
          )}

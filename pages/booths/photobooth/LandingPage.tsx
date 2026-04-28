@@ -61,6 +61,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
   };
 
   const isBackgroundOnly = settings.uiSettings?.launchLayout === 'background_only';
+  const launchLayout = settings.uiSettings?.launchLayout || 'button_with_gallery';
+  const showNameEvent = settings.uiSettings?.launchEnableNameEvent !== false;
+  const showDescEvent = settings.uiSettings?.launchEnableDescEvent !== false;
+
+  const launchButtonLabel = settings.uiSettings?.launchButtonLabel || 'LAUNCH';
+  const launchTextLabel = settings.uiSettings?.launchTextLabel || 'START NOW';
 
   return (
     <div 
@@ -92,7 +98,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
         className="absolute top-6 right-6 z-50 flex items-center gap-4 md:gap-6"
         onClick={(e) => e.stopPropagation()}
       >
-        {isBackgroundOnly && (
+        {(isBackgroundOnly || launchLayout === 'button_only') && (
            <button 
              onClick={onGallery}
              className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
@@ -158,35 +164,62 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
         <div className="relative z-10 flex flex-col items-center justify-center gap-6 w-full max-w-2xl mx-auto px-4 h-full py-12">
           
           <div className="flex flex-col items-center justify-center gap-2 mb-8">
-            <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-7xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-none uppercase text-center w-full`}>
-              {settings.eventName}
-            </h1>
-            <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-xl'} tracking-[0.3em] md:tracking-[0.5em] text-glow font-bold uppercase text-center w-full`}>
-              {settings.eventDescription}
-            </h2>
+            {showNameEvent && (
+              <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-7xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-none uppercase text-center w-full`}>
+                {settings.eventName}
+              </h1>
+            )}
+            {showDescEvent && (
+              <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-xl'} tracking-[0.3em] md:tracking-[0.5em] text-glow font-bold uppercase text-center w-full`}>
+                {settings.eventDescription}
+              </h2>
+            )}
           </div>
 
-          <div className={`flex items-center justify-center gap-4 w-full ${settings.uiSettings?.launchLayout === 'top_bottom' ? 'flex-col' : 'flex-col md:flex-row'}`}>
-            <button 
-              key="btn-launch"
-              onClick={(e) => { 
-                  e.stopPropagation(); 
-                  prewarmCamera(settings);
-                  onStart(); 
-              }}
-              style={settings.uiSettings?.buttonColor ? { backgroundColor: settings.uiSettings.buttonColor } : { backgroundColor: '#bc13fe' }}
-              className={`group relative py-3 md:py-5 transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden px-8 md:px-12 w-full max-w-sm`}
-            >
-              <span className="relative z-10 italic">LAUNCH</span>
-              <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
-            </button>
-            <button 
-              key="btn-gallery"
-              onClick={(e) => { e.stopPropagation(); onGallery(); }}
-              className={`group relative py-3 md:py-4 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-sm md:text-xl tracking-widest overflow-hidden px-8 md:px-12 bg-black/40 backdrop-blur-sm w-full max-w-sm`}
-            >
-              <span className="relative z-10 italic">GALLERY</span>
-            </button>
+          <div className={`flex items-center justify-center gap-4 w-full flex-col md:flex-row`}>
+            {(launchLayout === 'button_with_gallery' || launchLayout === 'split_left_right' || launchLayout === 'top_bottom' || launchLayout === 'button_only') && (
+              <button 
+                key="btn-launch"
+                onClick={(e) => { 
+                    e.stopPropagation(); 
+                    prewarmCamera(settings);
+                    onStart(); 
+                }}
+                style={settings.uiSettings?.buttonColor ? { backgroundColor: settings.uiSettings.buttonColor } : { backgroundColor: '#bc13fe' }}
+                className={`group relative py-3 md:py-5 transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden px-8 md:px-12 w-full max-w-sm`}
+              >
+                <span className="relative z-10 italic">{launchButtonLabel}</span>
+                <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
+              </button>
+            )}
+
+            {(launchLayout === 'button_with_gallery' || launchLayout === 'split_left_right' || launchLayout === 'top_bottom') && (
+              <button 
+                key="btn-gallery"
+                onClick={(e) => { e.stopPropagation(); onGallery(); }}
+                className={`group relative py-3 md:py-4 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-sm md:text-xl tracking-widest overflow-hidden px-8 md:px-12 bg-black/40 backdrop-blur-sm w-full max-w-sm`}
+              >
+                <span className="relative z-10 italic">GALLERY</span>
+              </button>
+            )}
+
+            {launchLayout === 'custom_text' && (
+              <button 
+                onClick={(e) => { 
+                    e.stopPropagation(); 
+                    prewarmCamera(settings);
+                    onStart(); 
+                }}
+                className={`${settings.uiSettings?.launchTextSize || 'text-3xl md:text-5xl'} font-bold uppercase hover:scale-105 transition-transform`}
+                style={{
+                  fontFamily: settings.uiSettings?.launchTextFont || 'inherit',
+                  color: settings.uiSettings?.launchTextColor || '#ffffff',
+                  textShadow: settings.uiSettings?.launchTextShadow || '0px 0px 15px rgba(255,255,255,0.8)'
+                }}
+              >
+                {launchTextLabel}
+              </button>
+            )}
           </div>
         </div>
       )}
