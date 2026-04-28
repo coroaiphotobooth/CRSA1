@@ -186,7 +186,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
                     onStart(); 
                 }}
                 style={settings.uiSettings?.buttonColor ? { backgroundColor: settings.uiSettings.buttonColor } : { backgroundColor: '#bc13fe' }}
-                className={`group relative py-3 md:py-4 transition-all rounded-none font-heading text-base md:text-xl tracking-widest neon-border overflow-hidden px-8 md:px-10 w-full max-w-sm`}
+                className={`group relative py-3 md:py-4 transition-all rounded-none font-heading text-base md:text-xl tracking-widest neon-border overflow-hidden w-full max-w-[240px] md:max-w-[280px]`}
               >
                 <span className="relative z-10 italic">{launchButtonLabel}</span>
                 <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
@@ -197,7 +197,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
               <button 
                 key="btn-gallery"
                 onClick={(e) => { e.stopPropagation(); onGallery(); }}
-                className={`group relative py-2 md:py-3 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-xs md:text-base tracking-widest overflow-hidden px-6 md:px-8 bg-black/40 backdrop-blur-sm w-full max-w-sm`}
+                className={`group relative py-3 md:py-4 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-base md:text-xl tracking-widest overflow-hidden bg-black/40 backdrop-blur-sm w-full max-w-[240px] md:max-w-[280px]`}
               >
                 <span className="relative z-10 italic">GALLERY</span>
               </button>
