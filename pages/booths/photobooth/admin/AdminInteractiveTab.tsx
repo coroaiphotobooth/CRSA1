@@ -303,7 +303,8 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
     const available = AVAILABLE_STEPS.find(s => s.id === stepId);
     if (available) return available.icon;
     if (stepId.startsWith('form')) return <FileText className="w-4 h-4 text-[#bc13fe]" />;
-    if (stepId.startsWith('video')) return <Video className="w-4 h-4 text-[#bc13fe]" />;
+    if (stepId.startsWith('video_start')) return <Video className="w-4 h-4 text-[#bc13fe]" />;
+    if (stepId.startsWith('video')) return <Video className="w-4 h-4 text-orange-400" />;
     return <Settings className="w-4 h-4" />;
   };
 
@@ -311,7 +312,7 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
     const available = AVAILABLE_STEPS.find(s => s.id === stepId);
     if (available) return available.label;
     const customPage = customPages.find(p => p.id === stepId);
-    if (customPage) return customPage.title || 'Custom Form';
+    if (customPage) return customPage.title || 'Custom Page';
     return stepId;
   };
 
@@ -319,27 +320,157 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
 
   if (activeConfigPage === 'launch') {
     rightPanelContent = (
-      <div className="flex flex-col gap-6 animate-in fade-in duration-300 h-full">
+      <div className="flex flex-col gap-6 animate-in fade-in duration-300 h-full overflow-y-auto custom-scrollbar pr-2">
          <h2 className="text-xl font-heading font-bold text-white uppercase flex items-center gap-3">
            <Smartphone className="w-5 h-5 text-[#bc13fe]" /> Launch Screen Settings
          </h2>
          <div className={UI_CONTAINER}>
-             <label className={UI_LABEL}>Launch Buttons Layout</label>
-             <div className="flex flex-col gap-3 mt-2">
-               <button onClick={() => updateUIChange('launchLayout', 'split_left_right')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'split_left_right' || !localUI.launchLayout ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Horizontal View (Desktop)</div></div>
+             <label className={UI_LABEL}>Launch Type</label>
+             <div className="flex gap-2 mt-2">
+               <button onClick={() => updateUIChange('launchType', 'standard')} className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all font-bold uppercase text-xs ${localUI.launchType === 'standard' || !localUI.launchType ? 'border-[#bc13fe] bg-[#bc13fe]/10 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30'}`}>
+                 Standard Launch
                </button>
-               <button onClick={() => updateUIChange('launchLayout', 'top_bottom')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'top_bottom' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Vertical View (Top / Bottom)</div></div>
-               </button>
-               <button onClick={() => updateUIChange('launchLayout', 'background_only')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'background_only' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Only Background (Click Anywhere)</div></div>
-               </button>
-               <button onClick={() => updateUIChange('launchLayout', 'vip_checkin')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'vip_checkin' ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-amber-500 uppercase text-xs mb-0.5">VIP Check-In (Scanner Mode)</div></div>
+               <button onClick={() => updateUIChange('launchType', 'video')} className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all font-bold uppercase text-xs ${localUI.launchType === 'video' ? 'border-[#bc13fe] bg-[#bc13fe]/10 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30'}`}>
+                 Video Start
                </button>
              </div>
          </div>
+
+         {(!localUI.launchType || localUI.launchType === 'standard') && (
+           <div className={UI_CONTAINER}>
+               <label className={UI_LABEL}>Standard Launch Layout</label>
+               <div className="flex flex-col gap-3 mt-2">
+                 <button onClick={() => updateUIChange('launchLayout', 'split_left_right')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'split_left_right' || !localUI.launchLayout ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                   <div><div className="font-bold text-white uppercase text-xs mb-0.5">Horizontal View (Desktop)</div></div>
+                 </button>
+                 <button onClick={() => updateUIChange('launchLayout', 'top_bottom')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'top_bottom' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                   <div><div className="font-bold text-white uppercase text-xs mb-0.5">Vertical View (Top / Bottom)</div></div>
+                 </button>
+                 <button onClick={() => updateUIChange('launchLayout', 'background_only')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'background_only' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                   <div><div className="font-bold text-white uppercase text-xs mb-0.5">Only Background (Click Anywhere)</div></div>
+                 </button>
+                 <button onClick={() => updateUIChange('launchLayout', 'vip_checkin')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'vip_checkin' ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                   <div><div className="font-bold text-amber-500 uppercase text-xs mb-0.5">VIP Check-In (Scanner Mode)</div></div>
+                 </button>
+               </div>
+           </div>
+         )}
+
+         {localUI.launchType === 'video' && (
+           <>
+              <div className={UI_CONTAINER}>
+                 <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-1">Video Idle URL (MP4 / WebM)</label>
+                 <span className="text-[8px] text-gray-400 mb-2">Max 15 seconds, max 13MB. Upload or paste link. Plays in loop until start.</span>
+                 <div className="flex gap-4 items-center">
+                    <div className="flex-1">
+                      <input type="text" value={localUI.videoIdleUrl || ''} onChange={(e) => updateUIChange('videoIdleUrl', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#bc13fe]/50" placeholder="https://..." />
+                    </div>
+                    <input type="file" accept="video/mp4,video/webm" className="hidden" id="upload-idle-video-launch" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 13 * 1024 * 1024) { await showDialog('alert', 'Error', 'Video > 13MB limit.'); return; }
+                      try {
+                        if (eventId) {
+                          const fileName = `${settings.storage_folder || eventId}/assets/vididle-${Date.now()}.${file.name.split('.').pop()}`;
+                          const { data, error } = await supabase.storage.from('photobooth').upload(fileName, file, {upsert: true});
+                          if (!error) {
+                            const { data: { publicUrl } } = supabase.storage.from('photobooth').getPublicUrl(fileName);
+                            updateUIChange('videoIdleUrl', publicUrl);
+                          } else {
+                            await showDialog('alert', 'Error', error.message);
+                          }
+                        }
+                      } catch (err:any) {
+                        await showDialog('alert', 'Error', err.message);
+                      }
+                    }} />
+                    <label htmlFor="upload-idle-video-launch" className="px-4 py-3 bg-[#bc13fe]/20 text-[#bc13fe] hover:bg-[#bc13fe]/40 border border-[#bc13fe]/30 rounded-xl font-bold uppercase text-xs cursor-pointer transition-colors whitespace-nowrap">
+                      Upload
+                    </label>
+                 </div>
+              </div>
+
+              <div className={UI_CONTAINER}>
+                 <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-1">Video Greeting URL (MP4 / WebM)</label>
+                 <span className="text-[8px] text-gray-400 mb-2">Max 15 seconds, max 13MB. Played when START is triggered.</span>
+                 <div className="flex gap-4 items-center">
+                    <div className="flex-1">
+                      <input type="text" value={localUI.videoGreetingUrl || ''} onChange={(e) => updateUIChange('videoGreetingUrl', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#bc13fe]/50" placeholder="https://..." />
+                    </div>
+                    <input type="file" accept="video/mp4,video/webm" className="hidden" id="upload-greet-video-launch" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 13 * 1024 * 1024) { await showDialog('alert', 'Error', 'Video > 13MB limit.'); return; }
+                      try {
+                        if (eventId) {
+                          const fileName = `${settings.storage_folder || eventId}/assets/vidgreet-${Date.now()}.${file.name.split('.').pop()}`;
+                          const { data, error } = await supabase.storage.from('photobooth').upload(fileName, file, {upsert: true});
+                          if (!error) {
+                            const { data: { publicUrl } } = supabase.storage.from('photobooth').getPublicUrl(fileName);
+                            updateUIChange('videoGreetingUrl', publicUrl);
+                          } else {
+                            await showDialog('alert', 'Error', error.message);
+                          }
+                        }
+                      } catch (err:any) {
+                        await showDialog('alert', 'Error', err.message);
+                      }
+                    }} />
+                    <label htmlFor="upload-greet-video-launch" className="px-4 py-3 bg-[#bc13fe]/20 text-[#bc13fe] hover:bg-[#bc13fe]/40 border border-[#bc13fe]/30 rounded-xl font-bold uppercase text-xs cursor-pointer transition-colors whitespace-nowrap">
+                      Upload
+                    </label>
+                 </div>
+              </div>
+
+              <div className={UI_CONTAINER}>
+                 <label className={UI_LABEL}>Start Option</label>
+                 <div className="flex flex-col gap-2 mt-1">
+                   <label className="flex items-center gap-3 p-3 bg-black/40 border border-white/10 rounded-lg cursor-pointer hover:border-white/30 transition-colors">
+                     <input type="radio" checked={localUI.videoStartOption === 'button'} onChange={() => updateUIChange('videoStartOption', 'button')} className="accent-[#bc13fe]" />
+                     <div className="flex flex-col">
+                       <span className="text-white text-xs font-bold">Use Button to Start</span>
+                     </div>
+                   </label>
+                   <label className="flex items-center gap-3 p-3 bg-black/40 border border-white/10 rounded-lg cursor-pointer hover:border-white/30 transition-colors">
+                     <input type="radio" checked={localUI.videoStartOption === 'text'} onChange={() => updateUIChange('videoStartOption', 'text')} className="accent-[#bc13fe]" />
+                     <div className="flex flex-col">
+                       <span className="text-white text-xs font-bold">Use Text to Start</span>
+                     </div>
+                   </label>
+                   <label className="flex items-center gap-3 p-3 bg-black/40 border border-white/10 rounded-lg cursor-pointer hover:border-white/30 transition-colors">
+                     <input type="radio" checked={localUI.videoStartOption === 'click_anywhere' || !localUI.videoStartOption} onChange={() => updateUIChange('videoStartOption', 'click_anywhere')} className="accent-[#bc13fe]" />
+                     <div className="flex flex-col">
+                       <span className="text-white text-xs font-bold">Click Anywhere to Start</span>
+                     </div>
+                   </label>
+                 </div>
+                 {(localUI.videoStartOption === 'button' || localUI.videoStartOption === 'text') && (
+                   <div className="mt-2">
+                     <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-1">Text / Button Label</label>
+                     <input type="text" value={localUI.videoStartLabel || 'START'} onChange={(e) => updateUIChange('videoStartLabel', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#bc13fe]/50" />
+                   </div>
+                 )}
+              </div>
+
+              <div className={UI_CONTAINER}>
+                 <label className={UI_LABEL}>Display Overlays (Idle Mode)</label>
+                 <div className="flex flex-col gap-2 mt-2">
+                   <label className="flex items-center gap-3 cursor-pointer">
+                     <input type="checkbox" checked={localUI.videoEnableNameEvent !== false} onChange={(e) => updateUIChange('videoEnableNameEvent', e.target.checked)} className="w-4 h-4 accent-[#bc13fe]" />
+                     <span className="text-white text-xs font-bold">Show Event Name</span>
+                   </label>
+                   <label className="flex items-center gap-3 cursor-pointer">
+                     <input type="checkbox" checked={localUI.videoEnableDescription !== false} onChange={(e) => updateUIChange('videoEnableDescription', e.target.checked)} className="w-4 h-4 accent-[#bc13fe]" />
+                     <span className="text-white text-xs font-bold">Show Event Description</span>
+                   </label>
+                   <label className="flex items-center gap-3 cursor-pointer">
+                     <input type="checkbox" checked={localUI.videoEnableGalleryButton !== false} onChange={(e) => updateUIChange('videoEnableGalleryButton', e.target.checked)} className="w-4 h-4 accent-[#bc13fe]" />
+                     <span className="text-white text-xs font-bold">Show Gallery Button</span>
+                   </label>
+                 </div>
+              </div>
+           </>
+         )}
 
          {/* Typography */}
          <div className="bg-black/40 border border-white/10 p-6 rounded-xl">
@@ -921,7 +1052,7 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                   <FileText className="w-4 h-4 text-[#bc13fe]" /> Add Question & Answer
                 </button>
                 <button onClick={addVideoPage} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest flex items-center gap-3">
-                  <Video className="w-4 h-4 text-[#bc13fe]" /> Add Video Page
+                  <Video className="w-4 h-4 text-orange-400" /> Add Video Page
                 </button>
               </div>
             )}

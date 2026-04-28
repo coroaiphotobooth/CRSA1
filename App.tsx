@@ -25,6 +25,7 @@ import FastThanksPage from './pages/booths/photobooth/FastThanksPage';
 import GuestResultPage from './pages/booths/photobooth/GuestResultPage';
 import InteractiveFormPage from './pages/booths/photobooth/InteractiveFormPage';
 import InteractiveVideoPage from './pages/booths/photobooth/InteractiveVideoPage';
+import InteractiveVideoStartPage from './pages/booths/photobooth/InteractiveVideoStartPage';
 import { usePresence } from './hooks/usePresence';
 import LoginPage from './pages/auth/LoginPage';
 import VendorDashboard from './pages/dashboard/VendorDashboard';
@@ -551,6 +552,27 @@ const PhotoboothFlow: React.FC = () => {
       const currentStepId = interactiveFlowArray[interactiveStepIndex];
       
       if (currentStepId === 'launch') {
+        if (settings.uiSettings?.launchType === 'video') {
+           const mapConfig = {
+               videoIdleUrl: settings.uiSettings.videoIdleUrl,
+               videoGreetingUrl: settings.uiSettings.videoGreetingUrl,
+               startOption: settings.uiSettings.videoStartOption,
+               startLabel: settings.uiSettings.videoStartLabel,
+               enableNameEvent: settings.uiSettings.videoEnableNameEvent,
+               enableDescription: settings.uiSettings.videoEnableDescription,
+               enableGalleryButton: settings.uiSettings.videoEnableGalleryButton
+           };
+
+           return <InteractiveVideoStartPage 
+            pageConfig={mapConfig}
+            settings={settings}
+            onNext={() => advanceInteractive()}
+            onBack={() => retreatInteractive()}
+            onAdmin={() => { setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
+            onGallery={() => setCurrentPage(AppState.GALLERY)}
+          />;
+        }
+
         if (settings.enableVipMode) {
           return (
             <VipLandingPage 
@@ -665,7 +687,20 @@ const PhotoboothFlow: React.FC = () => {
           />
         );
       }
-      if (currentStepId?.startsWith('video')) {
+      if (currentStepId?.startsWith('video_start')) {
+        const pageConfig = settings.interactivePages?.find(p => p.id === currentStepId);
+        return (
+          <InteractiveVideoStartPage 
+            pageConfig={pageConfig}
+            settings={settings}
+            onNext={() => advanceInteractive()}
+            onBack={() => retreatInteractive()}
+            onAdmin={() => { setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
+            onGallery={() => setCurrentPage(AppState.GALLERY)}
+          />
+        );
+      }
+      if (currentStepId?.startsWith('video') && !currentStepId?.startsWith('video_start')) {
         const pageConfig = settings.interactivePages?.find(p => p.id === currentStepId);
         return (
           <InteractiveVideoPage 
@@ -685,6 +720,28 @@ const PhotoboothFlow: React.FC = () => {
             setCurrentPage(AppState.THEMES);
             return null;
         }
+
+        if (settings.uiSettings?.launchType === 'video') {
+           const mapConfig = {
+               videoIdleUrl: settings.uiSettings.videoIdleUrl,
+               videoGreetingUrl: settings.uiSettings.videoGreetingUrl,
+               startOption: settings.uiSettings.videoStartOption,
+               startLabel: settings.uiSettings.videoStartLabel,
+               enableNameEvent: settings.uiSettings.videoEnableNameEvent,
+               enableDescription: settings.uiSettings.videoEnableDescription,
+               enableGalleryButton: settings.uiSettings.videoEnableGalleryButton
+           };
+
+           return <InteractiveVideoStartPage 
+            pageConfig={mapConfig}
+            settings={settings}
+            onNext={() => setCurrentPage(settings.uiSettings?.photoboothFlow === 'launch_photo_concept' ? AppState.CAMERA : AppState.THEMES)}
+            onBack={() => {}} // No back on landing
+            onAdmin={() => { setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
+            onGallery={() => setCurrentPage(AppState.GALLERY)}
+          />;
+        }
+
         if (settings.uiSettings?.launchLayout === 'vip_checkin') {
           return (
              <CheckinPage 

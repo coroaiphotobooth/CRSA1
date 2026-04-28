@@ -68,6 +68,14 @@ export interface UIDisplaySettings {
   conceptLayout: 'grid' | 'carousel';
   photoboothFlow: 'launch_concept_photo' | 'launch_photo_concept' | 'no_launch_concept_photo';
   launchLayout: 'split_left_right' | 'top_bottom' | 'background_only' | 'vip_checkin';
+  launchType?: 'standard' | 'video';
+  videoIdleUrl?: string;
+  videoGreetingUrl?: string;
+  videoStartOption?: 'button' | 'text' | 'click_anywhere';
+  videoStartLabel?: string;
+  videoEnableNameEvent?: boolean;
+  videoEnableDescription?: boolean;
+  videoEnableGalleryButton?: boolean;
   showFrameDuringCapture: boolean;
   captureButtonPosition: 'bottom' | 'top_right';
   resultButtonsPosition: 'bottom' | 'right' | 'top';
