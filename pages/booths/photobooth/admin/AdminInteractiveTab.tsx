@@ -103,7 +103,9 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
     }
   }));
 
-  const currentFlow = localSettings.interactiveFlow || ['launch', 'concept_select', 'capture', 'processing', 'result'];
+  const DEFAULT_FLOW = ['launch', 'concept_select', 'capture', 'processing', 'result'];
+  const currentFlow = localSettings.interactiveFlow || DEFAULT_FLOW;
+  const isFlowDefault = JSON.stringify(currentFlow) === JSON.stringify(DEFAULT_FLOW);
   const customPages = localSettings.interactivePages || [];
   const localUI: UIDisplaySettings = localSettings.uiSettings || ({} as UIDisplaySettings);
 
@@ -605,7 +607,28 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                <button onClick={() => updateUIChange('themeEventInfoPosition', 'none')} className={`flex-1 py-1.5 px-3 rounded-lg border-2 font-bold uppercase text-[10px] ${localUI.themeEventInfoPosition === 'none' || !localUI.themeEventInfoPosition ? 'border-[#bc13fe] bg-[#bc13fe]/20 text-white' : 'border-white/10 bg-black/40 text-gray-400'}`}>Hidden</button>
                <button onClick={() => updateUIChange('themeEventInfoPosition', 'top')} className={`flex-1 py-1.5 px-3 rounded-lg border-2 font-bold uppercase text-[10px] ${localUI.themeEventInfoPosition === 'top' ? 'border-[#bc13fe] bg-[#bc13fe]/20 text-white' : 'border-white/10 bg-black/40 text-gray-400'}`}>Top</button>
                <button onClick={() => updateUIChange('themeEventInfoPosition', 'bottom')} className={`flex-1 py-1.5 px-3 rounded-lg border-2 font-bold uppercase text-[10px] ${localUI.themeEventInfoPosition === 'bottom' ? 'border-[#bc13fe] bg-[#bc13fe]/20 text-white' : 'border-white/10 bg-black/40 text-gray-400'}`}>Bottom</button>
-             </div>
+              </div>
+          </div>
+          <div className={UI_CONTAINER}>
+              <label className={UI_LABEL}>Theme Selection Title Text</label>
+              <div className="flex flex-col gap-3 mt-2">
+                 <label className="flex items-center gap-3 cursor-pointer">
+                   <input type="checkbox" checked={localUI.themeEnableTitle !== false} onChange={(e) => updateUIChange('themeEnableTitle', e.target.checked)} className="w-4 h-4 accent-[#bc13fe]" />
+                   <span className="text-white text-xs font-bold uppercase">Enable Concept Title</span>
+                 </label>
+                 {localUI.themeEnableTitle !== false && (
+                   <div className="flex flex-col gap-3 mt-2">
+                     <div>
+                       <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-1">Title Text</label>
+                       <input type="text" value={localUI.themeTitleText || ''} onChange={(e) => updateUIChange('themeTitleText', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[#bc13fe]/50" placeholder="CHOOSE CONCEPT" />
+                     </div>
+                     <div>
+                       <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-1">Subtitle Text</label>
+                       <input type="text" value={localUI.themeSubtitleText || ''} onChange={(e) => updateUIChange('themeSubtitleText', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-[#bc13fe]/50" placeholder="Select your transformation" />
+                     </div>
+                   </div>
+                 )}
+              </div>
          </div>
       </div>
     );
@@ -1010,6 +1033,17 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
           <h2 className="text-xl font-heading tracking-widest font-bold text-white uppercase flex items-center gap-2">
             <Settings className="w-5 h-5 text-[#bc13fe]" /> INTERACTIVE FLOW
           </h2>
+          {!isFlowDefault && (
+            <button 
+              onClick={() => {
+                setLocalSettings(prev => ({ ...prev, interactiveFlow: DEFAULT_FLOW }));
+                setIsDirty(true);
+              }}
+              className="px-2 py-1 bg-white/5 border border-white/10 hover:border-[#bc13fe]/50 hover:bg-[#bc13fe]/20 rounded text-[10px] font-bold tracking-wider text-green-400 uppercase transition-colors whitespace-nowrap"
+            >
+              SET TO DEFAULT
+            </button>
+          )}
         </div>
         
         <p className="text-gray-400 text-xs mb-6">

@@ -90,6 +90,9 @@ export interface UIDisplaySettings {
   resultButtonsPosition: 'bottom' | 'right' | 'top';
   confirmPhotoBeforeGenerate?: boolean;
   themeEventInfoPosition?: 'none' | 'top' | 'bottom';
+  themeEnableTitle?: boolean;
+  themeTitleText?: string;
+  themeSubtitleText?: string;
   processingStyle?: string;
   processingText?: string;
 }
