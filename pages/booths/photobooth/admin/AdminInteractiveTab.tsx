@@ -773,27 +773,34 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
 
          <div className={UI_CONTAINER}>
              <label className={UI_LABEL}>Processing Visual Style</label>
-             <div className="flex flex-col gap-3 mt-2">
-               <button onClick={() => updateUIChange('processingStyle', 'progress_bar')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'progress_bar' || !localUI.processingStyle ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Progress Bar & Text (Default)</div></div>
+             <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+               <button onClick={() => updateUIChange('processingStyle', 'progress_bar')} className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all ${localUI.processingStyle === 'progress_bar' || !localUI.processingStyle ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOADING%20BAR/PROGRES%20BAR.jpg" alt="Progress Bar & Text (Default)" className="w-full h-auto rounded-lg mb-2 object-cover aspect-video" />
+                 <span className="font-bold text-white uppercase text-[9px] text-center">Progress Bar & Text</span>
                </button>
-               <button onClick={() => updateUIChange('processingStyle', 'futuristic_progress')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'futuristic_progress' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Futuristic Progress Bar</div></div>
+               <button onClick={() => updateUIChange('processingStyle', 'futuristic_progress')} className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all ${localUI.processingStyle === 'futuristic_progress' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOADING%20BAR/FUTURISTIC%20PROGGRES%20BAR.jpg" alt="Futuristic Progress Bar" className="w-full h-auto rounded-lg mb-2 object-cover aspect-video" />
+                 <span className="font-bold text-white uppercase text-[9px] text-center">Futuristic Progress Bar</span>
                </button>
-               <button onClick={() => updateUIChange('processingStyle', 'ai_neural')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'ai_neural' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">AI Neural Loading</div></div>
+               <button onClick={() => updateUIChange('processingStyle', 'ai_neural')} className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all ${localUI.processingStyle === 'ai_neural' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOADING%20BAR/AI%20NEURAL%20LOADING.jpg" alt="AI Neural Loading" className="w-full h-auto rounded-lg mb-2 object-cover aspect-video" />
+                 <span className="font-bold text-white uppercase text-[9px] text-center">AI Neural Loading</span>
                </button>
-               <button onClick={() => updateUIChange('processingStyle', 'heartbeat')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'heartbeat' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Heartbeat Loader</div></div>
+               <button onClick={() => updateUIChange('processingStyle', 'heartbeat')} className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all ${localUI.processingStyle === 'heartbeat' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOADING%20BAR/HEARBEAT%20LOADED.jpg" alt="Heartbeat Loader" className="w-full h-auto rounded-lg mb-2 object-cover aspect-video" />
+                 <span className="font-bold text-white uppercase text-[9px] text-center">Heartbeat Loader</span>
                </button>
-               <button onClick={() => updateUIChange('processingStyle', 'sound_wave')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'sound_wave' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Sound Wave Loader</div></div>
+               <button onClick={() => updateUIChange('processingStyle', 'sound_wave')} className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all ${localUI.processingStyle === 'sound_wave' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOADING%20BAR/SOUNDWAVE.jpg" alt="Sound Wave Loader" className="w-full h-auto rounded-lg mb-2 object-cover aspect-video" />
+                 <span className="font-bold text-white uppercase text-[9px] text-center">Sound Wave Loader</span>
                </button>
-               <button onClick={() => updateUIChange('processingStyle', 'pulse_wave')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'pulse_wave' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Pulse Wave Loader</div></div>
+               <button onClick={() => updateUIChange('processingStyle', 'pulse_wave')} className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all ${localUI.processingStyle === 'pulse_wave' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOADING%20BAR/PULSE%20WAVE%20LOADER.jpg" alt="Pulse Wave Loader" className="w-full h-auto rounded-lg mb-2 object-cover aspect-video" />
+                 <span className="font-bold text-white uppercase text-[9px] text-center">Pulse Wave Loader</span>
                </button>
-               <button onClick={() => updateUIChange('processingStyle', 'neural_signal')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'neural_signal' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Neural Signal Loader</div></div>
+               <button onClick={() => updateUIChange('processingStyle', 'neural_signal')} className={`flex flex-col items-center p-2 rounded-xl border-2 transition-all ${localUI.processingStyle === 'neural_signal' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOADING%20BAR/NEURAL%20SIGNAL%20LOADER.jpg" alt="Neural Signal Loader" className="w-full h-auto rounded-lg mb-2 object-cover aspect-video" />
+                 <span className="font-bold text-white uppercase text-[9px] text-center">Neural Signal Loader</span>
                </button>
              </div>
          </div>
