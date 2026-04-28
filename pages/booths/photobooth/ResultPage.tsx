@@ -429,31 +429,100 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
             </>
           )}
 
-          {procStyle === 'scanline' && (
-            <div className="relative w-72 h-96 border-2 border-glow shadow-[0_0_50px_rgba(var(--glow-color-rgb),0.3)] rounded-xl overflow-hidden mb-8">
-              <img src={capturedImage} className="absolute inset-0 w-full h-full object-cover opacity-60" />
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-glow/20 to-transparent animate-pulse" />
-              <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)]" style={{ backgroundSize: '100% 4px' }} />
-              <div className="absolute bottom-6 left-0 right-0 text-center z-10 w-full flex justify-center">
-                <div className="inline-block bg-black/80 text-glow px-4 py-2 border border-glow/30 rounded-full text-[10px] font-bold font-mono uppercase tracking-widest backdrop-blur-md">
-                  {mainText}
-                </div>
+          {procStyle === 'futuristic_progress' && (
+            <div className="flex flex-col items-center justify-center max-w-lg w-full bg-black/40 backdrop-blur-xl p-8 md:p-12 rounded-[2rem] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+              <div className="text-glow text-[10px] md:text-sm tracking-[0.5em] uppercase font-bold text-center mb-8 animate-pulse neon-text">{mainText}</div>
+              <div className="w-full relative h-1.5 md:h-2 rounded-full bg-black/80 border border-white/5 overflow-hidden shadow-[inset_0_0_10px_rgba(0,0,0,1)] mb-4">
+                <div className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-glow/20 via-glow to-glow/20 animate-[progress_10s_ease-in-out_infinite] blur-[2px]" style={{width: '60%'}} />
+                <div className="absolute top-0 bottom-0 left-0 bg-white drop-shadow-[0_0_10px_rgba(255,255,255,1)] animate-[progress_10s_ease-in-out_infinite]" style={{width: '60%'}} />
+              </div>
+              <div className="flex justify-between w-full mt-2 text-[8px] md:text-[10px] text-white/50 uppercase font-mono tracking-widest">
+                <span>{progress}</span>
+                <span>{timer}s</span>
               </div>
             </div>
           )}
 
-          {procStyle === 'countdown' && (
-            <div className="flex flex-col items-center justify-center mt-12 bg-black/50 p-12 rounded-3xl border border-white/10 backdrop-blur-md">
-               <div className="text-glow text-xs md:text-sm tracking-[0.4em] uppercase font-bold text-center mb-6 animate-pulse">{mainText}</div>
-               <div className="text-[120px] md:text-[200px] font-heading font-black text-white italic leading-none drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">{timer}</div>
-               <div className="text-white/40 text-xs md:text-sm mt-8 font-mono tracking-widest text-center uppercase">{progress}</div>
+          {procStyle === 'ai_neural' && (
+            <div className="flex flex-col items-center justify-center w-full">
+              <div className="relative w-32 h-32 md:w-48 md:h-48 mb-10 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border border-dashed border-white/20 animate-[spin_20s_linear_infinite]" />
+                <div className="absolute inset-4 rounded-full border border-glow/40 animate-[spin_10s_linear_reverse_infinite]" />
+                <div className="absolute inset-8 rounded-full border-2 border-dashed border-glow/80 animate-[spin_15s_linear_infinite]" />
+                <div className="w-3 h-3 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,1)] animate-ping" />
+                <div className="absolute w-2 h-2 bg-glow rounded-full top-0 left-1/2 -translate-x-1/2 shadow-[0_0_10px_rgba(var(--glow-color-rgb),1)] animate-pulse" />
+                <div className="absolute w-2 h-2 bg-glow rounded-full bottom-0 left-1/2 -translate-x-1/2 shadow-[0_0_10px_rgba(var(--glow-color-rgb),1)] animate-pulse" />
+                <div className="absolute w-2 h-2 bg-glow rounded-full left-0 top-1/2 -translate-y-1/2 shadow-[0_0_10px_rgba(var(--glow-color-rgb),1)] animate-pulse" />
+                <div className="absolute w-2 h-2 bg-glow rounded-full right-0 top-1/2 -translate-y-1/2 shadow-[0_0_10px_rgba(var(--glow-color-rgb),1)] animate-pulse" />
+              </div>
+              <h2 className="text-xl md:text-3xl font-heading mb-4 neon-text italic uppercase tracking-widest">{mainText}</h2>
+              <p className="text-[10px] text-white/60 tracking-[0.3em] uppercase font-mono bg-black/40 px-4 py-2 rounded-full border border-white/5">{progress}</p>
             </div>
           )}
 
-          {procStyle === 'text_only' && (
-            <div className="max-w-3xl w-full px-6 py-20 flex flex-col items-center justify-center bg-transparent">
-              <h2 className="text-4xl md:text-6xl font-heading font-black text-white italic uppercase tracking-[0.1em] mb-6 text-center drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] animate-pulse">{mainText}</h2>
-              <p className="text-glow tracking-[0.3em] uppercase text-sm md:text-lg text-center font-bold">{progress}</p>
+          {procStyle === 'heartbeat' && (
+            <div className="flex flex-col items-center justify-center w-full max-w-xl bg-black/60 backdrop-blur-lg p-10 rounded-3xl border border-[#bc13fe]/20 shadow-[0_0_40px_rgba(var(--glow-color-rgb),0.1)]">
+              <div className="text-glow animate-pulse mb-8 drop-shadow-[0_0_10px_rgba(var(--glow-color-rgb),0.8)]">
+                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                 </svg>
+              </div>
+              <h2 className="text-xl md:text-4xl text-white font-black italic uppercase tracking-tighter mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.6)]">{mainText}</h2>
+              <p className="text-xs text-white/70 tracking-[0.4em] uppercase font-bold flex items-center gap-4">
+                 <span>{progress}</span>
+                 <span className="text-glow text-lg">{timer}s</span>
+              </p>
+            </div>
+          )}
+
+          {procStyle === 'sound_wave' && (
+            <div className="flex flex-col items-center justify-center w-full bg-black/50 backdrop-blur-md py-12 px-8 rounded-3xl border border-white/10">
+              <div className="flex items-end justify-center gap-1.5 md:gap-2 h-16 md:h-24 mb-10 w-full max-w-xs overflow-hidden">
+                {[...Array(21)].map((_, i) => (
+                  <div 
+                    key={i} 
+                    className="w-1.5 md:w-2 bg-[#bc13fe] rounded-full shadow-[0_0_15px_rgba(188,19,254,0.8)]"
+                    style={{ 
+                      height: `${Math.max(10, Math.random() * 100)}%`, 
+                      animation: `pulse ${0.4 + Math.random() * 0.8}s infinite alternate ease-in-out` 
+                    }} 
+                  />
+                ))}
+              </div>
+              <h2 className="text-xl md:text-3xl text-white font-heading italic uppercase tracking-[0.2em] mb-4 drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">{mainText}</h2>
+              <p className="text-[10px] text-white/50 tracking-[0.4em] uppercase font-mono">{progress}</p>
+            </div>
+          )}
+
+          {procStyle === 'pulse_wave' && (
+            <div className="flex flex-col items-center justify-center relative w-full py-16">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+                 <div className="absolute w-[300px] h-[300px] md:w-[500px] md:h-[500px] border-[1px] border-[#bc13fe]/30 rounded-full animate-ping opacity-20" style={{ animationDuration: '4s' }} />
+                 <div className="absolute w-[200px] h-[200px] md:w-[350px] md:h-[350px] border-[2px] border-[#bc13fe]/40 rounded-full animate-ping opacity-40" style={{ animationDuration: '3s' }} />
+                 <div className="absolute w-[100px] h-[100px] md:w-[200px] md:h-[200px] border-[3px] border-white/30 rounded-full animate-ping opacity-60" style={{ animationDuration: '2s' }} />
+              </div>
+              <div className="relative z-10 bg-black/70 backdrop-blur-md px-8 md:px-16 py-8 rounded-[2rem] border border-white/10 flex flex-col items-center shadow-[0_0_40px_rgba(188,19,254,0.3)]">
+                 <div className="w-4 h-4 bg-white rounded-full mb-8 shadow-[0_0_20px_rgba(255,255,255,1)] animate-bounce" />
+                 <h2 className="text-xl md:text-3xl text-[#bc13fe] font-bold uppercase tracking-[0.3em] mb-4 text-center">{mainText}</h2>
+                 <p className="text-[8px] md:text-[10px] text-white/60 tracking-[0.5em] uppercase max-w-[250px] text-center leading-relaxed">{progress}</p>
+              </div>
+            </div>
+          )}
+
+          {procStyle === 'neural_signal' && (
+            <div className="flex flex-col items-center justify-center w-full max-w-2xl bg-[#bc13fe]/5 border border-[#bc13fe]/20 rounded-3xl p-10 md:p-16 backdrop-blur-xl shadow-[inset_0_0_30px_rgba(188,19,254,0.1)]">
+              <div className="flex items-center justify-center gap-6 mb-10 w-full">
+                <div className="h-0.5 flex-1 bg-gradient-to-l from-[#bc13fe] to-transparent opacity-50" />
+                <div className="w-10 h-10 md:w-16 md:h-16 rounded-xl bg-black/80 border border-[#bc13fe] flex items-center justify-center animate-spin shadow-[0_0_20px_rgba(188,19,254,0.5)]" style={{ animationDuration: '6s' }}>
+                  <div className="w-3 h-3 md:w-5 md:h-5 bg-white rounded-sm shadow-[0_0_15px_rgba(255,255,255,1)] animate-pulse" />
+                </div>
+                <div className="h-0.5 flex-1 bg-gradient-to-r from-[#bc13fe] to-transparent opacity-50" />
+              </div>
+              <h2 className="text-xl md:text-4xl text-white font-heading italic uppercase tracking-[0.2em] mb-6 drop-shadow-[0_0_20px_rgba(255,255,255,0.6)] text-center">{mainText}</h2>
+              <div className="flex items-center justify-center gap-4 text-[#bc13fe] text-[10px] md:text-xs tracking-[0.4em] font-mono uppercase bg-black/60 px-6 py-3 rounded-full border border-white/5">
+                <span className="w-2 h-2 rounded-full bg-[#bc13fe] animate-ping" />
+                <span>{progress}</span>
+              </div>
             </div>
           )}
 

@@ -777,14 +777,23 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                <button onClick={() => updateUIChange('processingStyle', 'progress_bar')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'progress_bar' || !localUI.processingStyle ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
                  <div><div className="font-bold text-white uppercase text-xs mb-0.5">Progress Bar & Text (Default)</div></div>
                </button>
-               <button onClick={() => updateUIChange('processingStyle', 'scanline')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'scanline' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Scanline / Matrix Effect</div></div>
+               <button onClick={() => updateUIChange('processingStyle', 'futuristic_progress')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'futuristic_progress' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Futuristic Progress Bar</div></div>
                </button>
-               <button onClick={() => updateUIChange('processingStyle', 'countdown')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'countdown' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Countdown Timer</div></div>
+               <button onClick={() => updateUIChange('processingStyle', 'ai_neural')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'ai_neural' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">AI Neural Loading</div></div>
                </button>
-               <button onClick={() => updateUIChange('processingStyle', 'text_only')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'text_only' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Text Only</div></div>
+               <button onClick={() => updateUIChange('processingStyle', 'heartbeat')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'heartbeat' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Heartbeat Loader</div></div>
+               </button>
+               <button onClick={() => updateUIChange('processingStyle', 'sound_wave')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'sound_wave' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Sound Wave Loader</div></div>
+               </button>
+               <button onClick={() => updateUIChange('processingStyle', 'pulse_wave')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'pulse_wave' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Pulse Wave Loader</div></div>
+               </button>
+               <button onClick={() => updateUIChange('processingStyle', 'neural_signal')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.processingStyle === 'neural_signal' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Neural Signal Loader</div></div>
                </button>
              </div>
          </div>
