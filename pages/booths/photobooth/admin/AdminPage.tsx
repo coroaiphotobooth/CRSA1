@@ -7,7 +7,6 @@ import { X } from 'lucide-react';
 
 import AdminSettingsTab, { AdminSettingsTabRef } from './AdminSettingsTab';
 import AdminConceptsTab, { AdminConceptsTabRef } from './AdminConceptsTab';
-import AdminMonitorTab from './AdminMonitorTab';
 import AdminInteractiveTab, { AdminInteractiveTabRef } from './AdminInteractiveTab';
 import AdminVipTab, { AdminVipTabRef } from './AdminVipTab';
 import { useDialog } from '../../../../components/DialogProvider';
@@ -139,10 +138,6 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
       </div>
 
       <div className="max-w-7xl mx-auto w-full px-6 md:px-10 pb-24">
-        {/* Launch Monitor Button Area */}
-        <AdminMonitorTab 
-          onLaunchMonitor={onLaunchMonitor} 
-        />
 
         {activeTab === 'settings' && (
           <AdminSettingsTab 
@@ -150,6 +145,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
             settings={settings} 
             onSaveSettings={onSaveSettings} 
             gasUrl={gasUrl}
+            onLaunchMonitor={onLaunchMonitor}
           />
         )}
 

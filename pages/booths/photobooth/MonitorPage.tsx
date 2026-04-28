@@ -9,6 +9,8 @@ interface MonitorPageProps {
   eventName?: string;
   monitorSize?: 'small' | 'medium' | 'large';
   theme?: MonitorTheme;
+  displayBgUrl?: string | null;
+  backgroundVideoUrl?: string | null;
 }
 
 interface PhysicsItem {
@@ -24,7 +26,7 @@ interface PhysicsItem {
   isDragging: boolean;
 }
 
-const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventName, monitorSize = 'medium', theme = 'physics' }) => {
+const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventName, monitorSize = 'medium', theme = 'physics', displayBgUrl, backgroundVideoUrl }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef<Map<string, PhysicsItem>>(new Map());
   const requestRef = useRef<number | null>(null);
@@ -335,33 +337,39 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
   }
 
   return (
-    <div className="fixed inset-0 w-full h-full bg-[#050505] overflow-hidden overscroll-none touch-none">
+    <div className="fixed inset-0 w-full h-full bg-[#050505] overflow-hidden overscroll-none touch-none" style={displayBgUrl && !backgroundVideoUrl ? { backgroundImage: `url(${displayBgUrl})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat' } : {}}>
       {/* Dynamic Background */}
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,#1a0b2e_0%,#000000_100%)]">
-        <div className="absolute inset-0 opacity-30" style={{backgroundImage: 'radial-gradient(white 1px, transparent 1px)', backgroundSize: '50px 50px'}}></div>
-      </div>
+      {backgroundVideoUrl ? (
+        <div className="absolute inset-0 z-0">
+          <video src={backgroundVideoUrl} className="w-full h-full object-cover opacity-60" autoPlay loop muted playsInline />
+        </div>
+      ) : !displayBgUrl ? (
+        <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,#1a0b2e_0%,#000000_100%)]">
+          <div className="absolute inset-0 opacity-30" style={{backgroundImage: 'radial-gradient(white 1px, transparent 1px)', backgroundSize: '50px 50px'}}></div>
+        </div>
+      ) : null}
 
       {/* --- THEME RENDERERS --- */}
       
       {/* 1. PHYSICS MODE */}
       <div ref={containerRef} className={`absolute inset-0 z-10 overflow-hidden ${theme !== 'physics' ? 'hidden' : ''}`} />
 
-      {/* 2. GRID MODE (3 Rows = 12 items) */}
+      {/* 2. CAROUSEL MODE (Replaces Grid) */}
       {theme === 'grid' && (
-         <div className="absolute inset-0 z-10 p-20 flex items-center justify-center">
-             <div className="grid grid-cols-4 grid-rows-3 gap-6 w-full h-full max-w-7xl">
-                 {photoItems.slice(0, 12).map((item) => (
+         <div className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden bg-black/40 backdrop-blur-sm">
+             <div className="flex gap-4 md:gap-8 px-10 items-center justify-start overflow-x-auto w-full h-full pb-10 pt-20 snap-x snap-mandatory">
+                 {photoItems.map((item) => (
                    <div 
                       key={item.id} 
                       onClick={() => setLightboxItem(item)}
-                      className="relative rounded-lg overflow-hidden border border-white/20 shadow-lg cursor-pointer hover:border-purple-500 hover:scale-105 transition-all group"
+                      className="relative shrink-0 w-[280px] h-[400px] md:w-[400px] md:h-[600px] rounded-2xl overflow-hidden border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] cursor-pointer hover:border-purple-500 hover:scale-[1.02] transition-all group snap-center"
                    >
                      <img 
-                       src={item.imageUrl.includes('lh3') ? `https://drive.google.com/thumbnail?id=${item.id}&sz=w600` : item.imageUrl} 
+                       src={item.imageUrl.includes('lh3') ? `https://drive.google.com/thumbnail?id=${item.id}&sz=w800` : item.imageUrl} 
                        className="w-full h-full object-cover" 
                      />
-                     <div className="absolute bottom-0 inset-x-0 p-2 bg-black/60 translate-y-full group-hover:translate-y-0 transition-transform">
-                       <p className="text-[8px] text-white font-heading truncate">{item.conceptName}</p>
+                     <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black via-black/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                       <p className="text-sm text-white font-heading truncate uppercase tracking-widest">{item.conceptName}</p>
                      </div>
                    </div>
                  ))}
@@ -374,24 +382,21 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black">
            {/* Blurry BG */}
            <div className="absolute inset-0 z-0">
-             <img src={photoItems[0].imageUrl} className="w-full h-full object-cover opacity-30 blur-xl" />
+             <img src={photoItems[0].imageUrl} className="w-full h-full object-cover opacity-50 blur-xl" />
            </div>
            
-           <div className="relative z-10 w-full h-full flex items-center justify-center p-8 gap-10">
-              <div className="h-full max-w-[70%] border-4 border-white/10 shadow-[0_0_50px_rgba(147,51,234,0.3)] rounded-xl overflow-hidden">
-                 <img src={getHighResUrl(photoItems[0])} className="h-full w-full object-contain bg-black" />
+           {/* Photo Full Screen */}
+           <img src={getHighResUrl(photoItems[0])} className="absolute inset-0 w-full h-full object-contain z-10 p-4 md:p-10" />
+           
+           {/* QR Code Bottom Left */}
+           <div className="absolute bottom-6 left-6 z-20 flex flex-col items-center bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/20 shadow-2xl animate-[popIn_0.5s_0.3s_both]">
+              <div className="bg-white p-2 rounded-lg shadow-inner mb-2">
+                 <img 
+                   src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(getShareUrl(photoItems[0]))}`} 
+                   className="w-20 h-20 md:w-24 md:h-24 object-contain"
+                 />
               </div>
-              
-              <div className="flex flex-col items-center gap-6 bg-black/40 backdrop-blur-md p-8 rounded-2xl border border-white/20">
-                 <h2 className="text-3xl text-white font-heading italic uppercase">{photoItems[0].conceptName}</h2>
-                 <div className="bg-white p-4 rounded-xl shadow-inner">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(getShareUrl(photoItems[0]))}`} 
-                      className="w-64 h-64 object-contain"
-                    />
-                 </div>
-                 <p className="text-white text-sm tracking-widest uppercase font-bold animate-pulse">SCAN TO DOWNLOAD</p>
-              </div>
+              <p className="text-white text-[8px] md:text-[10px] tracking-widest uppercase font-bold text-center">SCAN TO<br/>DOWNLOAD</p>
            </div>
         </div>
       )}
@@ -400,7 +405,7 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
       {theme === 'slider' && sliderActiveItem && (
          <div className="absolute inset-0 z-10 flex flex-col">
             {/* TOP: HERO SECTION (FULL CENTRIC) */}
-            <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-black">
+            <div className="flex-1 relative flex items-center justify-center overflow-hidden bg-transparent">
                {/* Ambient Background */}
                <div key={`bg-${sliderActiveItem.id}`} className="absolute inset-0 z-0 transition-opacity duration-1000">
                   <img src={sliderActiveItem.imageUrl} className="w-full h-full object-cover opacity-30 blur-3xl transform scale-125" />
@@ -442,12 +447,12 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
             </div>
 
             {/* BOTTOM: SLIDER STRIP (SCROLLABLE) */}
-            <div className="h-40 md:h-48 shrink-0 z-20 bg-gradient-to-t from-black via-black/90 to-transparent flex flex-col justify-end pb-6">
+            <div className="h-28 md:h-36 shrink-0 z-20 bg-gradient-to-t from-black via-black/90 to-transparent flex flex-col justify-end pb-4">
                <div className="w-full pl-6 md:pl-10">
-                    <p className="text-white/50 text-[10px] uppercase tracking-widest mb-2 font-heading">Recent Generations ({photoItems.length})</p>
+                    <p className="text-white/50 text-[10px] uppercase tracking-widest mb-1.5 font-heading">Recent Generations ({photoItems.length})</p>
                </div>
                <div 
-                   className="flex items-center px-6 md:px-10 gap-4 overflow-x-auto scrollbar-hide w-full pb-4 pt-2"
+                   className="flex items-center px-6 md:px-10 gap-3 overflow-x-auto scrollbar-hide w-full pb-2 pt-1"
                    style={{ scrollBehavior: 'smooth' }}
                >
                   {photoItems.map((item) => {
@@ -457,8 +462,8 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
                            key={item.id}
                            onClick={() => setSliderActiveItem(item)}
                            className={`
-                             relative flex-shrink-0 w-24 h-36 md:w-32 md:h-48 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 transform 
-                             ${isActive ? 'scale-105 border-2 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.6)] -translate-y-2 z-10' : 'border border-white/10 opacity-60 hover:opacity-100 hover:scale-100 grayscale hover:grayscale-0'}
+                             relative flex-shrink-0 w-16 h-24 md:w-24 md:h-32 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 transform 
+                             ${isActive ? 'scale-110 border-2 border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.6)] -translate-y-1 z-10' : 'border border-white/10 opacity-50 hover:opacity-100 hover:scale-100 grayscale hover:grayscale-0'}
                            `}
                         >
                            <img 
@@ -470,7 +475,7 @@ const MonitorPage: React.FC<MonitorPageProps> = ({ onBack, activeEventId, eventN
                              <div className="absolute inset-0 bg-purple-500/10 pointer-events-none" />
                            )}
                            <div className="absolute bottom-0 inset-x-0 bg-black/60 p-1 text-center">
-                              <p className="text-[8px] text-white font-heading truncate uppercase">{item.conceptName}</p>
+                              <p className="text-[7px] md:text-[8px] text-white font-heading truncate uppercase">{item.conceptName}</p>
                            </div>
                         </div>
                      )

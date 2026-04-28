@@ -54,7 +54,9 @@ const PhotoboothFlow: React.FC = () => {
   const { showDialog } = useDialog();
   
   const queryParams = new URLSearchParams(location.search);
-  const initialPage = queryParams.get('page') === 'gallery' 
+  const initialPage = queryParams.get('page') === 'monitor'
+    ? AppState.MONITOR
+    : queryParams.get('page') === 'gallery' 
     ? AppState.GALLERY 
     : location.pathname.startsWith('/admin') ? AppState.ADMIN : AppState.LANDING;
 
@@ -848,7 +850,7 @@ const PhotoboothFlow: React.FC = () => {
       case AppState.ADMIN:
         return <AdminPage settings={settings} concepts={concepts} onSaveSettings={handleUpdateSettings} onSaveConcepts={handleUpdateConcepts} onBack={() => setCurrentPage(AppState.LANDING)} onLaunchMonitor={() => setCurrentPage(AppState.MONITOR)} initialTab={adminTab} isVIPAdmin={isVIPAdmin} />;
       case AppState.MONITOR:
-        return <MonitorPage onBack={() => setCurrentPage(AppState.ADMIN)} activeEventId={settings.activeEventId} eventName={settings.eventName} monitorSize={settings.monitorImageSize} theme={settings.monitorTheme} />;
+        return <MonitorPage onBack={() => setCurrentPage(AppState.ADMIN)} activeEventId={settings.activeEventId} eventName={settings.eventName} monitorSize={settings.monitorImageSize} theme={settings.monitorTheme} displayBgUrl={settings.backgroundImage} backgroundVideoUrl={settings.backgroundVideoUrl} />;
       default:
         return <LandingPage onStart={() => setCurrentPage(AppState.THEMES)} onGallery={() => setCurrentPage(AppState.GALLERY)} onAdmin={(tab) => { if(tab) setAdminTab(tab); setCurrentPage(AppState.ADMIN); }} settings={settings} notifications={notifications} isVIPAdmin={isVIPAdmin} />;
     }

@@ -20,9 +20,10 @@ interface AdminSettingsTabProps {
   settings: PhotoboothSettings;
   onSaveSettings: (settings: PhotoboothSettings) => void;
   gasUrl: string;
+  onLaunchMonitor?: () => void;
 }
 
-const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(({ settings, onSaveSettings, gasUrl }, ref) => {
+const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(({ settings, onSaveSettings, gasUrl, onLaunchMonitor }, ref) => {
   const [localSettings, setLocalSettings] = useState(settings);
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
@@ -669,9 +670,9 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                   <button
                     key={t}
                     onClick={() => handleMonitorThemeChange(t)}
-                    className={`py-3 border border-white/10 rounded font-mono text-xs transition-all uppercase ${localSettings.monitorTheme === t ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
+                    className={`py-3 border border-white/10 rounded font-mono text-[9px] md:text-xs transition-all uppercase ${localSettings.monitorTheme === t ? 'bg-[#bc13fe] text-white shadow-lg border-[#bc13fe]' : 'bg-black/50 text-gray-400 hover:bg-white/5'}`}
                   >
-                    {t}
+                    {t === 'grid' ? 'carousel' : t}
                   </button>
                 ))}
               </div>
@@ -691,6 +692,30 @@ const AdminSettingsTab = forwardRef<AdminSettingsTabRef, AdminSettingsTabProps>(
                 ))}
               </div>
             </div>
+
+            {onLaunchMonitor && (
+              <div className="flex flex-col gap-3 mt-2 pt-4 border-t border-white/10">
+                 <label className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Monitor Actions</label>
+                 <div className="grid grid-cols-2 gap-3">
+                   <button 
+                     onClick={onLaunchMonitor} 
+                     className="py-3 bg-gradient-to-r from-blue-900 to-purple-900 border border-blue-500/30 hover:border-blue-400 text-blue-200 font-heading tracking-[0.1em] flex items-center justify-center uppercase rounded shadow-lg transition-all text-xs"
+                   >
+                     LAUNCH LIVE MONITOR
+                   </button>
+                   <button 
+                     onClick={() => {
+                        const url = window.location.origin + "/app/" + eventId + "?page=monitor";
+                        navigator.clipboard.writeText(url);
+                        showDialog('alert', 'Copied!', 'Monitor URL copied to clipboard.');
+                     }} 
+                     className="py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 font-heading tracking-[0.1em] flex items-center justify-center uppercase rounded transition-all text-xs"
+                   >
+                     COPY URL
+                   </button>
+                 </div>
+              </div>
+            )}
           </div>
 
           {/* Output Config */}
