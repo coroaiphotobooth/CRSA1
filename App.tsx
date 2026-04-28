@@ -673,6 +673,7 @@ const PhotoboothFlow: React.FC = () => {
             existingSession={currentSession} 
             interactiveFormData={interactiveFormData}
             skipAI={!isAIEnabled}
+            isInteractiveFlow={true}
         />;
       }
       if (currentStepId?.startsWith('form')) {
@@ -824,6 +825,7 @@ const PhotoboothFlow: React.FC = () => {
             isUltraQuality={regenUltraQuality}
             existingSession={currentSession} 
             interactiveFormData={interactiveFormData}
+            isInteractiveFlow={false}
         />;
       case AppState.FAST_THANKS:
         return <FastThanksPage onDone={handleReset} />;
