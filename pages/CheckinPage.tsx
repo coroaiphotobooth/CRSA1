@@ -197,8 +197,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
 
   const handleConfirmYes = async () => {
     if (!pendingGuest) return;
-    setStep('greet');
-    setGreetState('preparing');
+    setLoading(true);
     
     let scriptUrl = "https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec";
     if (settings.vipAppsScriptUrl && settings.vipAppsScriptUrl.includes('AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6')) {
@@ -212,8 +211,120 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
     }).catch(err => console.error("Ping Error:", err));
 
     const gName = pendingGuest.name.split(' ')[0]; // First name
+    const greetingText = `Halo ${pendingGuest.name}`;
     
-    await playGreetingSynthesis(gName, undefined, settings.vipTtsVoice, settings.vipTtsSpeed);
+    let audioCtx: AudioContext | null = null;
+    let audioBuffer: AudioBuffer | null = null;
+    let fallbackUtterance: SpeechSynthesisUtterance | null = null;
+    const voice = settings.vipTtsVoice || 'Kore';
+    const speed = settings.vipTtsSpeed || 1.25;
+
+    try {
+      if (process.env.GEMINI_API_KEY) {
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        let geminiVoice = voice;
+        if (!['Puck', 'Charon', 'Kore', 'Fenrir', 'Aoede'].includes(geminiVoice)) {
+           geminiVoice = 'Kore';
+        }
+
+        const response = await ai.models.generateContent({
+          model: "gemini-3.1-flash-tts-preview",
+          contents: [{ parts: [{ text: greetingText }] }],
+          config: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+                voiceConfig: {
+                  prebuiltVoiceConfig: { voiceName: geminiVoice as any },
+                },
+            },
+          },
+        });
+
+        const audioPart = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData && p.inlineData.mimeType?.startsWith('audio/'));
+        const base64Audio = audioPart?.inlineData?.data;
+
+        if (base64Audio) {
+           const binary = atob(base64Audio);
+           const bytes = new Uint8Array(binary.length);
+           for (let i = 0; i < binary.length; i++) {
+               bytes[i] = binary.charCodeAt(i);
+           }
+           
+           audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+           const int16Array = new Int16Array(bytes.buffer);
+           audioBuffer = audioCtx.createBuffer(1, int16Array.length, 24000);
+           const channelData = audioBuffer.getChannelData(0);
+           for (let i = 0; i < int16Array.length; i++) {
+             channelData[i] = int16Array[i] / 32768;
+           }
+        }
+      }
+    } catch (err) {
+      console.error("Gemini TTS Err:", err);
+    }
+
+    if (!audioBuffer) {
+      fallbackUtterance = new SpeechSynthesisUtterance(greetingText);
+      fallbackUtterance.lang = 'id-ID';
+      fallbackUtterance.rate = speed ?? 0.9; 
+      
+      let voices = window.speechSynthesis.getVoices();
+      let indoVoice = voices.find(v => v.lang.includes('id'));
+      if(indoVoice) fallbackUtterance.voice = indoVoice;
+    }
+
+    setLoading(false);
+    setStep('greet');
+    setGreetState('playing');
+
+    if (audioBuffer && audioCtx) {
+       const source = audioCtx.createBufferSource();
+       source.buffer = audioBuffer;
+       source.playbackRate.value = speed;
+       source.connect(audioCtx.destination);
+       
+       if (audioCtx.state === 'suspended') {
+         await audioCtx.resume();
+       }
+       
+       await new Promise<void>((resolve) => {
+         source.onended = () => resolve();
+         source.start(0);
+       });
+    } else if (fallbackUtterance) {
+       await new Promise<void>((resolve) => {
+          fallbackUtterance!.onend = () => resolve();
+          window.speechSynthesis.speak(fallbackUtterance!);
+       });
+    }
+
+    setIsVideoTalking(true);
+    if (talkingVideoRef.current) {
+        talkingVideoRef.current.playbackRate = 1.0;
+        talkingVideoRef.current.currentTime = 0;
+        talkingVideoRef.current.muted = false;
+        await talkingVideoRef.current.play().catch(e => console.error("Video play err:", e));
+        
+        await new Promise<void>((resolve) => {
+             if (talkingVideoRef.current) talkingVideoRef.current.onended = () => resolve();
+        });
+    } else {
+        await new Promise<void>((resolve) => setTimeout(resolve, 5000));
+    }
+    
+    setIsVideoTalking(false);
+    setGreetState('done');
+    
+    // Auto return after 5 seconds
+    setTimeout(() => {
+        setStep(prev => {
+           if (prev === 'greet') {
+              setVipKode('');
+              return 'input';
+           }
+           return prev;
+        });
+    }, 5000);
   };
 
   const handleConfirmNo = () => {
@@ -343,7 +454,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
                             </span>
                           ) : (
                             <>
-                              Check In <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                              Check data <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                             </>
                           )}
                         </button>
@@ -367,15 +478,17 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
                    <div className="flex gap-4">
                       <button 
                          onClick={handleConfirmNo}
-                         className="flex-1 py-4 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 rounded-xl text-white text-xs uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-2"
+                         disabled={loading}
+                         className="flex-1 py-4 bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 rounded-xl text-white text-xs uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                       >
                         <X className="w-4 h-4 text-red-400" /> No, Re-enter
                       </button>
                       <button 
                          onClick={handleConfirmYes}
-                         className="flex-1 py-4 bg-green-500/20 border border-green-500/50 hover:bg-green-500/30 hover:border-green-400 rounded-xl text-green-400 text-xs uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-2"
+                         disabled={loading}
+                         className="flex-1 py-4 bg-green-500/20 border border-green-500/50 hover:bg-green-500/30 hover:border-green-400 rounded-xl text-green-400 text-xs uppercase tracking-widest font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                       >
-                        <Check className="w-4 h-4" /> Yes, That's Me
+                         {loading ? 'Menyiapkan...' : <><Check className="w-4 h-4" /> Check In</>}
                       </button>
                    </div>
                  </motion.div>
