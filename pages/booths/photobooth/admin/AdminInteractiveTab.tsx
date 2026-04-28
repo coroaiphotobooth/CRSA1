@@ -524,6 +524,18 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                  )}
               </div>
 
+               <div className={UI_CONTAINER}>
+                  <label className={UI_LABEL}>Button / Text Position</label>
+                  <div className="flex gap-2 mt-2">
+                    <button onClick={() => updateUIChange('videoStartButtonPosition', 'center')} className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all font-bold uppercase text-xs ${localUI.videoStartButtonPosition === 'center' || !localUI.videoStartButtonPosition ? 'border-[#bc13fe] bg-[#bc13fe]/10 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30'}`}>
+                      Center
+                    </button>
+                    <button onClick={() => updateUIChange('videoStartButtonPosition', 'bottom')} className={`flex-1 py-3 px-4 rounded-xl border-2 transition-all font-bold uppercase text-xs ${localUI.videoStartButtonPosition === 'bottom' ? 'border-[#bc13fe] bg-[#bc13fe]/10 text-white' : 'border-white/10 bg-black/40 text-gray-400 hover:border-white/30'}`}>
+                      Bottom
+                    </button>
+                  </div>
+               </div>
+
               <div className={UI_CONTAINER}>
                  <label className={UI_LABEL}>Display Overlays (Idle Mode)</label>
                  <div className="flex flex-col gap-2 mt-2">

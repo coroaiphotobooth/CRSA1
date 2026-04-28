@@ -82,6 +82,7 @@ export interface UIDisplaySettings {
   videoGreetingUrl?: string;
   videoStartOption?: 'button' | 'text' | 'click_anywhere';
   videoStartLabel?: string;
+  videoStartButtonPosition?: 'center' | 'bottom';
   videoEnableNameEvent?: boolean;
   videoEnableDescription?: boolean;
   videoEnableGalleryButton?: boolean;

@@ -13,6 +13,7 @@ interface InteractiveVideoStartPageProps {
 
 const InteractiveVideoStartPage: React.FC<InteractiveVideoStartPageProps> = ({ pageConfig, settings, onNext, onBack, onAdmin, onGallery }) => {
   const [isPlayingGreeting, setIsPlayingGreeting] = useState(false);
+  const [isTransitioningOut, setIsTransitioningOut] = useState(false);
   const idleVideoRef = useRef<HTMLVideoElement>(null);
   const greetingVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -26,7 +27,7 @@ const InteractiveVideoStartPage: React.FC<InteractiveVideoStartPageProps> = ({ p
 
   const handleStart = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    if (isPlayingGreeting) return;
+    if (isPlayingGreeting || isTransitioningOut) return;
 
     if (videoGreetingUrl) {
       setIsPlayingGreeting(true);
@@ -36,20 +37,39 @@ const InteractiveVideoStartPage: React.FC<InteractiveVideoStartPageProps> = ({ p
         greetingVideoRef.current.play();
       }
     } else {
-      onNext();
+      triggerTransitionOut();
     }
+  };
+
+  const triggerTransitionOut = () => {
+    setIsTransitioningOut(true);
+    setTimeout(() => {
+      onNext();
+    }, 1000); // 1-second fade
   };
 
   useEffect(() => {
     if (isPlayingGreeting && greetingVideoRef.current) {
       const vid = greetingVideoRef.current;
-      const handleEnded = () => {
-        onNext();
+      const handleTimeUpdate = () => {
+        // Trigger fade out in the last 1 second of the video
+        if (vid.duration - vid.currentTime <= 1 && !isTransitioningOut) {
+          triggerTransitionOut();
+        }
       };
+      const handleEnded = () => {
+        if (!isTransitioningOut) triggerTransitionOut();
+      };
+      
+      vid.addEventListener('timeupdate', handleTimeUpdate);
       vid.addEventListener('ended', handleEnded);
-      return () => vid.removeEventListener('ended', handleEnded);
+      
+      return () => {
+        vid.removeEventListener('timeupdate', handleTimeUpdate);
+        vid.removeEventListener('ended', handleEnded);
+      };
     }
-  }, [isPlayingGreeting, onNext]);
+  }, [isPlayingGreeting, isTransitioningOut, onNext]);
 
   const handleClickAnywhere = (e: React.MouseEvent) => {
     if (startOption === 'click_anywhere') {
@@ -59,7 +79,7 @@ const InteractiveVideoStartPage: React.FC<InteractiveVideoStartPageProps> = ({ p
 
   return (
     <div 
-      className="w-full h-screen bg-black flex flex-col items-center justify-center relative overflow-hidden"
+      className={`w-full h-screen bg-black flex flex-col items-center justify-center relative overflow-hidden transition-opacity duration-1000 ${isTransitioningOut ? 'opacity-0' : 'opacity-100'}`}
       onClick={handleClickAnywhere}
     >
       {/* Settings Action (admin) */}
@@ -98,9 +118,8 @@ const InteractiveVideoStartPage: React.FC<InteractiveVideoStartPageProps> = ({ p
       </div>
 
       {/* UI Overlay */}
-      {!isPlayingGreeting && (
-        <div className="relative z-10 flex flex-col items-center justify-center h-full w-full max-w-4xl px-4 pointer-events-none">
-          <div className="flex-1 flex flex-col items-center justify-center">
+      <div className={`relative z-10 flex flex-col items-center justify-center h-full w-full max-w-4xl px-4 transition-opacity duration-1000 ${isPlayingGreeting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <div className={`${settings.uiSettings?.videoStartButtonPosition === 'bottom' ? 'flex-1' : ''} flex flex-col items-center justify-center pointer-events-none`}>
             {enableNameEvent && settings.eventName && (
               <h1 className={`${settings.uiSettings?.eventNameSize || 'text-5xl md:text-8xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-none uppercase text-center w-full mb-2 drop-shadow-2xl`}>
                 {settings.eventName}
@@ -113,7 +132,7 @@ const InteractiveVideoStartPage: React.FC<InteractiveVideoStartPageProps> = ({ p
             )}
           </div>
           
-          <div className="pb-24 pointer-events-auto flex flex-col items-center gap-6">
+          <div className={`${settings.uiSettings?.videoStartButtonPosition === 'bottom' ? 'pb-24' : 'py-8'} pointer-events-auto flex flex-col items-center gap-6`}>
             {startOption === 'button' && (
               <button 
                 onClick={handleStart}
@@ -144,7 +163,6 @@ const InteractiveVideoStartPage: React.FC<InteractiveVideoStartPageProps> = ({ p
             )}
           </div>
         </div>
-      )}
     </div>
   );
 };
