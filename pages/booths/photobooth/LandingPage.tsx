@@ -155,93 +155,39 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       </div>
 
       {!isBackgroundOnly && (
-        <div className="relative z-10 flex flex-col items-center justify-center gap-6 md:gap-12 w-full max-w-4xl mx-auto px-4 mt-8">
-          {(settings.uiSettings?.launchScreenOrder || ['eventName', 'eventDesc', 'buttonLaunch', 'buttonGallery']).reduce((acc: any[], blockId, index, array) => {
-            // Group buttons if needed
-            if ((blockId === 'buttonLaunch' || blockId === 'buttonGallery') && settings.uiSettings?.launchLayout !== 'top_bottom') {
-              const prev = array[index - 1];
-              if (prev === 'buttonLaunch' || prev === 'buttonGallery') {
-                return acc; // handled in the previous iteration
-              }
-              const next = array[index + 1];
-              if (next === 'buttonLaunch' || next === 'buttonGallery') {
-                acc.push({ type: 'buttonGroup', items: [blockId, next] });
-                return acc;
-              }
-            }
-            acc.push({ type: blockId });
-            return acc;
-          }, []).map((block: any, idx: number) => {
-            
-            if (block.type === 'eventName') {
-              return (
-                <div key={`block-${idx}`} className="w-full">
-                  <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-7xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight uppercase`}>
-                    {settings.eventName}
-                  </h1>
-                </div>
-              );
-            }
-            if (block.type === 'eventDesc') {
-              return (
-                <div key={`block-${idx}`} className="w-full">
-                  <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-xl'} tracking-[0.3em] md:tracking-[0.5em] text-glow font-bold uppercase`}>
-                    {settings.eventDescription}
-                  </h2>
-                </div>
-              );
-            }
-            
-            const renderButton = (btnType: string) => {
-              if (btnType === 'buttonLaunch') {
-                return (
-                  <button 
-                    key="btn-launch"
-                    onClick={(e) => { 
-                        e.stopPropagation(); 
-                        prewarmCamera(settings);
-                        onStart(); 
-                    }}
-                    style={settings.uiSettings?.buttonColor ? { backgroundColor: settings.uiSettings.buttonColor } : { backgroundColor: '#bc13fe' }}
-                    className={`group relative py-5 md:py-6 transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden px-8 md:px-16`}
-                  >
-                    <span className="relative z-10 italic">LAUNCH</span>
-                    <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
-                  </button>
-                );
-              }
-              if (btnType === 'buttonGallery') {
-                return (
-                  <button 
-                    key="btn-gallery"
-                    onClick={(e) => { e.stopPropagation(); onGallery(); }}
-                    className={`group relative py-4 md:py-5 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-sm md:text-xl tracking-widest overflow-hidden px-8 md:px-12 bg-black/40 backdrop-blur-sm`}
-                  >
-                    <span className="relative z-10 italic">GALLERY</span>
-                  </button>
-                );
-              }
-              return null;
-            };
+        <div className="relative z-10 flex flex-col items-center justify-center gap-6 w-full max-w-2xl mx-auto px-4 h-full py-12">
+          
+          <div className="flex flex-col items-center justify-center gap-2 mb-8">
+            <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-7xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-none uppercase text-center w-full`}>
+              {settings.eventName}
+            </h1>
+            <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-xl'} tracking-[0.3em] md:tracking-[0.5em] text-glow font-bold uppercase text-center w-full`}>
+              {settings.eventDescription}
+            </h2>
+          </div>
 
-            if (block.type === 'buttonGroup') {
-              return (
-                <div key={`block-${idx}`} className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 w-full mt-4">
-                  {block.items.map((btnId: string) => renderButton(btnId))}
-                </div>
-              );
-            }
-            
-            if (block.type === 'buttonLaunch' || block.type === 'buttonGallery') {
-              return (
-                <div key={`block-${idx}`} className="w-full flex justify-center mt-2">
-                  {renderButton(block.type)}
-                </div>
-              );
-            }
-
-            return null;
-          })}
+          <div className={`flex items-center justify-center gap-4 w-full ${settings.uiSettings?.launchLayout === 'top_bottom' ? 'flex-col' : 'flex-col md:flex-row'}`}>
+            <button 
+              key="btn-launch"
+              onClick={(e) => { 
+                  e.stopPropagation(); 
+                  prewarmCamera(settings);
+                  onStart(); 
+              }}
+              style={settings.uiSettings?.buttonColor ? { backgroundColor: settings.uiSettings.buttonColor } : { backgroundColor: '#bc13fe' }}
+              className={`group relative py-3 md:py-5 transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden px-8 md:px-12 w-full max-w-sm`}
+            >
+              <span className="relative z-10 italic">LAUNCH</span>
+              <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
+            </button>
+            <button 
+              key="btn-gallery"
+              onClick={(e) => { e.stopPropagation(); onGallery(); }}
+              className={`group relative py-3 md:py-4 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-sm md:text-xl tracking-widest overflow-hidden px-8 md:px-12 bg-black/40 backdrop-blur-sm w-full max-w-sm`}
+            >
+              <span className="relative z-10 italic">GALLERY</span>
+            </button>
+          </div>
         </div>
       )}
 

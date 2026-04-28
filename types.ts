@@ -73,7 +73,6 @@ export interface UIDisplaySettings {
   resultButtonsPosition: 'bottom' | 'right' | 'top';
   confirmPhotoBeforeGenerate?: boolean;
   themeEventInfoPosition?: 'none' | 'top' | 'bottom';
-  launchScreenOrder?: string[];
   processingStyle?: string;
   processingText?: string;
 }

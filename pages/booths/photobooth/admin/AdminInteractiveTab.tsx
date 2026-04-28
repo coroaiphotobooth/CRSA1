@@ -140,12 +140,6 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
 
       setLocalSettings(prev => ({ ...prev, interactiveFlow: finalItems }));
       setIsDirty(true);
-    } else if (result.source.droppableId === 'launch-blocks') {
-      const currentBlocks = localUI.launchScreenOrder || ['eventName', 'eventDesc', 'buttonLaunch', 'buttonGallery'];
-      const items = Array.from(currentBlocks);
-      const [reorderedItem] = items.splice(result.source.index, 1);
-      items.splice(result.destination.index, 0, reorderedItem);
-      updateUIChange('launchScreenOrder', items);
     }
   };
 
@@ -330,55 +324,19 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
            <Smartphone className="w-5 h-5 text-[#bc13fe]" /> Launch Screen Settings
          </h2>
          <div className={UI_CONTAINER}>
-             <label className={UI_LABEL}>Launch Screen Elements (Drag & Drop)</label>
-             <div className="flex flex-col gap-3 mt-2">
-                <DragDropContext onDragEnd={handleDragEnd}>
-                  <Droppable droppableId="launch-blocks">
-                    {(provided) => (
-                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
-                        {(localUI.launchScreenOrder || ['eventName', 'eventDesc', 'buttonLaunch', 'buttonGallery']).map((blockId, index) => {
-                          let label = '';
-                          if (blockId === 'eventName') label = 'Event Name';
-                          else if (blockId === 'eventDesc') label = 'Event Description';
-                          else if (blockId === 'buttonLaunch') label = 'Launch Button';
-                          else if (blockId === 'buttonGallery') label = 'Gallery Button';
-                          
-                          return (
-                            <Draggable key={blockId} draggableId={blockId} index={index}>
-                              {(provided, snapshot) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  className={`flex items-center gap-3 p-3 rounded-xl border bg-black/40 backdrop-blur-sm transition-all
-                                    ${snapshot.isDragging ? 'border-[#bc13fe] border-b-4' : 'border-white/10 hover:border-white/20'}`}
-                                >
-                                  <div {...provided.dragHandleProps} className="text-gray-500 hover:text-white cursor-grab active:cursor-grabbing p-1">
-                                    <GripVertical className="w-4 h-4" />
-                                  </div>
-                                  <div className="text-sm font-bold text-white tracking-widest uppercase">
-                                    {label}
-                                  </div>
-                                </div>
-                              )}
-                            </Draggable>
-                          );
-                        })}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </DragDropContext>
-             </div>
-         </div>
-         
-         <div className={UI_CONTAINER}>
-             <label className={UI_LABEL}>Launch Buttons Layout (if side-by-side)</label>
+             <label className={UI_LABEL}>Launch Buttons Layout</label>
              <div className="flex flex-col gap-3 mt-2">
                <button onClick={() => updateUIChange('launchLayout', 'split_left_right')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'split_left_right' || !localUI.launchLayout ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
                  <div><div className="font-bold text-white uppercase text-xs mb-0.5">Horizontal View (Desktop)</div></div>
                </button>
+               <button onClick={() => updateUIChange('launchLayout', 'top_bottom')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'top_bottom' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <div><div className="font-bold text-white uppercase text-xs mb-0.5">Vertical View (Top / Bottom)</div></div>
+               </button>
                <button onClick={() => updateUIChange('launchLayout', 'background_only')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'background_only' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
                  <div><div className="font-bold text-white uppercase text-xs mb-0.5">Only Background (Click Anywhere)</div></div>
+               </button>
+               <button onClick={() => updateUIChange('launchLayout', 'vip_checkin')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'vip_checkin' ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                 <div><div className="font-bold text-amber-500 uppercase text-xs mb-0.5">VIP Check-In (Scanner Mode)</div></div>
                </button>
              </div>
          </div>
@@ -431,9 +389,11 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
              <label className={UI_LABEL}>Concept Selector Style</label>
              <div className="grid grid-cols-2 gap-4 mt-2">
                <button onClick={() => updateUIChange('conceptLayout', 'grid')} className={`relative rounded-xl overflow-hidden border-2 transition-all aspect-square ${localUI.conceptLayout === 'grid' || !localUI.conceptLayout ? 'border-[#bc13fe] ring-4 ring-[#bc13fe]/30 scale-[1.02]' : 'border-white/10 hover:border-white/30 opacity-70 hover:opacity-100'}`}>
+                 <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOGO/GRID.jpg" className="absolute inset-0 w-full h-full object-cover" alt="Grid Layout Preview" referrerPolicy="no-referrer" />
                  <div className="absolute inset-x-0 bottom-0 bg-black/80 p-2 text-center text-white text-xs font-bold uppercase">GRID LAYOUT</div>
                </button>
                <button onClick={() => updateUIChange('conceptLayout', 'carousel')} className={`relative rounded-xl overflow-hidden border-2 transition-all aspect-square ${localUI.conceptLayout === 'carousel' ? 'border-[#bc13fe] ring-4 ring-[#bc13fe]/30 scale-[1.02]' : 'border-white/10 hover:border-white/30 opacity-70 hover:opacity-100'}`}>
+                 <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/LOGO/SLIDE.jpg" className="absolute inset-0 w-full h-full object-cover" alt="Slide Layout Preview" referrerPolicy="no-referrer" />
                  <div className="absolute inset-x-0 bottom-0 bg-black/80 p-2 text-center text-white text-xs font-bold uppercase">SLIDE / CAROUSEL</div>
                </button>
              </div>
