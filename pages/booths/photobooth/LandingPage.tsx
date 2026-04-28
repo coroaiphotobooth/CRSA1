@@ -70,7 +70,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
 
   return (
     <div 
-      className={`flex flex-col items-center justify-center w-full min-h-screen relative p-6 md:p-10 text-center overflow-hidden tour-app-page ${isBackgroundOnly && !isTransitioning ? 'cursor-pointer' : ''}`}
+      className={`flex flex-col items-center justify-center w-full h-[100dvh] relative p-4 md:p-10 text-center overflow-hidden tour-app-page ${isBackgroundOnly && !isTransitioning ? 'cursor-pointer' : ''}`}
       onClick={isBackgroundOnly ? handleStartBackgroundMode : undefined}
     >
       {/* Ripple Animation Element */}
@@ -161,16 +161,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       </div>
 
       {!isBackgroundOnly && (
-        <div className="relative z-10 flex flex-col items-center justify-center gap-6 w-full max-w-2xl mx-auto px-4 h-full py-12">
+        <div className="relative z-10 flex flex-col items-center justify-center gap-4 w-full max-w-2xl mx-auto px-4 h-full py-8">
           
-          <div className="flex flex-col items-center justify-center gap-2 mb-8">
+          <div className="flex flex-col items-center justify-center gap-1 mb-4">
             {showNameEvent && (
-              <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-7xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-none uppercase text-center w-full`}>
+              <h1 className={`${settings.uiSettings?.eventNameSize || 'text-3xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-none uppercase text-center w-full`}>
                 {settings.eventName}
               </h1>
             )}
             {showDescEvent && (
-              <h2 className={`${settings.uiSettings?.eventDescSize || 'text-sm md:text-xl'} tracking-[0.3em] md:tracking-[0.5em] text-glow font-bold uppercase text-center w-full`}>
+              <h2 className={`${settings.uiSettings?.eventDescSize || 'text-xs md:text-lg'} tracking-[0.2em] md:tracking-[0.4em] text-glow font-bold uppercase text-center w-full`}>
                 {settings.eventDescription}
               </h2>
             )}
@@ -186,7 +186,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
                     onStart(); 
                 }}
                 style={settings.uiSettings?.buttonColor ? { backgroundColor: settings.uiSettings.buttonColor } : { backgroundColor: '#bc13fe' }}
-                className={`group relative py-3 md:py-5 transition-all rounded-none font-heading text-lg md:text-2xl tracking-widest neon-border overflow-hidden px-8 md:px-12 w-full max-w-sm`}
+                className={`group relative py-3 md:py-4 transition-all rounded-none font-heading text-base md:text-xl tracking-widest neon-border overflow-hidden px-8 md:px-10 w-full max-w-sm`}
               >
                 <span className="relative z-10 italic">{launchButtonLabel}</span>
                 <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
@@ -197,7 +197,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
               <button 
                 key="btn-gallery"
                 onClick={(e) => { e.stopPropagation(); onGallery(); }}
-                className={`group relative py-3 md:py-4 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-sm md:text-xl tracking-widest overflow-hidden px-8 md:px-12 bg-black/40 backdrop-blur-sm w-full max-w-sm`}
+                className={`group relative py-2 md:py-3 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-xs md:text-base tracking-widest overflow-hidden px-6 md:px-8 bg-black/40 backdrop-blur-sm w-full max-w-sm`}
               >
                 <span className="relative z-10 italic">GALLERY</span>
               </button>
@@ -210,7 +210,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
                     prewarmCamera(settings);
                     onStart(); 
                 }}
-                className={`${settings.uiSettings?.launchTextSize || 'text-3xl md:text-5xl'} font-bold uppercase hover:scale-105 transition-transform`}
+                className={`${settings.uiSettings?.launchTextSize || 'text-2xl md:text-4xl'} font-bold uppercase hover:scale-105 transition-transform`}
                 style={{
                   fontFamily: settings.uiSettings?.launchTextFont || 'inherit',
                   color: settings.uiSettings?.launchTextColor || '#ffffff',

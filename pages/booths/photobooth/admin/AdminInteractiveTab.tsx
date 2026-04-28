@@ -430,13 +430,32 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
 
          {localUI.launchType === 'video' && (
            <>
+              <div className="bg-[#bc13fe]/10 border border-[#bc13fe]/30 rounded-xl p-4 mb-4">
+                 <h3 className="text-[#bc13fe] text-[10px] font-bold uppercase tracking-widest mb-2">How do I use it?</h3>
+                 <p className="text-gray-300 text-[10px] mb-1">Create two 5- to 10-second videos:</p>
+                 <ul className="list-disc list-inside text-gray-400 text-[10px] mb-2 leading-relaxed">
+                    <li>1 idle video</li>
+                    <li>1 video 5- to 10-second greeting</li>
+                 </ul>
+                 <p className="text-gray-300 text-[10px]">Upload each idle video. When you click it, the greeting video will appear.</p>
+              </div>
+
               <div className={UI_CONTAINER}>
                  <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-1">Video Idle URL (MP4 / WebM)</label>
-                 <span className="text-[8px] text-gray-400 mb-2">Max 15 seconds, max 13MB. Upload or paste link. Plays in loop until start.</span>
+                 <span className="text-[8px] text-gray-400 mb-3 block">Max 15 seconds, max 13MB. Upload or paste link. Plays in loop until start.</span>
+                 
+                 {(localUI.videoIdleUrl || 'https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/talking%20video/iddle%20v1%20.mp4') && (
+                    <video 
+                       src={localUI.videoIdleUrl || 'https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/talking%20video/iddle%20v1%20.mp4'} 
+                       className="w-[120px] h-[160px] md:w-[150px] md:h-[200px] rounded-lg mb-3 border border-white/20 object-cover bg-black/50" 
+                       controls 
+                       muted 
+                       loop
+                       playsInline
+                    />
+                 )}
+
                  <div className="flex gap-4 items-center">
-                    <div className="flex-1">
-                      <input type="text" value={localUI.videoIdleUrl || ''} onChange={(e) => updateUIChange('videoIdleUrl', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#bc13fe]/50" placeholder="https://..." />
-                    </div>
                     <input type="file" accept="video/mp4,video/webm" className="hidden" id="upload-idle-video-launch" onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -456,19 +475,28 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                         await showDialog('alert', 'Error', err.message);
                       }
                     }} />
-                    <label htmlFor="upload-idle-video-launch" className="px-4 py-3 bg-[#bc13fe]/20 text-[#bc13fe] hover:bg-[#bc13fe]/40 border border-[#bc13fe]/30 rounded-xl font-bold uppercase text-xs cursor-pointer transition-colors whitespace-nowrap">
-                      Upload
+                    <label htmlFor="upload-idle-video-launch" className="w-full text-center px-4 py-3 bg-[#bc13fe]/20 text-[#bc13fe] hover:bg-[#bc13fe]/40 border border-[#bc13fe]/30 rounded-xl font-bold uppercase text-xs cursor-pointer transition-colors">
+                      Upload Idle Video
                     </label>
                  </div>
               </div>
 
               <div className={UI_CONTAINER}>
                  <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-1">Video Greeting URL (MP4 / WebM)</label>
-                 <span className="text-[8px] text-gray-400 mb-2">Max 15 seconds, max 13MB. Played when START is triggered.</span>
+                 <span className="text-[8px] text-gray-400 mb-3 block">Max 15 seconds, max 13MB. Played when START is triggered.</span>
+
+                 {(localUI.videoGreetingUrl || 'https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/talking%20video/TALKING%20V1.mp4') && (
+                    <video 
+                       src={localUI.videoGreetingUrl || 'https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/talking%20video/TALKING%20V1.mp4'} 
+                       className="w-[120px] h-[160px] md:w-[150px] md:h-[200px] rounded-lg mb-3 border border-white/20 object-cover bg-black/50" 
+                       controls 
+                       muted 
+                       loop
+                       playsInline
+                    />
+                 )}
+
                  <div className="flex gap-4 items-center">
-                    <div className="flex-1">
-                      <input type="text" value={localUI.videoGreetingUrl || ''} onChange={(e) => updateUIChange('videoGreetingUrl', e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#bc13fe]/50" placeholder="https://..." />
-                    </div>
                     <input type="file" accept="video/mp4,video/webm" className="hidden" id="upload-greet-video-launch" onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -488,8 +516,8 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                         await showDialog('alert', 'Error', err.message);
                       }
                     }} />
-                    <label htmlFor="upload-greet-video-launch" className="px-4 py-3 bg-[#bc13fe]/20 text-[#bc13fe] hover:bg-[#bc13fe]/40 border border-[#bc13fe]/30 rounded-xl font-bold uppercase text-xs cursor-pointer transition-colors whitespace-nowrap">
-                      Upload
+                    <label htmlFor="upload-greet-video-launch" className="w-full text-center px-4 py-3 bg-[#bc13fe]/20 text-[#bc13fe] hover:bg-[#bc13fe]/40 border border-[#bc13fe]/30 rounded-xl font-bold uppercase text-xs cursor-pointer transition-colors">
+                      Upload Greeting Video
                     </label>
                  </div>
               </div>

@@ -568,8 +568,9 @@ const PhotoboothFlow: React.FC = () => {
             settings={settings}
             onNext={() => advanceInteractive()}
             onBack={() => retreatInteractive()}
-            onAdmin={() => { setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
+            onAdmin={(tab) => { if (tab) setAdminTab(tab as any); else setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
             onGallery={() => setCurrentPage(AppState.GALLERY)}
+            isVIPAdmin={isVIPAdmin}
           />;
         }
 
@@ -696,8 +697,9 @@ const PhotoboothFlow: React.FC = () => {
             settings={settings}
             onNext={() => advanceInteractive()}
             onBack={() => retreatInteractive()}
-            onAdmin={() => { setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
+            onAdmin={(tab) => { if (tab) setAdminTab(tab as any); else setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
             onGallery={() => setCurrentPage(AppState.GALLERY)}
+            isVIPAdmin={isVIPAdmin}
           />
         );
       }
@@ -738,8 +740,9 @@ const PhotoboothFlow: React.FC = () => {
             settings={settings}
             onNext={() => setCurrentPage(settings.uiSettings?.photoboothFlow === 'launch_photo_concept' ? AppState.CAMERA : AppState.THEMES)}
             onBack={() => {}} // No back on landing
-            onAdmin={() => { setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
+            onAdmin={(tab) => { if (tab) setAdminTab(tab as any); else setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
             onGallery={() => setCurrentPage(AppState.GALLERY)}
+            isVIPAdmin={isVIPAdmin}
           />;
         }
 

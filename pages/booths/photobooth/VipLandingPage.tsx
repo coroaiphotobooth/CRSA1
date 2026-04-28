@@ -59,7 +59,7 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
   };
 
   return (
-    <div className={`flex flex-col items-center justify-end w-full min-h-screen relative text-center overflow-hidden tour-app-page transition-opacity duration-1000 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
+    <div className={`flex flex-col items-center justify-end w-full h-[100dvh] relative text-center overflow-hidden tour-app-page transition-opacity duration-1000 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
       
       {/* BACKGROUND AVATAR VIDEO LAYER */}
       <div className="absolute inset-0 w-full h-full bg-black z-0">
