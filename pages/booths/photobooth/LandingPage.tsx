@@ -68,10 +68,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
   const launchButtonLabel = settings.uiSettings?.launchButtonLabel || 'LAUNCH';
   const launchTextLabel = settings.uiSettings?.launchTextLabel || 'START NOW';
 
+  const isClickableBackground = isBackgroundOnly || launchLayout === 'touch_anywhere';
+
   return (
     <div 
-      className={`flex flex-col items-center justify-center w-full h-[100dvh] relative p-4 md:p-10 text-center overflow-hidden tour-app-page ${isBackgroundOnly && !isTransitioning ? 'cursor-pointer' : ''}`}
-      onClick={isBackgroundOnly ? handleStartBackgroundMode : undefined}
+      className={`flex flex-col items-center justify-center w-full h-[100dvh] relative p-4 md:p-10 text-center overflow-hidden tour-app-page ${isClickableBackground && !isTransitioning ? 'cursor-pointer' : ''}`}
+      onClick={isClickableBackground ? handleStartBackgroundMode : undefined}
     >
       {/* Ripple Animation Element */}
       {ripple && (
@@ -105,7 +107,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
         className="absolute top-6 right-6 z-50 flex items-center gap-4 md:gap-6"
         onClick={(e) => e.stopPropagation()}
       >
-        {(isBackgroundOnly || launchLayout === 'button_only') && (
+        {(isBackgroundOnly || launchLayout === 'button_only' || launchLayout === 'touch_anywhere') && (
            <button 
              onClick={onGallery}
              className="text-gray-500 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest"
@@ -170,6 +172,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       {!isBackgroundOnly && (
         <div className="relative z-10 flex flex-col items-center justify-center gap-4 w-full max-w-2xl mx-auto px-4 h-full py-8">
           
+          {settings.uiSettings?.logoPosition === 'top' && settings.uiSettings?.logoUrl && (
+            <div className="mb-2"><img src={settings.uiSettings.logoUrl} className={`${settings.uiSettings.logoSize || 'w-32'} object-contain z-20`} alt="Event Logo" /></div>
+          )}
+
           <div className="flex flex-col items-center justify-center gap-1 mb-4">
             {showNameEvent && (
               <h1 className={`${settings.uiSettings?.eventNameSize || 'text-3xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-none uppercase text-center w-full`}>
@@ -183,6 +189,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
             )}
           </div>
 
+          {settings.uiSettings?.logoPosition === 'middle' && settings.uiSettings?.logoUrl && (
+            <div className="my-2"><img src={settings.uiSettings.logoUrl} className={`${settings.uiSettings.logoSize || 'w-32'} object-contain z-20`} alt="Event Logo" /></div>
+          )}
+
           <div className={`flex items-center justify-center gap-4 w-full flex-col md:flex-row`}>
             {(launchLayout === 'button_with_gallery' || launchLayout === 'split_left_right' || launchLayout === 'top_bottom' || launchLayout === 'button_only') && (
               <button 
@@ -193,9 +203,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
                     onStart(); 
                 }}
                 style={settings.uiSettings?.buttonColor ? { backgroundColor: settings.uiSettings.buttonColor } : { backgroundColor: '#bc13fe' }}
-                className={`group relative py-3 md:py-4 transition-all rounded-none font-heading text-base md:text-xl tracking-widest neon-border overflow-hidden w-full max-w-[240px] md:max-w-[280px]`}
+                className={`group relative ${settings.uiSettings?.buttonSize || 'py-3 md:py-4 px-8 text-base md:text-xl'} transition-all rounded-none font-heading tracking-widest neon-border overflow-hidden w-full max-w-fit md:min-w-[280px] h-fit inline-flex items-center justify-center`}
               >
-                <span className="relative z-10 italic">{launchButtonLabel}</span>
+                <span className="relative z-10 italic whitespace-nowrap">{launchButtonLabel}</span>
                 <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-500" />
               </button>
             )}
@@ -204,9 +214,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
               <button 
                 key="btn-gallery"
                 onClick={(e) => { e.stopPropagation(); onGallery(); }}
-                className={`group relative py-3 md:py-4 border-2 border-white/20 hover:border-white transition-all rounded-none font-heading text-base md:text-xl tracking-widest overflow-hidden bg-black/40 backdrop-blur-sm w-full max-w-[240px] md:max-w-[280px]`}
+                className={`group relative ${settings.uiSettings?.buttonSize || 'py-3 md:py-4 px-8 text-base md:text-xl'} border-2 border-white/20 hover:border-white transition-all rounded-none font-heading tracking-widest overflow-hidden bg-black/40 backdrop-blur-sm w-full max-w-fit md:min-w-[280px] h-fit inline-flex items-center justify-center`}
               >
-                <span className="relative z-10 italic">GALLERY</span>
+                <span className="relative z-10 italic whitespace-nowrap">GALLERY</span>
               </button>
             )}
 
@@ -228,6 +238,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
               </button>
             )}
           </div>
+          
+          {settings.uiSettings?.logoPosition === 'bottom' && settings.uiSettings?.logoUrl && (
+            <div className="mt-8"><img src={settings.uiSettings.logoUrl} className={`${settings.uiSettings.logoSize || 'w-32'} object-contain z-20`} alt="Event Logo" /></div>
+          )}
         </div>
       )}
 

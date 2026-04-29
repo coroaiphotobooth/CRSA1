@@ -719,6 +719,7 @@ const PhotoboothFlow: React.FC = () => {
             skipAI={!isAIEnabled}
             isInteractiveFlow={true}
             isPreviewMode={isPreviewMode}
+            previewStep={previewStep || undefined}
         />;
       }
       if (currentStepId?.startsWith('form')) {

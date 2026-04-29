@@ -1,7 +1,7 @@
 import React, { useState, useImperativeHandle, forwardRef, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { PhotoboothSettings, UIDisplaySettings } from '../../../../types';
-import { Settings, Save, Plus, Trash2, GripVertical, FileText, CheckCircle, Smartphone, Camera, Image as ImageIcon, Wand2, Video, MonitorPlay } from 'lucide-react';
+import { Settings, Save, Plus, Trash2, GripVertical, FileText, CheckCircle, Smartphone, Camera, Image as ImageIcon, Wand2, Video, MonitorPlay, ArrowLeft } from 'lucide-react';
 import { useDialog } from '../../../../components/DialogProvider';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../../../lib/supabase';
@@ -38,6 +38,10 @@ const PREDEFINED_VIDEOS = [
   "https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO%20BACKGROUND/VIDEO%208.mp4"
 ];
 
+const TEXT_SIZES = ['text-xs', 'text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl', 'text-3xl', 'text-4xl', 'text-5xl', 'text-6xl', 'text-7xl', 'text-8xl', 'text-9xl'];
+const LOGO_SIZES = ['w-12', 'w-16', 'w-24', 'w-32', 'w-48', 'w-64', 'w-80', 'w-96', 'w-[400px]', 'w-[500px]', 'w-[600px]'];
+const BUTTON_SIZES = ['text-xs py-2 px-4', 'text-sm py-2 px-6', 'text-base py-3 px-8', 'text-lg py-4 px-10', 'text-xl py-5 px-12', 'text-2xl py-6 px-16'];
+
 const UI_CONTAINER = "flex flex-col gap-3";
 const UI_LABEL = "text-[10px] text-gray-500 uppercase tracking-widest font-bold";
 const UI_INPUT = "w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#bc13fe]/50";
@@ -47,6 +51,18 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
   const { eventId } = useParams<{ eventId: string }>();
   const [localSettings, setLocalSettings] = useState<PhotoboothSettings>(settings);
   const [isDirty, setIsDirty] = useState(false);
+  const localUI = localSettings.uiSettings || {};
+
+  const handleSizeChange = (field: keyof UIDisplaySettings, direction: 'up' | 'down', sizesArray: string[], defaultVal: string) => {
+    const currentVal = localUI[field] as string || defaultVal;
+    let currentIndex = sizesArray.indexOf(currentVal);
+    if (currentIndex === -1) currentIndex = sizesArray.indexOf(defaultVal);
+    if (direction === 'up' && currentIndex < sizesArray.length - 1) {
+      updateUIChange(field, sizesArray[currentIndex + 1]);
+    } else if (direction === 'down' && currentIndex > 0) {
+      updateUIChange(field, sizesArray[currentIndex - 1]);
+    }
+  };
   const [activeConfigPage, setActiveConfigPage] = useState<any>(null); // string or object
 
   // Cameras
@@ -120,7 +136,6 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
   const currentFlow = localSettings.interactiveFlow || DEFAULT_FLOW;
   const isFlowDefault = JSON.stringify(currentFlow) === JSON.stringify(DEFAULT_FLOW);
   const customPages = localSettings.interactivePages || [];
-  const localUI: UIDisplaySettings = localSettings.uiSettings || ({} as UIDisplaySettings);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -377,9 +392,12 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                  <button onClick={() => updateUIChange('launchLayout', 'custom_text')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'custom_text' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
                    <div><div className="font-bold text-white uppercase text-xs mb-0.5">Use Custom Text to Start</div></div>
                  </button>
-                 <button onClick={() => updateUIChange('launchLayout', 'vip_checkin')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'vip_checkin' ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
-                   <div><div className="font-bold text-amber-500 uppercase text-xs mb-0.5">VIP Check-In (Scanner Mode)</div></div>
+                 <button onClick={() => updateUIChange('launchLayout', 'touch_anywhere')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'touch_anywhere' ? 'border-[#bc13fe] bg-[#bc13fe]/10 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                   <div><div className="font-bold text-white uppercase text-xs mb-0.5">Touch Anywhere to Start</div></div>
                  </button>
+                 {/* <button onClick={() => updateUIChange('launchLayout', 'vip_checkin')} className={`text-left py-2.5 px-4 rounded-xl border-2 transition-all flex items-center justify-between ${localUI.launchLayout === 'vip_checkin' ? 'border-amber-500 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+                   <div><div className="font-bold text-amber-500 uppercase text-xs mb-0.5">VIP Check-In (Scanner Mode)</div></div>
+                 </button> */}
                </div>
                
                {(localUI.launchLayout === 'button_with_gallery' || localUI.launchLayout === 'button_only' || !localUI.launchLayout) && (
@@ -616,16 +634,61 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
             <div className="grid grid-cols-2 gap-4">
                <div className={UI_CONTAINER}>
                  <label className={UI_LABEL}>Event Name Size</label>
-                 <select value={localUI.eventNameSize || 'text-6xl'} onChange={(e) => updateUIChange('eventNameSize', e.target.value)} className="w-full bg-black/50 py-2 px-3 rounded font-mono text-xs text-white">
-                   <option value="text-4xl">Small (4xl)</option><option value="text-6xl">Medium (6xl)</option><option value="text-8xl">Large (8xl)</option>
-                 </select>
+                 <div className="flex border border-white/10 rounded-xl overflow-hidden bg-black/40">
+                   <button onClick={() => handleSizeChange('eventNameSize', 'down', TEXT_SIZES, 'text-6xl')} className="px-4 py-2 hover:bg-white/10 font-bold border-r border-white/10">-</button>
+                   <div className="flex-1 text-center py-2 text-xs font-mono">{localUI.eventNameSize || 'text-6xl'}</div>
+                   <button onClick={() => handleSizeChange('eventNameSize', 'up', TEXT_SIZES, 'text-6xl')} className="px-4 py-2 hover:bg-white/10 font-bold border-l border-white/10">+</button>
+                 </div>
                </div>
                <div className={UI_CONTAINER}>
                  <label className={UI_LABEL}>Event Desc Size</label>
-                 <select value={localUI.eventDescSize || 'text-xl'} onChange={(e) => updateUIChange('eventDescSize', e.target.value)} className="w-full bg-black/50 py-2 px-3 rounded font-mono text-xs text-white">
-                   <option value="text-sm">Small (sm)</option><option value="text-xl">Medium (xl)</option><option value="text-2xl">Large (2xl)</option>
+                 <div className="flex border border-white/10 rounded-xl overflow-hidden bg-black/40">
+                   <button onClick={() => handleSizeChange('eventDescSize', 'down', TEXT_SIZES, 'text-xl')} className="px-4 py-2 hover:bg-white/10 font-bold border-r border-white/10">-</button>
+                   <div className="flex-1 text-center py-2 text-xs font-mono">{localUI.eventDescSize || 'text-xl'}</div>
+                   <button onClick={() => handleSizeChange('eventDescSize', 'up', TEXT_SIZES, 'text-xl')} className="px-4 py-2 hover:bg-white/10 font-bold border-l border-white/10">+</button>
+                 </div>
+               </div>
+               <div className={UI_CONTAINER}>
+                 <label className={UI_LABEL}>Button Size</label>
+                 <div className="flex border border-white/10 rounded-xl overflow-hidden bg-black/40">
+                   <button onClick={() => handleSizeChange('buttonSize', 'down', BUTTON_SIZES, 'text-base py-3 px-8')} className="px-4 py-2 hover:bg-white/10 font-bold border-r border-white/10">-</button>
+                   <div className="flex-1 text-center py-2 text-xs font-mono">{localUI.buttonSize || 'text-base py-3 px-8'}</div>
+                   <button onClick={() => handleSizeChange('buttonSize', 'up', BUTTON_SIZES, 'text-base py-3 px-8')} className="px-4 py-2 hover:bg-white/10 font-bold border-l border-white/10">+</button>
+                 </div>
+               </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mt-4">
+               <div className={UI_CONTAINER}>
+                 <label className={UI_LABEL}>Logo URL (Optional)</label>
+                 <input 
+                   type="text" 
+                   value={localUI.logoUrl || ''} 
+                   onChange={(e) => updateUIChange('logoUrl', e.target.value)} 
+                   className={UI_INPUT} 
+                   placeholder="https://..."
+                 />
+                 <p className="text-[10px] text-gray-500">Paste logo URL</p>
+               </div>
+               <div className={UI_CONTAINER}>
+                 <label className={UI_LABEL}>Logo Size</label>
+                 <div className="flex border border-white/10 rounded-xl overflow-hidden bg-black/40">
+                   <button onClick={() => handleSizeChange('logoSize', 'down', LOGO_SIZES, 'w-32')} className="px-4 py-2 hover:bg-white/10 font-bold border-r border-white/10">-</button>
+                   <div className="flex-1 text-center py-2 text-xs font-mono">{localUI.logoSize || 'w-32'}</div>
+                   <button onClick={() => handleSizeChange('logoSize', 'up', LOGO_SIZES, 'w-32')} className="px-4 py-2 hover:bg-white/10 font-bold border-l border-white/10">+</button>
+                 </div>
+               </div>
+               <div className={UI_CONTAINER}>
+                 <label className={UI_LABEL}>Logo Position</label>
+                 <select value={localUI.logoPosition || 'top'} onChange={(e) => updateUIChange('logoPosition', e.target.value)} className="w-full bg-black/50 py-2 px-3 rounded font-mono text-xs text-white border border-white/10">
+                   <option value="top">Top</option>
+                   <option value="middle">Middle</option>
+                   <option value="bottom">Bottom</option>
                  </select>
                </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mt-4">
                <div className={UI_CONTAINER}>
                  <label className={UI_LABEL}>Font Family</label>
                  <select value={localUI.fontFamily || 'font-sans'} onChange={(e) => updateUIChange('fontFamily', e.target.value)} className="w-full bg-black/50 py-2 px-3 rounded font-mono text-xs text-white">
@@ -1107,14 +1170,6 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                    ))}
                  </div>
                </div>
-               <div className="w-full aspect-video bg-white/5 border border-white/10 rounded-lg flex items-center justify-center overflow-hidden shadow-2xl relative mb-4">
-                  {localSettings.backgroundVideoUrl ? (
-                     <video src={localSettings.backgroundVideoUrl} className="w-full h-full object-cover opacity-70" autoPlay loop muted playsInline />
-                  ) : localSettings.backgroundImage ? (
-                    <img src={getGoogleDriveDirectLink(localSettings.backgroundImage)} className="w-full h-full object-cover" alt="Background" />
-                  ) : <span className="text-[10px] text-gray-700 font-mono">DEFAULT_DARK</span>}
-               </div>
-
                <input type="file" accept="image/jpeg,image/png" className="hidden" ref={backgroundInputRef} onChange={async (e) => {
                  const file = e.target.files?.[0];
                  if (!file) return;
@@ -1342,9 +1397,11 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
       <div className="w-full lg:w-2/3 flex flex-col xl:flex-row gap-6">
         <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl min-h-[700px] flex flex-col relative overflow-hidden">
            {activeConfigPage && (
-              <button onClick={() => setActiveConfigPage(null)} className="absolute top-6 right-6 z-10 p-2 bg-white/5 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1">
-                BACK TO GLOBAL
-              </button>
+              <div className="mb-4">
+                <button onClick={() => setActiveConfigPage(null)} className="px-3 py-2 bg-white/5 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-2 w-fit border border-white/10 hover:border-white/30">
+                  <ArrowLeft className="w-3 h-3" /> BACK TO GLOBAL
+                </button>
+              </div>
            )}
            
            {rightPanelContent}

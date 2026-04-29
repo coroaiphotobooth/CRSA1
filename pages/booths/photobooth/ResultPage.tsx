@@ -24,9 +24,10 @@ interface ResultPageProps {
   onNext?: () => void;
   isInteractiveFlow?: boolean;
   isPreviewMode?: boolean;
+  previewStep?: string;
 }
 
-const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initialConcept, settings, concepts, onDone, onGallery, isUltraQuality = false, existingSession, interactiveFormData = {}, skipAI, hasNextPage, onNext, isInteractiveFlow, isPreviewMode }) => {
+const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initialConcept, settings, concepts, onDone, onGallery, isUltraQuality = false, existingSession, interactiveFormData = {}, skipAI, hasNextPage, onNext, isInteractiveFlow, isPreviewMode, previewStep }) => {
   const [concept, setConcept] = useState(initialConcept);
   const [isProcessing, setIsProcessing] = useState(true);
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -95,11 +96,14 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
 
     // MOCK PREVIEW MODE
     if (isPreviewMode) {
-      setTimeout(() => {
-         setResultImage(capturedImage);
+      if (previewStep === 'processing') {
+         setIsProcessing(true);
+         setIsFinalizing(false);
+      } else {
          setIsProcessing(false);
          setIsFinalizing(false);
-      }, 1500); // simulate 1.5s processing for preview
+         setResultImage(capturedImage);
+      }
       return;
     }
 

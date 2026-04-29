@@ -67,7 +67,7 @@ export interface UIDisplaySettings {
   fontColor?: string;
   conceptLayout: 'grid' | 'carousel';
   photoboothFlow: 'launch_concept_photo' | 'launch_photo_concept' | 'no_launch_concept_photo';
-  launchLayout: 'split_left_right' | 'top_bottom' | 'background_only' | 'vip_checkin' | 'button_with_gallery' | 'button_only' | 'custom_text';
+  launchLayout: 'split_left_right' | 'top_bottom' | 'background_only' | 'vip_checkin' | 'button_with_gallery' | 'button_only' | 'custom_text' | 'touch_anywhere';
   launchButtonLabel?: string;
   launchTextLabel?: string;
   launchTextSize?: string;
@@ -77,6 +77,10 @@ export interface UIDisplaySettings {
   launchTextShadowColor?: string;
   launchEnableNameEvent?: boolean;
   launchEnableDescEvent?: boolean;
+  buttonSize?: string;
+  logoUrl?: string;
+  logoSize?: string;
+  logoPosition?: 'top' | 'middle' | 'bottom';
   launchType?: 'standard' | 'video';
   videoIdleUrl?: string;
   videoGreetingUrl?: string;

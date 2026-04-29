@@ -170,7 +170,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
       <div className="flex-1 w-full max-w-6xl flex flex-col items-center justify-center py-4">
         
         {/* Event Info TOP (Inside wrapper to center above grid) */}
-        {photoboothFlow === 'no_launch_concept_photo' && settings?.uiSettings?.themeEventInfoPosition === 'top' && (
+        {settings?.uiSettings?.themeEventInfoPosition === 'top' && (
           <div className="w-full text-center mb-6 md:mb-10 z-20 animate-[popIn_0.5s_ease-out]">
             <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-2 uppercase`}>
               {settings.eventName}
@@ -313,7 +313,7 @@ const ThemesPage: React.FC<ThemesPageProps> = ({ concepts, onSelect, onBack, onA
         )}
 
         {/* Event Info BOTTOM (Inside wrapper to center below grid) */}
-        {photoboothFlow === 'no_launch_concept_photo' && settings?.uiSettings?.themeEventInfoPosition === 'bottom' && (
+        {settings?.uiSettings?.themeEventInfoPosition === 'bottom' && (
           <div className="w-full text-center mt-6 md:mt-10 z-20 animate-[popIn_0.5s_ease-out]">
             <h1 className={`${settings.uiSettings?.eventNameSize || 'text-4xl md:text-5xl'} font-heading font-black neon-text text-white tracking-tighter italic leading-tight mb-2 uppercase`}>
               {settings.eventName}
