@@ -57,7 +57,7 @@ const PhotoboothFlow: React.FC = () => {
   const queryParams = new URLSearchParams(location.search);
   const previewStep = queryParams.get('preview_step');
   const previewToken = queryParams.get('preview_token'); // To force re-render if needed
-  const isPreviewMode = !!previewStep;
+  const isPreviewMode = !!previewStep || queryParams.get('preview_mode') === 'true';
 
   let initialPage = AppState.LANDING;
   if (queryParams.get('page') === 'monitor') initialPage = AppState.MONITOR;
@@ -688,12 +688,15 @@ const PhotoboothFlow: React.FC = () => {
             return <div className="w-full h-full bg-black flex items-center justify-center text-white text-xs">PREPARING...</div>;
         }
 
-        const conceptToUse = selectedConcept || concepts[0]; // Fallback, shouldn't reach if isAI is enabled due to above IF
+        const conceptToUse = selectedConcept || concepts[0] || { id: 'dummy', title: 'Dummy Concept', prompt: '', imageUrl: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&q=80&w=1080&h=1920' };
+
+        const previewMockImage = isPreviewMode ? "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=1080&h=1920" : null;
+        const actualCapturedImage = capturedImage || previewMockImage;
 
         const isFast = settings.processingMode === 'fast';
-        if (isFast && currentStepId === 'processing') {
-            if (capturedImage && conceptToUse && !interactiveFormData._hasProcessed) {
-                processInBackground(capturedImage, conceptToUse);
+        if (isFast && currentStepId === 'processing' && !isPreviewMode) {
+            if (actualCapturedImage && conceptToUse && !interactiveFormData._hasProcessed) {
+                processInBackground(actualCapturedImage, conceptToUse);
                 setInteractiveFormData(prev => ({ ...prev, _hasProcessed: true }));
             }
             // we skip processing screen for fast mode or show fast thanks?
@@ -702,7 +705,7 @@ const PhotoboothFlow: React.FC = () => {
         const hasNextPage = interactiveStepIndex < interactiveFlowArray.length - 1;
 
         return <ResultPage 
-            capturedImage={capturedImage!} 
+            capturedImage={actualCapturedImage!} 
             concept={conceptToUse as any} 
             settings={settings} 
             concepts={concepts} 
@@ -715,6 +718,7 @@ const PhotoboothFlow: React.FC = () => {
             interactiveFormData={interactiveFormData}
             skipAI={!isAIEnabled}
             isInteractiveFlow={true}
+            isPreviewMode={isPreviewMode}
         />;
       }
       if (currentStepId?.startsWith('form')) {

@@ -23,9 +23,10 @@ interface ResultPageProps {
   hasNextPage?: boolean;
   onNext?: () => void;
   isInteractiveFlow?: boolean;
+  isPreviewMode?: boolean;
 }
 
-const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initialConcept, settings, concepts, onDone, onGallery, isUltraQuality = false, existingSession, interactiveFormData = {}, skipAI, hasNextPage, onNext, isInteractiveFlow }) => {
+const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initialConcept, settings, concepts, onDone, onGallery, isUltraQuality = false, existingSession, interactiveFormData = {}, skipAI, hasNextPage, onNext, isInteractiveFlow, isPreviewMode }) => {
   const [concept, setConcept] = useState(initialConcept);
   const [isProcessing, setIsProcessing] = useState(true);
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -91,6 +92,16 @@ const ResultPage: React.FC<ResultPageProps> = ({ capturedImage, concept: initial
     setTimer(0);
     setResultImage(null);
     setPhotoId(null);
+
+    // MOCK PREVIEW MODE
+    if (isPreviewMode) {
+      setTimeout(() => {
+         setResultImage(capturedImage);
+         setIsProcessing(false);
+         setIsFinalizing(false);
+      }, 1500); // simulate 1.5s processing for preview
+      return;
+    }
 
     try {
       const currentSessionId = sessionFolder?.id || existingSession?.id;

@@ -1364,8 +1364,7 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
             <div className={`bg-black border-[4px] border-[#bc13fe]/50 rounded-2xl relative shadow-[0_0_30px_rgba(188,19,254,0.15)] transition-all duration-300 overflow-hidden ${previewRatio === '9:16' ? 'w-[270px] h-[480px]' : 'w-[280px] h-[157px]'}`}>
                 <iframe 
                    ref={iframeRef}
-                   key={`${previewRatio}-${typeof activeConfigPage === 'string' ? activeConfigPage : activeConfigPage?.id}`}
-                   src={`/app/${eventId}?preview_step=${typeof activeConfigPage === 'string' ? activeConfigPage : activeConfigPage?.id || 'launch'}&preview_token=${Date.now()}`} 
+                   src={`/app/${eventId}?preview_step=${typeof activeConfigPage === 'string' ? activeConfigPage : activeConfigPage?.id || 'launch'}&preview_mode=true`} 
                    className="absolute border-0" 
                    style={{
                        width: previewRatio === '9:16' ? '1080px' : '1920px',
