@@ -407,9 +407,11 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
        </div>
 
        {/* Logo */}
-       <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50">
-          <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/TECH%20DATA/LOGO%20TECH%20DATA.png" alt="Tech Data" className="h-[80px] md:h-[120px] object-contain transition-all" />
-       </div>
+       {(!settings.eventName || settings.eventName.toLowerCase().includes('tech data') || (settings.vipAppsScriptUrl && settings.vipAppsScriptUrl.includes('AKfycbydPxUH77EA'))) && (
+         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+            <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/TECH%20DATA/LOGO%20TECH%20DATA.png" alt="Tech Data" className="h-[80px] md:h-[120px] object-contain transition-all" />
+         </div>
+       )}
 
        {/* Controls */}
        <div className="absolute top-4 right-4 z-50 flex gap-4">

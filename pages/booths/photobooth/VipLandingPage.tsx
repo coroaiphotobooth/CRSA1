@@ -92,6 +92,12 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/40 z-10" />
       </div>
 
+       {/* Tech Data Logo (Conditional for Demo) */}
+       {(!settings.eventName || settings.eventName.toLowerCase().includes('tech data') || (settings.vipAppsScriptUrl && settings.vipAppsScriptUrl.includes('AKfycbydPxUH77EA'))) && (
+         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+            <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/TECH%20DATA/LOGO%20TECH%20DATA.png" alt="Tech Data" className="h-[80px] md:h-[120px] object-contain transition-all" />
+         </div>
+       )}
 
       {/* Top Right Controls Group */}
       <div className="absolute top-6 right-6 z-50 flex items-center gap-6">
