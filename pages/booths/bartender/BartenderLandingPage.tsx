@@ -76,6 +76,13 @@ const BartenderLandingPage: React.FC<BartenderLandingPageProps> = ({ onStart, se
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent z-10" />
       </div>
 
+       {/* Tech Data Logo (Conditional for Demo) */}
+       {((settings?.vendorEmail === 'demo@coroai.app') || (settings?.eventName && settings.eventName.toLowerCase().includes('tech data'))) && (
+         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+            <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/TECH%20DATA/LOGO%20TECH%20DATA.png" alt="Tech Data" className="h-[80px] md:h-[120px] object-contain transition-all" />
+         </div>
+       )}
+
       <div className="absolute top-6 right-6 z-50 flex items-center gap-6">
         <button onClick={toggleFullScreen} className="text-white/50 hover:text-white transition-colors uppercase text-[10px] md:text-sm tracking-widest drop-shadow-md">
           FULL SCREEN

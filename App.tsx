@@ -281,7 +281,7 @@ const PhotoboothFlow: React.FC = () => {
           // Fetch from Supabase
           const { data: eventData, error } = await supabase
             .from('events')
-            .select('*')
+            .select('*, vendors(email)')
             .eq('id', eventId)
             .single();
             
@@ -300,7 +300,8 @@ const PhotoboothFlow: React.FC = () => {
               eventDescription: eventData.description,
               activeEventId: eventData.id,
               storage_folder: eventData.storage_folder,
-              vendor_id: eventData.vendor_id
+              vendor_id: eventData.vendor_id,
+              vendorEmail: eventData.vendors?.email
             };
             setSettings(nextSettings);
             

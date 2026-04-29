@@ -94,7 +94,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart, onGallery, onAdmin, 
       />
       
        {/* Tech Data Logo (Conditional for Demo) */}
-       {(!settings.eventName || settings.eventName.toLowerCase().includes('tech data') || (settings.vipAppsScriptUrl && settings.vipAppsScriptUrl.includes('AKfycbydPxUH77EA'))) && (
+       {((settings?.vendorEmail === 'demo@coroai.app') || (settings?.eventName && settings.eventName.toLowerCase().includes('tech data'))) && (
          <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
             <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/TECH%20DATA/LOGO%20TECH%20DATA.png" alt="Tech Data" className="h-[80px] md:h-[120px] object-contain transition-all" />
          </div>

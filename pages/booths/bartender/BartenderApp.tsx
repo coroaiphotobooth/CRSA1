@@ -25,9 +25,9 @@ const BartenderApp: React.FC = () => {
   useEffect(() => {
     const loadEventSettings = async () => {
       if (eventId) {
-        const { data, error } = await supabase.from('events').select('settings').eq('id', eventId).single();
+        const { data, error } = await supabase.from('events').select('settings, vendors(email)').eq('id', eventId).single();
         if (data && data.settings) {
-          setSettings(prev => ({ ...prev, ...data.settings }));
+          setSettings(prev => ({ ...prev, ...data.settings, vendorEmail: data.vendors?.email }));
         }
       }
     };

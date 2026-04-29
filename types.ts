@@ -104,6 +104,7 @@ export interface PhotoboothSettings {
   eventDescription: string;
   uiSettings?: UIDisplaySettings;
   vendor_id?: string;
+  vendorEmail?: string;
   folderId: string;
   originalFolderId?: string; 
   storage_folder?: string;

@@ -17,7 +17,7 @@ const RegistrationApp: React.FC = () => {
         if (!eventId) return;
         const { data, error } = await supabase
           .from('events')
-          .select('*')
+          .select('*, vendors(email)')
           .eq('id', eventId)
           .single();
         
@@ -28,7 +28,8 @@ const RegistrationApp: React.FC = () => {
             ...data.settings,
             eventName: data.name,
             activeEventId: data.id,
-            eventType: data.event_type || 'registration'
+            eventType: data.event_type || 'registration',
+            vendorEmail: data.vendors?.email
           });
         }
       } catch (err) {
