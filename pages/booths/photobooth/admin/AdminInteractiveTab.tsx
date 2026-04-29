@@ -80,6 +80,8 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
   const [isUploadingBackgroundVideo, setIsUploadingBackgroundVideo] = useState(false);
   const backgroundInputRef = useRef<HTMLInputElement>(null);
   const backgroundVideoInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [showAddPageMenu, setShowAddPageMenu] = useState(false);
   const addPageMenuRef = useRef<HTMLDivElement>(null);
@@ -660,15 +662,35 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
             
             <div className="grid grid-cols-2 gap-4 mt-4">
                <div className={UI_CONTAINER}>
-                 <label className={UI_LABEL}>Logo URL (Optional)</label>
-                 <input 
-                   type="text" 
-                   value={localUI.logoUrl || ''} 
-                   onChange={(e) => updateUIChange('logoUrl', e.target.value)} 
-                   className={UI_INPUT} 
-                   placeholder="https://..."
-                 />
-                 <p className="text-[10px] text-gray-500">Paste logo URL</p>
+                 <label className={UI_LABEL}>Logo (Optional)</label>
+                 <div className="flex gap-2 items-center">
+                   {localUI.logoUrl && (
+                     <div className="relative w-12 h-12 rounded bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shrink-0 group">
+                       <img src={localUI.logoUrl} className="max-w-full max-h-full object-contain" alt="Logo" />
+                       <button onClick={() => updateUIChange('logoUrl', '')} className="absolute inset-0 bg-black/60 text-white text-xs opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><Trash2 className="w-4 h-4" /></button>
+                     </div>
+                   )}
+                   <button onClick={() => logoInputRef.current?.click()} disabled={isUploadingLogo} className="flex-1 py-3 text-xs border border-white/10 hover:border-[#bc13fe] bg-black/40 rounded-xl transition-colors text-white font-bold uppercase">
+                     {isUploadingLogo ? 'UPLOADING...' : 'UPLOAD LOGO (2MB)'}
+                   </button>
+                 </div>
+                 <input type="file" accept="image/jpeg,image/png,image/svg+xml" className="hidden" ref={logoInputRef} onChange={async (e) => {
+                   const file = e.target.files?.[0];
+                   if (!file) return;
+                   if (file.size > 2 * 1024 * 1024) { await showDialog('alert', 'Error', 'Image > 2MB limit.'); return; }
+                   setIsUploadingLogo(true);
+                   if (eventId) {
+                     const fileName = `${settings.storage_folder || eventId}/assets/logo-${Date.now()}.${file.name.split('.').pop()}`;
+                     const { data, error } = await supabase.storage.from('photobooth').upload(fileName, file, {upsert: true});
+                     if (!error) {
+                       const { data: { publicUrl } } = supabase.storage.from('photobooth').getPublicUrl(fileName);
+                       updateUIChange('logoUrl', publicUrl);
+                     } else {
+                       await showDialog('alert', 'Upload Failed', error.message);
+                     }
+                     setIsUploadingLogo(false);
+                   }
+                 }} />
                </div>
                <div className={UI_CONTAINER}>
                  <label className={UI_LABEL}>Logo Size</label>
@@ -918,6 +940,29 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
           <div>
             <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-2">Description / Sub-Title</label>
             <input type="text" value={activeConfigPage.description || ''} onChange={(e) => updateActivePage({ ...activeConfigPage, description: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#bc13fe]/50" />
+          </div>
+        </div>
+
+        <div className="mb-8 border border-white/10 rounded-xl p-4 bg-black/20">
+          <label className="text-[10px] font-bold tracking-widest text-[#bc13fe] uppercase block mb-3">Form Display Style / Layout Type</label>
+          <div className="grid grid-cols-3 gap-3">
+            <button onClick={() => updateActivePage({ ...activeConfigPage, formStyle: 'card' })} className={`py-4 px-2 text-center rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${activeConfigPage.formStyle === 'card' || (!activeConfigPage.formStyle || activeConfigPage.formStyle === 'glass' || activeConfigPage.formStyle === 'solid' || activeConfigPage.formStyle === 'neon') ? 'border-[#bc13fe] bg-[#bc13fe]/20 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+              <div className="w-12 h-8 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20"></div>
+              <span className={`text-[10px] uppercase font-bold text-center ${activeConfigPage.formStyle === 'card' || (!activeConfigPage.formStyle || activeConfigPage.formStyle === 'glass' || activeConfigPage.formStyle === 'solid' || activeConfigPage.formStyle === 'neon') ? 'text-white' : 'text-gray-400'}`}>Tipe 1 (Box/Card)</span>
+            </button>
+            <button onClick={() => updateActivePage({ ...activeConfigPage, formStyle: 'floating' })} className={`py-4 px-2 text-center rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${activeConfigPage.formStyle === 'floating' ? 'border-[#bc13fe] bg-[#bc13fe]/20 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+              <div className="w-12 h-8 rounded-lg border-dashed border border-gray-600 flex flex-col items-center justify-center gap-1 p-1">
+                <div className="w-full h-1 bg-white/30 rounded"></div><div className="w-full h-1 bg-white/30 rounded"></div>
+              </div>
+              <span className={`text-[10px] uppercase font-bold text-center ${activeConfigPage.formStyle === 'floating' ? 'text-white' : 'text-gray-400'}`}>Tipe 2 (Floating)</span>
+            </button>
+            <button onClick={() => updateActivePage({ ...activeConfigPage, formStyle: 'split' })} className={`py-4 px-2 text-center rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${activeConfigPage.formStyle === 'split' ? 'border-[#bc13fe] bg-[#bc13fe]/20 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30'}`}>
+              <div className="w-12 h-8 rounded-lg border border-white/20 flex overflow-hidden">
+                <div className="w-1/2 h-full border-r border-white/20 bg-white/10 flex items-center justify-center p-0.5"><div className="w-full h-1 bg-white/30"></div></div>
+                <div className="w-1/2 h-full flex flex-col justify-center gap-0.5 p-1"><div className="w-full h-0.5 bg-white/30"></div><div className="w-full h-0.5 bg-white/30"></div></div>
+              </div>
+              <span className={`text-[10px] uppercase font-bold text-center ${activeConfigPage.formStyle === 'split' ? 'text-white' : 'text-gray-400'}`}>Tipe 3 (Split)</span>
+            </button>
           </div>
         </div>
 
