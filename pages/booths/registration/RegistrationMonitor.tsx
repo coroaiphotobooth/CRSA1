@@ -55,8 +55,8 @@ const RegistrationMonitor: React.FC = () => {
     let mounted = true;
     const fetchLiveArrivals = async () => {
       try {
-        let scriptUrl = "https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec";
-        if (settings?.vipAppsScriptUrl && settings.vipAppsScriptUrl.includes('AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6')) {
+        let scriptUrl = "https://script.google.com/macros/s/AKfycbydPxUH77EAIf79llD0-jPQJQHssx72km8P4CVUDX1Nvz96US4yg8i1WUWdeVwyFMsW/exec";
+        if (settings?.vipAppsScriptUrl && !settings.vipAppsScriptUrl.match(/AKfycbwWZV9|AKfycbw5Z|AKfycbxH9|AKfycbxJI/)) {
            scriptUrl = settings.vipAppsScriptUrl;
         }
         

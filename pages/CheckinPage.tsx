@@ -160,28 +160,63 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
     setLoading(true);
     setError(null);
 
+    const searchQuery = vipKode.trim();
+
     try {
-      let scriptUrl = "https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec";
-      if (settings.vipAppsScriptUrl && settings.vipAppsScriptUrl.includes('AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6')) {
+      let scriptUrl = "https://script.google.com/macros/s/AKfycbydPxUH77EAIf79llD0-jPQJQHssx72km8P4CVUDX1Nvz96US4yg8i1WUWdeVwyFMsW/exec";
+      if (settings.vipAppsScriptUrl && !settings.vipAppsScriptUrl.match(/AKfycbwWZV9|AKfycbw5Z|AKfycbxH9|AKfycbxJI/)) {
          scriptUrl = settings.vipAppsScriptUrl;
       }
       
-      // Sending query as 'kode' Parameter to verification script. 
-      // If the GAS script is updated to search by both, it works. If not, it just matches exactly.
-      const verifyUrl = `${scriptUrl}?action=verify&kode=${encodeURIComponent(vipKode.trim())}`;
-      const res = await fetch(verifyUrl);
-      const text = await res.text();
-      let data;
+      let data = null;
+
+      // FIRST: Try client-side fuzzy search using getRecent which holds allData
       try {
-         data = JSON.parse(text);
-      } catch(e) {
-         throw new Error("Invalid response format from server");
+         const allDataRes = await fetch(`${scriptUrl}?action=getRecent&t=${Date.now()}`);
+         const allDataText = await allDataRes.text();
+         const allDataJson = JSON.parse(allDataText);
+         
+         if (allDataJson && allDataJson.success && allDataJson.allData) {
+             const lowerQuery = searchQuery.toLowerCase();
+             const queryWords = lowerQuery.split(/\s+/);
+             const found = allDataJson.allData.find((g: any) => {
+                const gId = String(g.id).toLowerCase();
+                const gName = String(g.name).toLowerCase();
+                
+                if (gId === lowerQuery || gId.includes(lowerQuery)) return true;
+                
+                // Allow matching if all provided words exist anywhere in the name
+                return queryWords.every(word => gName.includes(word));
+             });
+             
+             if (found) {
+                 data = {
+                    success: true,
+                    guestName: found.name,
+                    kode: found.id
+                 };
+             }
+         }
+      } catch (err) {
+         console.error("Client side search via getRecent failed", err);
+      }
+
+      // SECOND: Fallback to verify action just in case
+      if (!data) {
+        const verifyUrl = `${scriptUrl}?action=verify&kode=${encodeURIComponent(searchQuery)}`;
+        const res = await fetch(verifyUrl);
+        const text = await res.text();
+        try {
+           data = JSON.parse(text);
+        } catch(e) {
+           throw new Error("Invalid response format from server");
+        }
       }
 
       if (data && data.success && data.guestName) {
         setPendingGuest({
            name: data.guestName,
-           kode: data.kode || vipKode.trim()
+           kode: data.kode || searchQuery
         });
         setStep('confirm');
       } else {
@@ -199,8 +234,8 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
     if (!pendingGuest) return;
     setLoading(true);
     
-    let scriptUrl = "https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec";
-    if (settings.vipAppsScriptUrl && settings.vipAppsScriptUrl.includes('AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6')) {
+    let scriptUrl = "https://script.google.com/macros/s/AKfycbydPxUH77EAIf79llD0-jPQJQHssx72km8P4CVUDX1Nvz96US4yg8i1WUWdeVwyFMsW/exec";
+    if (settings.vipAppsScriptUrl && !settings.vipAppsScriptUrl.match(/AKfycbwWZV9|AKfycbw5Z|AKfycbxH9|AKfycbxJI/)) {
        scriptUrl = settings.vipAppsScriptUrl;
     }
     
@@ -369,6 +404,11 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ settings, onExit }) => {
                 <div className="absolute inset-0 top-auto bottom-0 h-1/2 bg-gradient-to-t from-black via-black/80 to-transparent z-10 hidden lg:block" />
              </>
           )}
+       </div>
+
+       {/* Logo */}
+       <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50">
+          <img src="https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/TECH%20DATA/LOGO%20TECH%20DATA.png" alt="Tech Data" className="h-[80px] md:h-[120px] object-contain transition-all" />
        </div>
 
        {/* Controls */}

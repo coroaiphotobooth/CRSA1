@@ -1,7 +1,7 @@
 
 import { Concept, PhotoboothSettings } from './types';
 
-export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbxH9LHFPmWozQOo2MmeEujd_PyIMY3AzTA9ANYEi5bGjxyu3YzG9pF4N4kjfiXnskk7/exec';
+export const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbydPxUH77EAIf79llD0-jPQJQHssx72km8P4CVUDX1Nvz96US4yg8i1WUWdeVwyFMsW/exec';
 
 export const DEFAULT_CONCEPTS: Concept[] = [];
 
@@ -45,7 +45,7 @@ export const DEFAULT_SETTINGS: PhotoboothSettings = {
   printTransparency: 0,
   enableSilentPrintWrapper: false,
   enableVipMode: false,
-  vipAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec',
+  vipAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbydPxUH77EAIf79llD0-jPQJQHssx72km8P4CVUDX1Nvz96US4yg8i1WUWdeVwyFMsW/exec',
   vipVideoIdleUrl: 'https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO/LOOP%20IDLE.mp4',
   vipVideoTalkingUrl: 'https://ufxymelzgxshoopuphoj.supabase.co/storage/v1/object/public/DATA%20COROAI/VIDEO/TALKING.mp4',
   vipTtsSpeed: 1.25,

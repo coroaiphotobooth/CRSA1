@@ -124,27 +124,52 @@ function doGet(e) {
     const values = dataRange.getValues();
     if (values.length <= 1) return createJsonResponse({ success: false, error: "No data" });
     const headers = values[0].map(h => String(h).toLowerCase().trim());
-    const kodeIndex = headers.indexOf('kode');
+    
+    let kodeIndex = headers.indexOf('kode');
+    if (kodeIndex === -1) kodeIndex = headers.findIndex(h => h.includes('kode') || h.includes('id') || h.includes('qr') || h.includes('barcode'));
+    
     let nameIndex = headers.indexOf('name');
     if (nameIndex === -1) nameIndex = headers.indexOf('nama');
     if (nameIndex === -1) nameIndex = headers.indexOf('first name');
+    if (nameIndex === -1) nameIndex = headers.findIndex(h => h.includes('nama') || h.includes('name') || h.includes('guest'));
+    
+    let lastNameIndex = headers.indexOf('last name');
+    if (lastNameIndex === -1) lastNameIndex = headers.findIndex(h => h.includes('last name') || h.includes('nama belakang'));
     
     if (kodeIndex === -1) return createJsonResponse({ success: false, error: "Kode column not found" });
     
+    let matchedIndex = -1;
+    let query = String(kode).toLowerCase().trim();
+    
     for (let i = 1; i < values.length; i++) {
-       if (String(values[i][kodeIndex]) === String(kode)) {
-         let fullName = nameIndex !== -1 ? values[i][nameIndex] : ("Guest " + kode);
-         // if there's a last name, append it
-         let lastIndex = headers.indexOf('last name');
-         if (lastIndex !== -1 && values[i][lastIndex]) {
-            fullName += " " + values[i][lastIndex];
-         }
-         return createJsonResponse({
-           success: true,
-           guestName: fullName,
-           kode: kode
-         });
+       let currentKode = String(values[i][kodeIndex]).toLowerCase().trim();
+       
+       let fullName = nameIndex !== -1 ? String(values[i][nameIndex]).toLowerCase().trim() : "";
+       if (lastNameIndex !== -1 && values[i][lastNameIndex]) {
+           fullName += " " + String(values[i][lastNameIndex]).toLowerCase().trim();
        }
+       
+       const queryWords = query.split(/\s+/);
+       const isNameMatch = queryWords.every(word => fullName.includes(word));
+       
+       if (currentKode === query || isNameMatch) {
+         matchedIndex = i;
+         break;
+       }
+    }
+    
+    if (matchedIndex !== -1) {
+       let i = matchedIndex;
+       let origFullName = nameIndex !== -1 ? values[i][nameIndex] : ("Guest " + values[i][kodeIndex]);
+       if (lastNameIndex !== -1 && values[i][lastNameIndex]) {
+           origFullName += " " + values[i][lastNameIndex];
+       }
+       
+       return createJsonResponse({
+         success: true,
+         guestName: origFullName,
+         kode: values[i][kodeIndex]
+       });
     }
     return createJsonResponse({ success: false, error: "Not found" });
   }
@@ -195,16 +220,22 @@ function doGet(e) {
     let nameIndex = headers.indexOf('name');
     if (nameIndex === -1) nameIndex = headers.indexOf('nama');
     if (nameIndex === -1) nameIndex = headers.indexOf('first name');
+    if (nameIndex === -1) nameIndex = headers.findIndex(h => h.includes('nama') || h.includes('name') || h.includes('guest'));
     
     let lastNameIndex = headers.indexOf('last name');
+    if (lastNameIndex === -1) lastNameIndex = headers.findIndex(h => h.includes('last name') || h.includes('nama belakang'));
     
     let statusIndex = headers.indexOf('status login');
     if (statusIndex === -1) statusIndex = headers.indexOf('status');
+    if (statusIndex === -1) statusIndex = headers.findIndex(h => h.includes('status') || h.includes('check'));
     
-    const timeIndex = headers.indexOf('timestamp');
-    const tableIndex = headers.indexOf('table');
-    const paxIndex = headers.indexOf('pax');
-    const idIndex = headers.indexOf('kode') !== -1 ? headers.indexOf('kode') : 0;
+    const timeIndex = headers.findIndex(h => h.includes('time') || h.includes('waktu') || h.includes('jam'));
+    const tableIndex = headers.findIndex(h => h.includes('table') || h.includes('meja'));
+    const paxIndex = headers.findIndex(h => h.includes('pax'));
+    
+    let idIndex = headers.indexOf('kode');
+    if (idIndex === -1) idIndex = headers.findIndex(h => h.includes('kode') || h.includes('id') || h.includes('qr') || h.includes('barcode'));
+    if (idIndex === -1) idIndex = 0;
     
     let arrivals = [];
     let allData = [];

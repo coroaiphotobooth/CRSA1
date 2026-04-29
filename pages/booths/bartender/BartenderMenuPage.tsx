@@ -268,7 +268,10 @@ const BartenderMenuPage: React.FC<BartenderMenuPageProps> = ({ settings, guestNa
 
     try {
        const orderNumber = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-       const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec";
+       let scriptUrl = "https://script.google.com/macros/s/AKfycbydPxUH77EAIf79llD0-jPQJQHssx72km8P4CVUDX1Nvz96US4yg8i1WUWdeVwyFMsW/exec";
+       if (settings.vipAppsScriptUrl && !settings.vipAppsScriptUrl.match(/AKfycbwWZV9|AKfycbw5Z|AKfycbxH9|AKfycbxJI/)) {
+          scriptUrl = settings.vipAppsScriptUrl;
+       }
        
        // Log to Apps Script for legacy support
        await fetch(`${scriptUrl}?action=update&target=minuman&kode=${encodeURIComponent(orderNumber)}&status=${encodeURIComponent(selectedDrink)}`, {
@@ -306,7 +309,10 @@ const BartenderMenuPage: React.FC<BartenderMenuPageProps> = ({ settings, guestNa
 
     try {
       const orderNumber = `ORD-${Math.floor(1000 + Math.random() * 9000)}`;
-      const scriptUrl = settings.vipAppsScriptUrl || "https://script.google.com/macros/s/AKfycbwWZV9VV6W1njqvju2yTGAcfjEEt9YwsI3_57FX3RTCFmwGNiYtGbRFTI7PttRCc7R6/exec";
+      let scriptUrl = "https://script.google.com/macros/s/AKfycbydPxUH77EAIf79llD0-jPQJQHssx72km8P4CVUDX1Nvz96US4yg8i1WUWdeVwyFMsW/exec";
+      if (settings.vipAppsScriptUrl && !settings.vipAppsScriptUrl.match(/AKfycbwWZV9|AKfycbw5Z|AKfycbxH9|AKfycbxJI/)) {
+         scriptUrl = settings.vipAppsScriptUrl;
+      }
       
       await fetch(`${scriptUrl}?action=update&target=minuman&kode=${encodeURIComponent(orderNumber)}&status=${encodeURIComponent(drinkName)}`, {
         method: 'GET',
