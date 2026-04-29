@@ -1,7 +1,7 @@
 import React, { useState, useImperativeHandle, forwardRef, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { PhotoboothSettings, UIDisplaySettings } from '../../../../types';
-import { Settings, Save, Plus, Trash2, GripVertical, FileText, CheckCircle, Smartphone, Camera, Image as ImageIcon, Wand2, Video } from 'lucide-react';
+import { Settings, Save, Plus, Trash2, GripVertical, FileText, CheckCircle, Smartphone, Camera, Image as ImageIcon, Wand2, Video, MonitorPlay } from 'lucide-react';
 import { useDialog } from '../../../../components/DialogProvider';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../../../lib/supabase';
@@ -22,7 +22,7 @@ interface AdminInteractiveTabProps {
 const AVAILABLE_STEPS = [
   { id: 'launch', label: 'Launch Screen', icon: <Smartphone className="w-4 h-4" />, deletable: true },
   { id: 'concept_select', label: 'Concept Selection', icon: <ImageIcon className="w-4 h-4" />, deletable: true },
-  { id: 'capture', label: 'Camera / Capture', icon: <Camera className="w-4 h-4" />, deletable: false },
+  { id: 'capture', label: 'Camera / Capture', icon: <Camera className="w-4 h-4" />, deletable: true },
   { id: 'processing', label: 'AI Processing', icon: <Wand2 className="w-4 h-4" />, fixed: true, deletable: true },
   { id: 'result', label: 'Result Screen', icon: <CheckCircle className="w-4 h-4" />, fixed: true, deletable: false },
 ];
@@ -68,6 +68,9 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
   const [showAddPageMenu, setShowAddPageMenu] = useState(false);
   const addPageMenuRef = useRef<HTMLDivElement>(null);
 
+  const [previewRatio, setPreviewRatio] = useState<'9:16' | '16:9'>('9:16');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (addPageMenuRef.current && !addPageMenuRef.current.contains(e.target as Node)) {
@@ -82,6 +85,16 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
     setLocalSettings(settings);
     setIsDirty(false);
   }, [settings]);
+
+  useEffect(() => {
+    // Send live localSettings to iframe if it exists
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(
+        { type: 'preview_settings', settings: localSettings },
+        '*'
+      );
+    }
+  }, [localSettings]);
 
   useImperativeHandle(ref, () => ({
     hasUnsavedChanges: () => isDirty,
@@ -153,6 +166,19 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
       interactivePages: [...(prev.interactivePages || []), newPage],
       interactiveFlow: [...(prev.interactiveFlow || []), newId]
     }));
+    setIsDirty(true);
+    setShowAddPageMenu(false);
+  };
+
+  const addCameraFxPage = () => {
+    const newId = `camera_fx_${Date.now()}`;
+    const newPage = { id: newId, type: 'camera_fx', title: 'Camera FX', deepArLicenseKey: '', effects: [], instructionText: 'Look at the camera', allowCapture: true };
+    setLocalSettings(prev => ({
+      ...prev,
+      interactivePages: [...(prev.interactivePages || []), newPage],
+      interactiveFlow: [...(prev.interactiveFlow || []), newId]
+    }));
+    setActiveConfigPage(newPage);
     setIsDirty(true);
     setShowAddPageMenu(false);
   };
@@ -991,6 +1017,73 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
         </div>
       </div>
     );
+  } else if (typeof activeConfigPage === 'object' && activeConfigPage !== null && activeConfigPage.type === 'camera_fx') {
+    rightPanelContent = (
+      <div className="w-full h-full flex flex-col animate-in fade-in duration-300">
+        <div className="flex justify-between items-center mb-6 pb-6 border-b border-white/10">
+          <h2 className="text-xl font-heading tracking-widest font-bold text-white uppercase flex items-center gap-3">
+            <Wand2 className="w-5 h-5 text-green-400" /> EDIT CAMERA FX
+            <span className="bg-green-400/20 text-green-400 px-2 py-0.5 rounded text-[10px]">{activeConfigPage.id}</span>
+          </h2>
+        </div>
+
+        <div className="flex flex-col gap-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          <div className={UI_CONTAINER}>
+             <label className={UI_LABEL}>DeepAR License Key</label>
+             <input type="text" value={activeConfigPage.deepArLicenseKey || ''} onChange={(e) => updateActivePage({ ...activeConfigPage, deepArLicenseKey: e.target.value })} className={UI_INPUT} placeholder="Enter your DeepAR License Key" />
+          </div>
+
+          <div className={UI_CONTAINER}>
+             <label className={UI_LABEL}>Instruction Text</label>
+             <input type="text" value={activeConfigPage.instructionText || ''} onChange={(e) => updateActivePage({ ...activeConfigPage, instructionText: e.target.value })} className={UI_INPUT} />
+          </div>
+
+          <div className={UI_CONTAINER}>
+             <label className={UI_LABEL}>Allow Camera Capture</label>
+             <label className="flex items-center gap-3 cursor-pointer p-4 bg-white/5 border border-white/10 rounded-lg">
+                <input type="checkbox" checked={activeConfigPage.allowCapture ?? true} onChange={(e) => updateActivePage({ ...activeConfigPage, allowCapture: e.target.checked})} className="w-5 h-5 accent-green-400" />
+                <span className="text-white text-xs font-bold uppercase tracking-widest">Enable Photo Capture</span>
+             </label>
+          </div>
+
+          <div className={UI_CONTAINER}>
+            <label className={UI_LABEL}>DeepAR Effects (.deepar files)</label>
+            <div className="flex flex-col gap-2">
+              <button onClick={() => {
+                const newEffects = [...(activeConfigPage.effects || []), { name: 'New Effect', url: '' }];
+                updateActivePage({ ...activeConfigPage, effects: newEffects });
+              }} className="self-start px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold transition-colors">
+                + Add Effect URL
+              </button>
+              
+              {(activeConfigPage.effects || []).map((effect: any, index: number) => (
+                <div key={index} className="flex flex-col gap-2 p-3 bg-black/40 border border-white/10 rounded-lg">
+                  <div className="flex gap-2">
+                    <input type="text" placeholder="Effect Name" value={effect.name} onChange={(e) => {
+                      const newFx = [...activeConfigPage.effects];
+                      newFx[index].name = e.target.value;
+                      updateActivePage({ ...activeConfigPage, effects: newFx });
+                    }} className="flex-1 bg-black/60 border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                    <button onClick={() => {
+                      const newFx = [...activeConfigPage.effects];
+                      newFx.splice(index, 1);
+                      updateActivePage({ ...activeConfigPage, effects: newFx });
+                    }} className="p-1 text-red-400 hover:bg-red-400/20 rounded">
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <input type="text" placeholder="https://.../effect.deepar" value={effect.url} onChange={(e) => {
+                    const newFx = [...activeConfigPage.effects];
+                    newFx[index].url = e.target.value;
+                    updateActivePage({ ...activeConfigPage, effects: newFx });
+                  }} className="w-full bg-black/60 border border-white/10 rounded px-2 py-1 text-xs text-white" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   } else {
     // Global Display Settings
     rightPanelContent = (
@@ -1115,7 +1208,7 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                     const isFixed = AVAILABLE_STEPS.find(s => s.id === stepId)?.fixed;
                     const isForm = stepId.startsWith('form');
                     const isVideo = stepId.startsWith('video');
-                    const isCustom = isForm || isVideo;
+                    const isCustom = isForm || isVideo || stepId.startsWith('camera_fx');
                     const isActive = typeof activeConfigPage === 'string' ? activeConfigPage === stepId : activeConfigPage?.id === stepId;
                     
                     return (
@@ -1146,6 +1239,7 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                                 <span>{renderStepName(stepId)}</span>
                                 {isForm && <span className="text-[9px] text-[#bc13fe] font-normal lowercase tracking-normal">custom form / q&a</span>}
                                 {isVideo && <span className="text-[9px] text-[#bc13fe] font-normal lowercase tracking-normal">custom video page</span>}
+                                {stepId.startsWith('camera_fx') && <span className="text-[9px] text-green-400 font-normal lowercase tracking-normal">camera fx page</span>}
                               </div>
                             </div>
                             
@@ -1173,7 +1267,21 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
           </DragDropContext>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-white/10 flex flex-col gap-3">
+        {(() => {
+          const cameraCount = currentFlow.filter(id => id === 'capture' || customPages.find(p => p.id === id && p.type === 'camera_fx')).length;
+          if (cameraCount > 1) {
+            return (
+              <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
+                <p className="text-red-400 text-[10px] font-bold uppercase tracking-widest text-center">
+                  ⚠️ You have 2 camera captures, are you sure? Or delete one of them.
+                </p>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
+        <div className="mt-4 pt-6 border-t border-white/10 flex flex-col gap-3">
           <div className="relative" ref={addPageMenuRef}>
             <button onClick={() => setShowAddPageMenu(!showAddPageMenu)} className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 border-dashed rounded-xl text-white text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" /> ADD PAGE
@@ -1211,8 +1319,11 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                 <button onClick={() => addCustomForm('Question & Answer')} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest border-b border-white/5 flex items-center gap-3">
                   <FileText className="w-4 h-4 text-[#bc13fe]" /> Add Question & Answer
                 </button>
-                <button onClick={addVideoPage} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest flex items-center gap-3">
+                <button onClick={addVideoPage} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest border-b border-white/5 flex items-center gap-3">
                   <Video className="w-4 h-4 text-orange-400" /> Add Video Page
+                </button>
+                <button onClick={addCameraFxPage} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest flex items-center gap-3">
+                  <Wand2 className="w-4 h-4 text-green-400" /> Add Camera FX
                 </button>
               </div>
             )}
@@ -1228,14 +1339,47 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
       </div>
 
       {/* Right Panel: Page Editor & Sub-Settings */}
-      <div className="w-full lg:w-2/3 bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl min-h-[700px] flex flex-col relative">
-         {activeConfigPage && (
-            <button onClick={() => setActiveConfigPage(null)} className="absolute top-6 right-6 z-10 p-2 bg-white/5 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1">
-              BACK TO GLOBAL
-            </button>
-         )}
-         
-         {rightPanelContent}
+      <div className="w-full lg:w-2/3 flex flex-col xl:flex-row gap-6">
+        <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl min-h-[700px] flex flex-col relative overflow-hidden">
+           {activeConfigPage && (
+              <button onClick={() => setActiveConfigPage(null)} className="absolute top-6 right-6 z-10 p-2 bg-white/5 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1">
+                BACK TO GLOBAL
+              </button>
+           )}
+           
+           {rightPanelContent}
+        </div>
+        
+        {/* Preview Panel */}
+        <div className="w-full xl:w-[320px] bg-white/5 flex flex-col items-center p-4 border border-white/10 rounded-2xl shadow-xl h-fit sticky top-0">
+            <h3 className="text-white font-bold tracking-widest text-[#bc13fe] uppercase text-sm mb-4 flex items-center gap-2">
+              <MonitorPlay className="w-4 h-4" /> LIVE PREVIEW
+            </h3>
+            
+            <div className="flex gap-2 mb-6 w-full">
+               <button onClick={() => setPreviewRatio('9:16')} className={`flex-1 py-2 border rounded-lg text-[10px] font-bold uppercase transition-colors ${previewRatio === '9:16' ? 'bg-[#bc13fe]/20 border-[#bc13fe] text-[#bc13fe]' : 'bg-transparent border-white/20 text-gray-400 hover:text-white'}`}>Portrait</button>
+               <button onClick={() => setPreviewRatio('16:9')} className={`flex-1 py-2 border rounded-lg text-[10px] font-bold uppercase transition-colors ${previewRatio === '16:9' ? 'bg-[#bc13fe]/20 border-[#bc13fe] text-[#bc13fe]' : 'bg-transparent border-white/20 text-gray-400 hover:text-white'}`}>Landscape</button>
+            </div>
+            
+            <div className={`bg-black border-[4px] border-[#bc13fe]/50 rounded-2xl relative shadow-[0_0_30px_rgba(188,19,254,0.15)] transition-all duration-300 overflow-hidden ${previewRatio === '9:16' ? 'w-[270px] h-[480px]' : 'w-[280px] h-[157px]'}`}>
+                <iframe 
+                   ref={iframeRef}
+                   key={`${previewRatio}-${typeof activeConfigPage === 'string' ? activeConfigPage : activeConfigPage?.id}`}
+                   src={`/app/${eventId}?preview_step=${typeof activeConfigPage === 'string' ? activeConfigPage : activeConfigPage?.id || 'launch'}&preview_token=${Date.now()}`} 
+                   className="absolute border-0" 
+                   style={{
+                       width: previewRatio === '9:16' ? '1080px' : '1920px',
+                       height: previewRatio === '9:16' ? '1920px' : '1080px',
+                       transform: previewRatio === '9:16' ? 'scale(0.25)' : 'scale(0.1458)', // 280 / 1920
+                       transformOrigin: 'top left',
+                       pointerEvents: 'auto'
+                   }} 
+                />
+            </div>
+            <p className="text-gray-500 text-[10px] mt-6 text-center leading-relaxed">
+              Preview updates live as you edit.<br/>Shows UI layout only, not actual AI or camera.
+            </p>
+        </div>
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ const BartenderApp: React.FC = () => {
       if (eventId) {
         const { data, error } = await supabase.from('events').select('settings, vendors(email)').eq('id', eventId).single();
         if (data && data.settings) {
-          setSettings(prev => ({ ...prev, ...data.settings, vendorEmail: data.vendors?.email }));
+          setSettings(prev => ({ ...prev, ...data.settings, vendorEmail: Array.isArray(data.vendors) ? data.vendors[0]?.email : (data.vendors as any)?.email }));
         }
       }
     };

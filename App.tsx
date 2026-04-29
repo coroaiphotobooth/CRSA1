@@ -26,6 +26,7 @@ import GuestResultPage from './pages/booths/photobooth/GuestResultPage';
 import InteractiveFormPage from './pages/booths/photobooth/InteractiveFormPage';
 import InteractiveVideoPage from './pages/booths/photobooth/InteractiveVideoPage';
 import InteractiveVideoStartPage from './pages/booths/photobooth/InteractiveVideoStartPage';
+import CameraFXPage from './pages/booths/photobooth/CameraFXPage';
 import { usePresence } from './hooks/usePresence';
 import LoginPage from './pages/auth/LoginPage';
 import VendorDashboard from './pages/dashboard/VendorDashboard';
@@ -54,11 +55,14 @@ const PhotoboothFlow: React.FC = () => {
   const { showDialog } = useDialog();
   
   const queryParams = new URLSearchParams(location.search);
-  const initialPage = queryParams.get('page') === 'monitor'
-    ? AppState.MONITOR
-    : queryParams.get('page') === 'gallery' 
-    ? AppState.GALLERY 
-    : location.pathname.startsWith('/admin') ? AppState.ADMIN : AppState.LANDING;
+  const previewStep = queryParams.get('preview_step');
+  const previewToken = queryParams.get('preview_token'); // To force re-render if needed
+  const isPreviewMode = !!previewStep;
+
+  let initialPage = AppState.LANDING;
+  if (queryParams.get('page') === 'monitor') initialPage = AppState.MONITOR;
+  else if (queryParams.get('page') === 'gallery') initialPage = AppState.GALLERY;
+  else if (location.pathname.startsWith('/admin')) initialPage = AppState.ADMIN;
 
   const [currentPage, setCurrentPage] = useState<AppState>(initialPage);
   const [adminTab, setAdminTab] = useState<'settings' | 'concepts' | 'vip' | 'interactive'>('settings');
@@ -69,6 +73,32 @@ const PhotoboothFlow: React.FC = () => {
   const [settings, setSettings] = useState<PhotoboothSettings>(DEFAULT_SETTINGS);
   const [concepts, setConcepts] = useState<Concept[]>(DEFAULT_CONCEPTS);
   const [eventLoadStatus, setEventLoadStatus] = useState<'loading' | 'success' | 'error'>('loading');
+
+  // Preview Mode: Listen for live settings from admin iframe parent
+  useEffect(() => {
+    if (isPreviewMode) {
+      const handleMessage = (e: MessageEvent) => {
+        if (e.data && e.data.type === 'preview_settings') {
+          setSettings(e.data.settings);
+        }
+      };
+      window.addEventListener('message', handleMessage);
+      
+      // Also, force specific interactive step
+      const flow = settings.interactiveFlow || ['launch', 'concept_select', 'capture', 'processing', 'result'];
+      const index = flow.findIndex(s => s === previewStep);
+      let targetIndex = index !== -1 ? index : 0;
+      
+      // But previewStep might be a custom page ID like "form_xyz", which is in interactiveFlow.
+      // Above logic handles it, since we compare to `previewStep`.
+      if (index === -1 && previewStep === 'launch') {
+        targetIndex = 0;
+      }
+      setInteractiveStepIndex(targetIndex);
+      
+      return () => window.removeEventListener('message', handleMessage);
+    }
+  }, [isPreviewMode, previewStep, settings.interactiveFlow]);
   
   // App Booting States
   const [isBooting, setIsBooting] = useState(false);
@@ -201,6 +231,13 @@ const PhotoboothFlow: React.FC = () => {
     
     // 3. Sync Cloud
     const syncCloud = async () => {
+      // OVERRIDE FOR PREVIEW MODE
+      if (isPreviewMode) {
+          setEventLoadStatus('success');
+          setIsBooting(false);
+          return;
+      }
+
       const handleBoot = async (settingsToLoad: PhotoboothSettings, conceptsToLoad: Concept[]) => {
           setEventLoadStatus('success');
           
@@ -530,7 +567,7 @@ const PhotoboothFlow: React.FC = () => {
       });
   };
 
-  const isInteractive = settings.boothType === 'interactive';
+  const isInteractive = settings.boothType === 'interactive' || isPreviewMode;
   const interactiveFlowArray = settings.interactiveFlow || ['launch', 'concept_select', 'capture', 'processing', 'result'];
 
   const advanceInteractive = (dataPatch?: any) => {
@@ -703,6 +740,25 @@ const PhotoboothFlow: React.FC = () => {
             onAdmin={(tab) => { if (tab) setAdminTab(tab as any); else setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
             onGallery={() => setCurrentPage(AppState.GALLERY)}
             isVIPAdmin={isVIPAdmin}
+          />
+        );
+      }
+      if (currentStepId?.startsWith('camera_fx')) {
+        const pageConfig = settings.interactivePages?.find(p => p.id === currentStepId);
+        return (
+          <CameraFXPage
+            pageConfig={pageConfig}
+            settings={settings}
+            onCapture={(img) => {
+              if (pageConfig?.allowCapture) {
+                setCapturedImage(img);
+                setRegenUltraQuality(false); 
+                setCurrentSession(null);
+                advanceInteractive();
+              }
+            }}
+            onNext={() => advanceInteractive()}
+            onBack={() => retreatInteractive()}
           />
         );
       }
