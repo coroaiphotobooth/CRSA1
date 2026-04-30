@@ -1510,7 +1510,8 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="flow-list">
               {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                <div {...provided.droppableProps} ref={provided.innerRef} className="relative flex flex-col gap-3">
+                  <div className="absolute left-10 top-6 bottom-6 w-0.5 bg-gradient-to-b from-white/5 via-white/10 to-white/5 -z-10 rounded-full hidden sm:block"></div>
                   {currentFlow.map((stepId, index) => {
                     const isFixed = AVAILABLE_STEPS.find(s => s.id === stepId)?.fixed;
                     const isForm = stepId.startsWith('form');
@@ -1525,12 +1526,16 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`flex items-center gap-2 p-2 rounded-xl border bg-black/40 backdrop-blur-sm transition-all shadow-lg group
-                              ${snapshot.isDragging ? 'border-[#bc13fe] border-b-4' : ''}
+                            className={`flex items-center gap-2 p-2 rounded-xl border bg-black/80 backdrop-blur-md transition-all shadow-lg group relative isolate
+                              ${snapshot.isDragging ? 'border-[#bc13fe] border-b-4 z-50' : 'z-10'}
                               ${isActive ? 'border-[#bc13fe] shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 hover:border-white/20 hover:bg-white/5'}`}
                           >
                             <div {...provided.dragHandleProps} className="text-gray-500 hover:text-white cursor-grab active:cursor-grabbing p-1 shrink-0">
                               <GripVertical className="w-4 h-4" />
+                            </div>
+                            
+                            <div className="flex bg-white/10 border border-white/20 text-[9px] font-black text-white w-5 h-5 rounded-full items-center justify-center shrink-0">
+                              {index + 1}
                             </div>
                             
                             <div 
