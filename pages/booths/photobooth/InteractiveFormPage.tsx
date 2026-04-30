@@ -64,6 +64,76 @@ const InteractiveFormPage: React.FC<InteractiveFormPageProps> = ({ pageConfig, s
               value={formData[field.id] || ''}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
             />
+          ) : field.type === 'radio' ? (
+            <div className={`flex flex-col gap-3 ${errors[field.id] ? 'p-2 border border-red-500 rounded-xl' : ''}`}>
+              {(field.options || '').split(',').map((opt: string, i: number) => {
+                const val = opt.trim();
+                if (!val) return null;
+                const isChecked = formData[field.id] === val;
+                return (
+                  <label key={i} className={`flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-black/40 cursor-pointer transition-all hover:bg-white/10 ${isChecked ? 'border-[#bc13fe] bg-white/10' : ''}`}>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${isChecked ? 'border-[#bc13fe] bg-[#bc13fe]' : 'border-gray-500'}`}>
+                      {isChecked && <div className="w-2 h-2 bg-white rounded-full" />}
+                    </div>
+                    <input 
+                      type="radio" 
+                      name={field.id}
+                      value={val}
+                      checked={isChecked}
+                      onChange={(e) => handleInputChange(field.id, e.target.value)}
+                      className="hidden"
+                    />
+                    <span className="text-white text-sm">{val}</span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : field.type === 'checkbox' ? (
+            <div className={`flex flex-col gap-3 ${errors[field.id] ? 'p-2 border border-red-500 rounded-xl' : ''}`}>
+              {(field.options || '').split(',').map((opt: string, i: number) => {
+                const val = opt.trim();
+                if (!val) return null;
+                const currentVals = formData[field.id] ? formData[field.id].split(',').map((v:string) => v.trim()) : [];
+                const isChecked = currentVals.includes(val);
+                return (
+                  <label key={i} className={`flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-black/40 cursor-pointer transition-all hover:bg-white/10 ${isChecked ? 'border-[#bc13fe] bg-white/10' : ''}`}>
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${isChecked ? 'border-[#bc13fe] bg-[#bc13fe]' : 'border-gray-500'}`}>
+                      {isChecked && (
+                        <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      )}
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      value={val}
+                      checked={isChecked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleInputChange(field.id, [...currentVals, val].filter(Boolean).join(', '));
+                        } else {
+                          handleInputChange(field.id, currentVals.filter((v:string) => v !== val).filter(Boolean).join(', '));
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <span className="text-white text-sm">{val}</span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : field.type === 'select' ? (
+            <select
+              className={`w-full ${formStyle === 'split' || formStyle === 'floating' ? 'bg-black/60 border-white/20' : 'bg-black/50 border-white/20'} backdrop-blur-md border ${errors[field.id] ? '!border-red-500' : ''} rounded-2xl px-5 py-4 text-white placeholder-gray-500 focus:outline-none focus:border-[#bc13fe] focus:ring-1 focus:ring-[#bc13fe] transition-all shadow-inner appearance-none`}
+              value={formData[field.id] || ''}
+              onChange={(e) => handleInputChange(field.id, e.target.value)}
+            >
+              <option value="" disabled>Pilih {field.label?.toLowerCase() || 'pilihan'}</option>
+              {(field.options || '').split(',').map((opt: string, i: number) => {
+                const val = opt.trim();
+                return val ? <option key={i} value={val}>{val}</option> : null;
+              })}
+            </select>
           ) : (
             <input
               type={field.type === 'email' ? 'email' : field.type === 'number' ? 'tel' : field.type === 'date' ? 'date' : 'text'}

@@ -178,11 +178,15 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
   const addCustomForm = (title: string) => {
     const newId = `form_${Date.now()}`;
     const newPage = { id: newId, type: 'form', title: title, description: 'Please fill out the form below', fields: [] };
-    setLocalSettings(prev => ({
-      ...prev,
-      interactivePages: [...(prev.interactivePages || []), newPage],
-      interactiveFlow: [...(prev.interactiveFlow || []), newId]
-    }));
+    setLocalSettings(prev => {
+      const flow = prev.interactiveFlow || [];
+      const newFlow = flow[0] === 'launch' ? [flow[0], newId, ...flow.slice(1)] : [newId, ...flow];
+      return {
+        ...prev,
+        interactivePages: [...(prev.interactivePages || []), newPage],
+        interactiveFlow: newFlow
+      };
+    });
     setIsDirty(true);
     setShowAddPageMenu(false);
   };
@@ -190,11 +194,15 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
   const addQuizPage = () => {
     const newId = `quiz_${Date.now()}`;
     const newPage = { id: newId, type: 'quiz', title: 'Quiz', description: 'Answer the questions', questions: [], passScore: 100, onFail: 'retry' };
-    setLocalSettings(prev => ({
-      ...prev,
-      interactivePages: [...(prev.interactivePages || []), newPage],
-      interactiveFlow: [...(prev.interactiveFlow || []), newId]
-    }));
+    setLocalSettings(prev => {
+      const flow = prev.interactiveFlow || [];
+      const newFlow = flow[0] === 'launch' ? [flow[0], newId, ...flow.slice(1)] : [newId, ...flow];
+      return {
+        ...prev,
+        interactivePages: [...(prev.interactivePages || []), newPage],
+        interactiveFlow: newFlow
+      };
+    });
     setActiveConfigPage(newPage);
     setIsDirty(true);
     setShowAddPageMenu(false);
@@ -203,11 +211,15 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
   const addCameraFxPage = () => {
     const newId = `camera_fx_${Date.now()}`;
     const newPage = { id: newId, type: 'camera_fx', title: 'Camera FX', deepArLicenseKey: '', effects: [], instructionText: 'Look at the camera', allowCapture: true };
-    setLocalSettings(prev => ({
-      ...prev,
-      interactivePages: [...(prev.interactivePages || []), newPage],
-      interactiveFlow: [...(prev.interactiveFlow || []), newId]
-    }));
+    setLocalSettings(prev => {
+      const flow = prev.interactiveFlow || [];
+      const newFlow = flow[0] === 'launch' ? [flow[0], newId, ...flow.slice(1)] : [newId, ...flow];
+      return {
+        ...prev,
+        interactivePages: [...(prev.interactivePages || []), newPage],
+        interactiveFlow: newFlow
+      };
+    });
     setActiveConfigPage(newPage);
     setIsDirty(true);
     setShowAddPageMenu(false);
@@ -216,11 +228,15 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
   const addVideoPage = () => {
     const newId = `video_${Date.now()}`;
     const newPage = { id: newId, type: 'video', title: 'Video Screen', videoUrl: '', videoSize: 'full', interaction: 'click_anywhere', showBackButton: true };
-    setLocalSettings(prev => ({
-      ...prev,
-      interactivePages: [...(prev.interactivePages || []), newPage],
-      interactiveFlow: [...(prev.interactiveFlow || []), newId]
-    }));
+    setLocalSettings(prev => {
+      const flow = prev.interactiveFlow || [];
+      const newFlow = flow[0] === 'launch' ? [flow[0], newId, ...flow.slice(1)] : [newId, ...flow];
+      return {
+        ...prev,
+        interactivePages: [...(prev.interactivePages || []), newPage],
+        interactiveFlow: newFlow
+      };
+    });
     setActiveConfigPage(newPage);
     setIsDirty(true);
     setShowAddPageMenu(false);
@@ -1010,13 +1026,25 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                         <option value="number">WhatsApp / Number</option>
                         <option value="date">Date</option>
                         <option value="textarea">Long Text</option>
+                        <option value="select">Dropdown</option>
+                        <option value="radio">Select One (Radio)</option>
+                        <option value="checkbox">Select Multiple (Checkbox)</option>
                       </select>
                     </div>
                     <div className="md:col-span-2">
-                      <label className="text-[9px] text-gray-400 uppercase tracking-wider mb-1 block">Question Label</label>
-                      <input type="text" value={field.label} onChange={(e) => {
-                        updateActivePage({ ...activeConfigPage, fields: activeConfigPage.fields.map((f:any) => f.id === field.id ? { ...f, label: e.target.value } : f) });
-                      }} placeholder="Example: What is your name?" className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#bc13fe]/50" />
+                       <label className="text-[9px] text-gray-400 uppercase tracking-wider mb-1 block">Question Label</label>
+                       <input type="text" value={field.label} onChange={(e) => {
+                         updateActivePage({ ...activeConfigPage, fields: activeConfigPage.fields.map((f:any) => f.id === field.id ? { ...f, label: e.target.value } : f) });
+                       }} placeholder="Example: What is your name?" className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#bc13fe]/50 mb-2" />
+                       
+                       {['select', 'radio', 'checkbox'].includes(field.type) && (
+                         <>
+                           <label className="text-[9px] text-gray-400 uppercase tracking-wider mb-1 block mt-2">Options (Comma separated)</label>
+                           <input type="text" value={field.options || ''} onChange={(e) => {
+                             updateActivePage({ ...activeConfigPage, fields: activeConfigPage.fields.map((f:any) => f.id === field.id ? { ...f, options: e.target.value } : f) });
+                           }} placeholder="Option 1, Option 2, Option 3" className="w-full bg-black border border-white/10 rounded-lg px-3 py-2 text-white text-xs focus:outline-none focus:border-[#bc13fe]/50" />
+                         </>
+                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-4 mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-white/10 w-full md:w-auto">
