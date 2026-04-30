@@ -1,7 +1,7 @@
 import React, { useState, useImperativeHandle, forwardRef, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { PhotoboothSettings, UIDisplaySettings } from '../../../../types';
-import { Settings, Save, Plus, Trash2, GripVertical, FileText, CheckCircle, Smartphone, Camera, Image as ImageIcon, Wand2, Video, MonitorPlay, ArrowLeft } from 'lucide-react';
+import { Settings, Save, Plus, Trash2, GripVertical, FileText, CheckCircle, Smartphone, Camera, Image as ImageIcon, Wand2, Video, MonitorPlay, ArrowLeft, HelpCircle } from 'lucide-react';
 import { useDialog } from '../../../../components/DialogProvider';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../../../lib/supabase';
@@ -187,6 +187,19 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
     setShowAddPageMenu(false);
   };
 
+  const addQuizPage = () => {
+    const newId = `quiz_${Date.now()}`;
+    const newPage = { id: newId, type: 'quiz', title: 'Quiz', description: 'Answer the questions', questions: [], passScore: 100, onFail: 'retry' };
+    setLocalSettings(prev => ({
+      ...prev,
+      interactivePages: [...(prev.interactivePages || []), newPage],
+      interactiveFlow: [...(prev.interactiveFlow || []), newId]
+    }));
+    setActiveConfigPage(newPage);
+    setIsDirty(true);
+    setShowAddPageMenu(false);
+  };
+
   const addCameraFxPage = () => {
     const newId = `camera_fx_${Date.now()}`;
     const newPage = { id: newId, type: 'camera_fx', title: 'Camera FX', deepArLicenseKey: '', effects: [], instructionText: 'Look at the camera', allowCapture: true };
@@ -348,6 +361,7 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
     const available = AVAILABLE_STEPS.find(s => s.id === stepId);
     if (available) return available.icon;
     if (stepId.startsWith('form')) return <FileText className="w-4 h-4 text-[#bc13fe]" />;
+    if (stepId.startsWith('quiz')) return <HelpCircle className="w-4 h-4 text-yellow-400" />;
     if (stepId.startsWith('video_start')) return <Video className="w-4 h-4 text-[#bc13fe]" />;
     if (stepId.startsWith('video')) return <Video className="w-4 h-4 text-orange-400" />;
     return <Settings className="w-4 h-4" />;
@@ -1028,6 +1042,117 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
         </div>
       </div>
     );
+  } else if (typeof activeConfigPage === 'object' && activeConfigPage !== null && activeConfigPage.type === 'quiz') {
+    rightPanelContent = (
+      <div className="w-full h-full flex flex-col animate-in fade-in duration-300">
+        <div className="flex justify-between items-center mb-6 pb-6 border-b border-white/10">
+          <h2 className="text-xl font-heading tracking-widest font-bold text-white uppercase flex items-center gap-3">
+            <HelpCircle className="w-5 h-5 text-yellow-400" /> EDIT QUIZ PAGE
+            <span className="bg-yellow-400/20 text-yellow-400 px-2 py-0.5 rounded text-[10px]">{activeConfigPage.id}</span>
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div>
+            <label className="text-[10px] font-bold tracking-widest text-yellow-400 uppercase block mb-2">Quiz Title</label>
+            <input type="text" value={activeConfigPage.title || ''} onChange={(e) => updateActivePage({ ...activeConfigPage, title: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400/50" />
+          </div>
+          <div>
+            <label className="text-[10px] font-bold tracking-widest text-yellow-400 uppercase block mb-2">Description / Instructions</label>
+            <input type="text" value={activeConfigPage.description || ''} onChange={(e) => updateActivePage({ ...activeConfigPage, description: e.target.value })} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400/50" />
+          </div>
+        </div>
+
+        <div className="mb-6 grid grid-cols-2 gap-6">
+          <div className={UI_CONTAINER}>
+             <label className={UI_LABEL}>Pass Score (%)</label>
+             <input type="number" min="0" max="100" value={activeConfigPage.passScore ?? 100} onChange={(e) => updateActivePage({ ...activeConfigPage, passScore: parseInt(e.target.value) || 0 })} className={UI_INPUT} />
+          </div>
+          <div className={UI_CONTAINER}>
+             <label className={UI_LABEL}>On Fail Action</label>
+             <select value={activeConfigPage.onFail || 'retry'} onChange={(e) => updateActivePage({ ...activeConfigPage, onFail: e.target.value })} className={UI_INPUT}>
+               <option value="retry">Retry (Must pass to continue)</option>
+               <option value="skip">Skip (Continue anyway)</option>
+             </select>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-sm font-bold tracking-widest text-white uppercase">Questions</h3>
+            <button onClick={() => {
+              updateActivePage({ ...activeConfigPage, questions: [...(activeConfigPage.questions || []), { id: `q_${Date.now()}`, questionText: 'New Question', options: [{ id: `o_${Date.now()}_1`, text: 'Option A', isCorrect: true }, { id: `o_${Date.now()}_2`, text: 'Option B', isCorrect: false }] }] });
+            }} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-[10px] font-bold uppercase transition-all flex items-center gap-2 border border-white/10">
+              <Plus className="w-3 h-3" /> Add Question
+            </button>
+          </div>
+
+          {(activeConfigPage.questions || []).length === 0 ? (
+            <div className="w-full py-12 border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-gray-500">
+              <HelpCircle className="w-8 h-8 mb-3 opacity-50" />
+              <p className="text-xs uppercase tracking-widest font-bold">No questions yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {(activeConfigPage.questions || []).map((question: any, qIdx: number) => (
+                <div key={question.id} className="p-4 bg-black/40 border border-white/10 rounded-xl flex flex-col gap-4 relative group">
+                  <div className="flex items-start gap-4">
+                    <span className="w-6 h-6 rounded-full bg-yellow-400/20 text-yellow-400 flex items-center justify-center text-xs font-bold mt-1 shrink-0">{qIdx + 1}</span>
+                    <div className="flex-1">
+                      <input type="text" value={question.questionText} onChange={(e) => {
+                        const newQ = [...activeConfigPage.questions];
+                        newQ[qIdx].questionText = e.target.value;
+                        updateActivePage({ ...activeConfigPage, questions: newQ });
+                      }} placeholder="Enter question..." className="w-full bg-black/60 border border-white/10 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-yellow-400/50 font-bold" />
+                    </div>
+                    <button onClick={() => {
+                      updateActivePage({ ...activeConfigPage, questions: activeConfigPage.questions.filter((q:any) => q.id !== question.id) });
+                    }} className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors shrink-0 mt-1">
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="pl-10 space-y-2">
+                    <label className="text-[10px] text-gray-400 uppercase tracking-widest block mb-1">Answers (Select Correct One)</label>
+                    {question.options.map((opt: any, oIdx: number) => (
+                      <div key={opt.id} className="flex items-center gap-3">
+                        <input type="radio" name={`correct_${question.id}`} checked={opt.isCorrect} onChange={() => {
+                          const newQ = [...activeConfigPage.questions];
+                          // set all others to false, this to true
+                          newQ[qIdx].options = newQ[qIdx].options.map((o:any, i:number) => ({ ...o, isCorrect: i === oIdx }));
+                          updateActivePage({ ...activeConfigPage, questions: newQ });
+                        }} className="w-4 h-4 accent-yellow-400" />
+                        <input type="text" value={opt.text} onChange={(e) => {
+                          const newQ = [...activeConfigPage.questions];
+                          newQ[qIdx].options[oIdx].text = e.target.value;
+                          updateActivePage({ ...activeConfigPage, questions: newQ });
+                        }} placeholder="Answer text..." className={`flex-1 bg-black/40 border ${opt.isCorrect ? 'border-yellow-400/50' : 'border-white/10'} rounded px-3 py-2 text-white text-sm focus:outline-none`} />
+                        <button onClick={() => {
+                          const newQ = [...activeConfigPage.questions];
+                          newQ[qIdx].options = newQ[qIdx].options.filter((o:any) => o.id !== opt.id);
+                          // if we removed correct answer, make first one correct
+                          if (opt.isCorrect && newQ[qIdx].options.length > 0) newQ[qIdx].options[0].isCorrect = true;
+                          updateActivePage({ ...activeConfigPage, questions: newQ });
+                        }} className="p-1.5 text-gray-500 hover:text-red-500 rounded bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed" disabled={question.options.length <= 1}>
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    <button onClick={() => {
+                      const newQ = [...activeConfigPage.questions];
+                      newQ[qIdx].options.push({ id: `o_${Date.now()}_${question.options.length}`, text: '', isCorrect: false });
+                      updateActivePage({ ...activeConfigPage, questions: newQ });
+                    }} className="mt-2 text-[10px] uppercase font-bold text-yellow-400 hover:text-yellow-300 transition-colors flex items-center gap-1">
+                      <Plus className="w-3 h-3" /> Add Option
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   } else if (typeof activeConfigPage === 'object' && activeConfigPage !== null && activeConfigPage.type === 'video') {
     rightPanelContent = (
       <div className="w-full h-full flex flex-col animate-in fade-in duration-300">
@@ -1308,7 +1433,8 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                     const isFixed = AVAILABLE_STEPS.find(s => s.id === stepId)?.fixed;
                     const isForm = stepId.startsWith('form');
                     const isVideo = stepId.startsWith('video');
-                    const isCustom = isForm || isVideo || stepId.startsWith('camera_fx');
+                    const isQuiz = stepId.startsWith('quiz');
+                    const isCustom = isForm || isVideo || isQuiz || stepId.startsWith('camera_fx');
                     const isActive = typeof activeConfigPage === 'string' ? activeConfigPage === stepId : activeConfigPage?.id === stepId;
                     
                     return (
@@ -1415,6 +1541,9 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                 )}
                 <button onClick={() => addCustomForm('New Form')} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest border-b border-white/5 flex items-center gap-3">
                   <FileText className="w-4 h-4 text-[#bc13fe]" /> Add Form
+                </button>
+                <button onClick={addQuizPage} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest border-b border-white/5 flex items-center gap-3">
+                  <HelpCircle className="w-4 h-4 text-yellow-400" /> Add Quiz
                 </button>
                 <button onClick={() => addCustomForm('Question & Answer')} className="w-full text-left px-4 py-3 hover:bg-white/5 text-white text-xs font-bold uppercase tracking-widest border-b border-white/5 flex items-center gap-3">
                   <FileText className="w-4 h-4 text-[#bc13fe]" /> Add Question & Answer

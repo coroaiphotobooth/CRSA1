@@ -119,10 +119,10 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
           {isMenuOpen && (
             <div className="absolute right-0 mt-4 w-48 bg-black/95 border border-white/10 rounded-lg shadow-2xl overflow-hidden flex flex-col">
               <button 
-                onClick={() => { setIsMenuOpen(false); navigate('/dashboard'); }}
+                onClick={() => { setIsMenuOpen(false); onAdmin('concepts'); }}
                 className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors border-b border-white/5"
               >
-                Dashboard
+                Settings Concept
               </button>
               <button 
                 onClick={() => { setIsMenuOpen(false); onAdmin('settings'); }}
@@ -131,16 +131,16 @@ const VipLandingPage: React.FC<VipLandingPageProps> = ({ onStart, onGallery, onA
                 Settings Event
               </button>
               <button 
-                onClick={() => { setIsMenuOpen(false); onAdmin('concepts'); }}
+                onClick={() => { setIsMenuOpen(false); onAdmin('interactive'); }}
                 className="px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors border-b border-white/5"
               >
-                Settings Concept
+                Interactive & Display
               </button>
               <button 
-                onClick={() => { setIsMenuOpen(false); onAdmin('interactive'); }}
+                onClick={() => { setIsMenuOpen(false); navigate('/dashboard'); }}
                 className={`px-4 py-3 text-left text-xs text-gray-300 hover:text-white hover:bg-white/10 uppercase tracking-widest transition-colors ${isVIPAdmin ? 'border-b border-white/5' : ''}`}
               >
-                Interactive & Display
+                Dashboard
               </button>
               {isVIPAdmin && (
                 <button 

@@ -24,6 +24,7 @@ import MonitorPage from './pages/booths/photobooth/MonitorPage';
 import FastThanksPage from './pages/booths/photobooth/FastThanksPage';
 import GuestResultPage from './pages/booths/photobooth/GuestResultPage';
 import InteractiveFormPage from './pages/booths/photobooth/InteractiveFormPage';
+import InteractiveQuizPage from './pages/booths/photobooth/InteractiveQuizPage';
 import InteractiveVideoPage from './pages/booths/photobooth/InteractiveVideoPage';
 import InteractiveVideoStartPage from './pages/booths/photobooth/InteractiveVideoStartPage';
 import CameraFXPage from './pages/booths/photobooth/CameraFXPage';
@@ -728,6 +729,17 @@ const PhotoboothFlow: React.FC = () => {
           <InteractiveFormPage 
             pageConfig={pageConfig}
             settings={settings}
+            onNext={(data) => advanceInteractive(data)}
+            onBack={() => retreatInteractive()}
+            onAdmin={() => { setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}
+          />
+        );
+      }
+      if (currentStepId?.startsWith('quiz')) {
+        const pageConfig = settings.interactivePages?.find(p => p.id === currentStepId);
+        return (
+          <InteractiveQuizPage 
+            pageConfig={pageConfig}
             onNext={(data) => advanceInteractive(data)}
             onBack={() => retreatInteractive()}
             onAdmin={() => { setAdminTab('interactive'); setCurrentPage(AppState.ADMIN); }}

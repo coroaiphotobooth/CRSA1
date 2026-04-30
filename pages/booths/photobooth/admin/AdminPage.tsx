@@ -84,8 +84,8 @@ const AdminPage: React.FC<AdminPageProps> = ({ settings, concepts, onSaveSetting
         <h2 className="text-xl md:text-2xl font-heading text-white neon-text italic uppercase">Settings</h2>
         <div className="flex bg-white/5 p-1 rounded-xl my-4 md:my-0 flex-wrap">
           {(isVIPAdmin ? 
-            ['settings', 'concepts', 'interactive', 'vip'] : 
-            ['settings', 'concepts', 'interactive']
+            ['concepts', 'settings', 'interactive', 'vip'] : 
+            ['concepts', 'settings', 'interactive']
           ).map(tab => {
             let label = tab;
             if (tab === 'interactive') label = 'Interactive & Display';
