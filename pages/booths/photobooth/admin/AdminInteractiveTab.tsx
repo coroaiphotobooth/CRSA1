@@ -1,7 +1,7 @@
 import React, { useState, useImperativeHandle, forwardRef, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { PhotoboothSettings, UIDisplaySettings } from '../../../../types';
-import { Settings, Save, Plus, Trash2, GripVertical, FileText, CheckCircle, Smartphone, Camera, Image as ImageIcon, Wand2, Video, MonitorPlay, ArrowLeft, HelpCircle } from 'lucide-react';
+import { Settings, Save, Plus, Trash2, GripVertical, FileText, CheckCircle, Smartphone, Camera, Image as ImageIcon, Wand2, Video, MonitorPlay, ArrowLeft, HelpCircle, DownloadCloud, ChevronRight } from 'lucide-react';
 import { useDialog } from '../../../../components/DialogProvider';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../../../../lib/supabase';
@@ -952,6 +952,60 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
          </div>
       </div>
     );
+  } else if (activeConfigPage === 'guest_download') {
+    rightPanelContent = (
+      <div className="flex flex-col gap-6 animate-in fade-in duration-300 h-full overflow-y-auto custom-scrollbar pr-2">
+         <h2 className="text-xl font-heading font-bold text-white uppercase flex items-center gap-3">
+           <DownloadCloud className="w-5 h-5 text-indigo-400" /> Guest Download Page Settings
+         </h2>
+         <div className="text-xs text-gray-400 leading-relaxed mb-4">
+            This is the page guests see on their mobile devices when they scan the QR code.
+         </div>
+
+         <div className={UI_CONTAINER}>
+            <label className={UI_LABEL}>Page Header Text</label>
+            <input type="text" value={localUI.downloadPageHeader !== undefined ? localUI.downloadPageHeader : 'YOUR DIGITAL ART'} onChange={(e) => updateUIChange('downloadPageHeader', e.target.value)} className={UI_INPUT} placeholder="YOUR DIGITAL ART" />
+         </div>
+
+         <div className={UI_CONTAINER}>
+            <label className={UI_LABEL}>Sub-Text / Instruction</label>
+            <input type="text" value={localUI.downloadPageSubText !== undefined ? localUI.downloadPageSubText : 'COROAI PHOTOBOOTH'} onChange={(e) => updateUIChange('downloadPageSubText', e.target.value)} className={UI_INPUT} placeholder="COROAI PHOTOBOOTH" />
+         </div>
+
+         <div className={UI_CONTAINER}>
+            <div className="flex items-center justify-between">
+               <div className="flex flex-col">
+                  <span className="text-white text-xs font-bold uppercase tracking-widest">Enable Original Photo</span>
+                  <span className="text-[10px] text-gray-500">Allow guests to view and download their original unedited photo</span>
+               </div>
+               <button
+                  onClick={() => updateUIChange('enableOriginalPhotoDownload', !localUI.enableOriginalPhotoDownload)}
+                  className={`w-12 h-6 rounded-full transition-colors relative ${localUI.enableOriginalPhotoDownload ? 'bg-[#bc13fe]' : 'bg-white/10'}`}
+               >
+                  <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${localUI.enableOriginalPhotoDownload ? 'translate-x-6' : 'translate-x-0'}`} />
+               </button>
+            </div>
+         </div>
+
+         <div className={UI_CONTAINER}>
+            <label className={UI_LABEL}>Download Photo Button Text</label>
+            <input type="text" value={localUI.downloadButtonText !== undefined ? localUI.downloadButtonText : 'DOWNLOAD PHOTO'} onChange={(e) => updateUIChange('downloadButtonText', e.target.value)} className={UI_INPUT} placeholder="DOWNLOAD PHOTO" />
+         </div>
+         
+         <div className={UI_CONTAINER}>
+            <label className={UI_LABEL}>Download Video Button Text</label>
+            <input type="text" value={localUI.downloadVideoButtonText !== undefined ? localUI.downloadVideoButtonText : 'DOWNLOAD VIDEO'} onChange={(e) => updateUIChange('downloadVideoButtonText', e.target.value)} className={UI_INPUT} placeholder="DOWNLOAD VIDEO" />
+         </div>
+
+         <div className={UI_CONTAINER}>
+            <label className={UI_LABEL}>Layout Style</label>
+            <div className="grid grid-cols-2 gap-3 mt-1">
+               <button onClick={() => updateUIChange('downloadPageStyle', 'neon')} className={`p-3 rounded-xl border ${(!localUI.downloadPageStyle || localUI.downloadPageStyle === 'neon') ? 'bg-indigo-500/20 border-indigo-500 text-white' : 'bg-black/40 border-white/10 text-gray-400'} text-xs font-bold uppercase tracking-wider`}>Neon Glow</button>
+               <button onClick={() => updateUIChange('downloadPageStyle', 'minimal')} className={`p-3 rounded-xl border ${(localUI.downloadPageStyle === 'minimal') ? 'bg-indigo-500/20 border-indigo-500 text-white' : 'bg-black/40 border-white/10 text-gray-400'} text-xs font-bold uppercase tracking-wider`}>Minimal</button>
+            </div>
+         </div>
+      </div>
+    );
   } else if (typeof activeConfigPage === 'object' && activeConfigPage !== null && activeConfigPage.type === 'form') {
     rightPanelContent = (
       <div className="w-full h-full flex flex-col animate-in fade-in duration-300">
@@ -1428,12 +1482,12 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 w-full h-full pb-32">
+    <div className="flex flex-col lg:flex-row gap-6 w-full min-h-full pb-32">
       {/* Left Panel: Flow Editor */}
-      <div className="w-full lg:w-1/3 bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col h-[700px] lg:sticky top-0">
+      <div className="w-full lg:w-[280px] shrink-0 bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col min-h-[700px] h-fit lg:sticky top-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-heading tracking-widest font-bold text-white uppercase flex items-center gap-2">
-            <Settings className="w-5 h-5 text-[#bc13fe]" /> INTERACTIVE FLOW
+          <h2 className="text-xs font-heading tracking-wider font-bold text-white uppercase flex items-center gap-1.5">
+            <Settings className="w-4 h-4 text-[#bc13fe] shrink-0" /> <span>INTERACTIVE FLOW</span>
           </h2>
           {!isFlowDefault && (
             <button 
@@ -1452,7 +1506,7 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
           Click a step to configure UI & Display. Drag and drop to reorder.
         </p>
 
-        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="flex-1">
           <DragDropContext onDragEnd={handleDragEnd}>
             <Droppable droppableId="flow-list">
               {(provided) => (
@@ -1471,33 +1525,33 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`flex items-center gap-3 p-3 rounded-xl border bg-black/40 backdrop-blur-sm transition-all shadow-lg group
+                            className={`flex items-center gap-2 p-2 rounded-xl border bg-black/40 backdrop-blur-sm transition-all shadow-lg group
                               ${snapshot.isDragging ? 'border-[#bc13fe] border-b-4' : ''}
                               ${isActive ? 'border-[#bc13fe] shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 hover:border-white/20 hover:bg-white/5'}`}
                           >
-                            <div {...provided.dragHandleProps} className="text-gray-500 hover:text-white cursor-grab active:cursor-grabbing p-1">
+                            <div {...provided.dragHandleProps} className="text-gray-500 hover:text-white cursor-grab active:cursor-grabbing p-1 shrink-0">
                               <GripVertical className="w-4 h-4" />
                             </div>
                             
                             <div 
-                              className="flex-1 flex gap-3 text-sm font-bold text-white uppercase tracking-wider items-center cursor-pointer"
+                              className="flex-1 flex gap-2 text-[10px] font-bold text-white uppercase tracking-wider items-center cursor-pointer min-w-0"
                               onClick={() => {
                                 if (isCustom) setActiveConfigPage(customPages.find(p => p.id === stepId));
                                 else setActiveConfigPage(stepId);
                               }}
                             >
-                              <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                              <div className="w-7 h-7 shrink-0 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
                                 {renderStepIcon(stepId)}
                               </div>
-                              <div className="flex flex-col">
-                                <span>{renderStepName(stepId)}</span>
-                                {isForm && <span className="text-[9px] text-[#bc13fe] font-normal lowercase tracking-normal">custom form / q&a</span>}
-                                {isVideo && <span className="text-[9px] text-[#bc13fe] font-normal lowercase tracking-normal">custom video page</span>}
-                                {stepId.startsWith('camera_fx') && <span className="text-[9px] text-green-400 font-normal lowercase tracking-normal">camera fx page</span>}
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <span className="leading-tight block" title={renderStepName(stepId)}>{renderStepName(stepId)}</span>
+                                {isForm && <span className="text-[8px] text-[#bc13fe] font-normal lowercase tracking-normal">custom form / q&a</span>}
+                                {isVideo && <span className="text-[8px] text-[#bc13fe] font-normal lowercase tracking-normal">custom video page</span>}
+                                {stepId.startsWith('camera_fx') && <span className="text-[8px] text-green-400 font-normal lowercase tracking-normal">camera fx page</span>}
                               </div>
                             </div>
                             
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 shrink-0">
                               {((AVAILABLE_STEPS.find(s => s.id === stepId) as any)?.deletable !== false) && !isCustom && (
                                 <button onClick={(e) => { e.stopPropagation(); removeStep(stepId); }} className="p-2 bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors border border-transparent opacity-0 group-hover:opacity-100">
                                   <Trash2 className="w-4 h-4" />
@@ -1593,10 +1647,31 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
             ))}
           </div>
         </div>
+
+        <div className="mt-auto border-t border-white/10 pt-6">
+           <h2 className="text-[12px] font-heading tracking-widest font-bold text-white uppercase mb-4">
+             STANDALONE PAGES
+           </h2>
+           <button
+             onClick={() => setActiveConfigPage('guest_download')}
+             className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${activeConfigPage === 'guest_download' ? 'border-[#bc13fe] bg-[#bc13fe]/20 shadow-[0_0_15px_rgba(188,19,254,0.3)]' : 'border-white/10 bg-black/40 hover:border-white/30 hover:bg-white/5'}`}
+           >
+              <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                    <DownloadCloud className="w-4 h-4" />
+                 </div>
+                 <div className="flex flex-col text-left">
+                    <span className="text-xs font-bold text-white uppercase tracking-wider">Guest Download Page</span>
+                    <span className="text-[10px] text-gray-500">QR Scan Destination</span>
+                 </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+           </button>
+        </div>
       </div>
 
       {/* Right Panel: Page Editor & Sub-Settings */}
-      <div className="w-full lg:w-2/3 flex flex-col xl:flex-row gap-6">
+      <div className="flex-1 flex flex-col xl:flex-row gap-6">
         <div className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl min-h-[700px] flex flex-col relative overflow-hidden">
            {activeConfigPage && (
               <div className="mb-4">
@@ -1610,26 +1685,28 @@ export const AdminInteractiveTab = forwardRef<AdminInteractiveTabRef, AdminInter
         </div>
         
         {/* Preview Panel */}
-        <div className="w-full xl:w-[320px] bg-white/5 flex flex-col items-center p-4 border border-white/10 rounded-2xl shadow-xl h-fit sticky top-0">
+        <div className="w-full xl:w-[320px] shrink-0 bg-white/5 flex flex-col items-center p-5 border border-white/10 rounded-2xl shadow-xl h-fit sticky top-6">
             <h3 className="text-white font-bold tracking-widest text-[#bc13fe] uppercase text-sm mb-4 flex items-center gap-2">
               <MonitorPlay className="w-4 h-4" /> LIVE PREVIEW
             </h3>
             
             <div className="flex gap-2 mb-6 w-full">
-               <button onClick={() => setPreviewRatio('9:16')} className={`flex-1 py-2 border rounded-lg text-[10px] font-bold uppercase transition-colors ${previewRatio === '9:16' ? 'bg-[#bc13fe]/20 border-[#bc13fe] text-[#bc13fe]' : 'bg-transparent border-white/20 text-gray-400 hover:text-white'}`}>Portrait</button>
-               <button onClick={() => setPreviewRatio('16:9')} className={`flex-1 py-2 border rounded-lg text-[10px] font-bold uppercase transition-colors ${previewRatio === '16:9' ? 'bg-[#bc13fe]/20 border-[#bc13fe] text-[#bc13fe]' : 'bg-transparent border-white/20 text-gray-400 hover:text-white'}`}>Landscape</button>
+               <button onClick={() => setPreviewRatio('9:16')} className={`flex-1 py-2 border rounded-lg text-xs font-bold uppercase transition-colors ${previewRatio === '9:16' ? 'bg-[#bc13fe]/20 border-[#bc13fe] text-[#bc13fe]' : 'bg-transparent border-white/20 text-gray-400 hover:text-white'}`}>Portrait</button>
+               <button onClick={() => setPreviewRatio('16:9')} className={`flex-1 py-2 border rounded-lg text-xs font-bold uppercase transition-colors ${previewRatio === '16:9' ? 'bg-[#bc13fe]/20 border-[#bc13fe] text-[#bc13fe]' : 'bg-transparent border-white/20 text-gray-400 hover:text-white'}`}>Landscape</button>
             </div>
             
-            <div className={`bg-black border-[4px] border-[#bc13fe]/50 rounded-2xl relative shadow-[0_0_30px_rgba(188,19,254,0.15)] transition-all duration-300 overflow-hidden ${previewRatio === '9:16' ? 'w-[270px] h-[480px]' : 'w-[280px] h-[157px]'}`}>
+            <div className={`bg-black border border-[#bc13fe]/30 rounded-2xl relative shadow-[0_0_30px_rgba(188,19,254,0.15)] transition-all duration-300 overflow-hidden w-full ${previewRatio === '9:16' ? 'aspect-[9/16]' : 'aspect-[16/9]'}`}>
                 <iframe 
                    ref={iframeRef}
-                   src={`/app/${eventId}?preview_step=${typeof activeConfigPage === 'string' ? activeConfigPage : activeConfigPage?.id || 'launch'}&preview_mode=true`} 
-                   className="absolute border-0" 
+                   src={activeConfigPage === 'guest_download' ? `/result/preview?preview_event_id=${eventId}&preview_mode=true` : `/app/${eventId}?preview_step=${typeof activeConfigPage === 'string' ? activeConfigPage : activeConfigPage?.id || 'launch'}&preview_mode=true`}
+                   className="absolute top-0 left-0 border-0 origin-top-left" 
                    style={{
                        width: previewRatio === '9:16' ? '1080px' : '1920px',
                        height: previewRatio === '9:16' ? '1920px' : '1080px',
-                       transform: previewRatio === '9:16' ? 'scale(0.25)' : 'scale(0.1458)', // 280 / 1920
-                       transformOrigin: 'top left',
+                       // 320 - 40px (padding 5 -> 20px*2) = 280px
+                       // portrait: 280 / 1080 = 0.259259
+                       // landscape: 280 / 1920 = 0.145833
+                       transform: previewRatio === '9:16' ? 'scale(0.259259)' : 'scale(0.145833)',
                        pointerEvents: 'auto'
                    }} 
                 />
